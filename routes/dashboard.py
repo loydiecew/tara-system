@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, session, redirect, url_for
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from models.database import get_db
 
 dashboard_bp = Blueprint('dashboard', __name__)
@@ -36,7 +36,6 @@ def dashboard():
         last_month_last = next_month_last - timedelta(days=1)
     
     # ========== CORE FINANCIAL ==========
-    # Monthly income
     cursor.execute("""
         SELECT SUM(amount) as total FROM transactions 
         WHERE user_id = %s AND type = 'income' 
@@ -44,7 +43,6 @@ def dashboard():
     """, (session['user_id'], first_day, last_day))
     monthly_income = float(cursor.fetchone()['total'] or 0)
     
-    # Monthly expense
     cursor.execute("""
         SELECT SUM(amount) as total FROM transactions 
         WHERE user_id = %s AND type = 'expense' 
@@ -52,10 +50,8 @@ def dashboard():
     """, (session['user_id'], first_day, last_day))
     monthly_expense = float(cursor.fetchone()['total'] or 0)
     
-    # Monthly profit
     current_profit = monthly_income - monthly_expense
     
-    # Last month income
     cursor.execute("""
         SELECT SUM(amount) as total FROM transactions 
         WHERE user_id = %s AND type = 'income' 
@@ -63,7 +59,6 @@ def dashboard():
     """, (session['user_id'], last_month_first, last_month_last))
     last_monthly_income = float(cursor.fetchone()['total'] or 0)
     
-    # Last month expense
     cursor.execute("""
         SELECT SUM(amount) as total FROM transactions 
         WHERE user_id = %s AND type = 'expense' 
@@ -73,7 +68,6 @@ def dashboard():
     
     last_profit = last_monthly_income - last_monthly_expense
     
-    # Calculate changes
     def calc_change(current, last):
         if last == 0:
             return 0.0 if current == 0 else 100.0
@@ -84,7 +78,6 @@ def dashboard():
     profit_change = calc_change(current_profit, last_profit)
     profit_margin = (current_profit / monthly_income * 100) if monthly_income > 0 else 0
     
-    # ========== CASH BALANCE (all time) ==========
     cursor.execute("""
         SELECT 
             SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
@@ -94,21 +87,18 @@ def dashboard():
     totals = cursor.fetchone()
     cash_balance = (float(totals['total_income'] or 0)) - (float(totals['total_expense'] or 0))
     
-    # ========== AR OUTSTANDING ==========
     cursor.execute("""
         SELECT SUM(amount) as total FROM invoices 
         WHERE user_id = %s AND status = 'unpaid'
     """, (session['user_id'],))
     ar_outstanding = float(cursor.fetchone()['total'] or 0)
     
-    # ========== AP OUTSTANDING ==========
     cursor.execute("""
         SELECT SUM(amount) as total FROM bills 
         WHERE user_id = %s AND status = 'unpaid'
     """, (session['user_id'],))
     ap_outstanding = float(cursor.fetchone()['total'] or 0)
     
-    # ========== INVENTORY SUMMARY ==========
     cursor.execute("""
         SELECT 
             SUM(quantity * price) as total_value,
@@ -121,7 +111,6 @@ def dashboard():
     total_products = inv_summary['total_products'] or 0
     low_stock_count = inv_summary['low_stock_count'] or 0
     
-    # ========== RECENT TRANSACTIONS ==========
     cursor.execute("""
         SELECT * FROM transactions 
         WHERE user_id = %s 
@@ -132,6 +121,16 @@ def dashboard():
     
     cursor.close()
     db.close()
+    
+    # Get current time for greeting
+    now = datetime.now()
+    current_hour = now.hour
+    if current_hour < 12:
+        greeting = "Morning"
+    elif current_hour < 18:
+        greeting = "Afternoon"
+    else:
+        greeting = "Evening"
     
     return render_template('dashboard.html',
                          username=session['username'],
@@ -148,4 +147,6 @@ def dashboard():
                          inventory_value=inventory_value,
                          total_products=total_products,
                          low_stock_count=low_stock_count,
-                         transactions=recent)
+                         transactions=recent,
+                         greeting=greeting,
+                         today=now.strftime('%B %d, %Y'))

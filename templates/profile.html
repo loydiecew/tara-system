@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+
+{% block title %}Profile{% endblock %}
+{% block page_title %}Profile Settings{% endblock %}
+{% block page_subtitle %}Manage your account{% endblock %}
+
+{% block content %}
+<div style="display: flex; gap: 24px; flex-wrap: wrap;">
+    <!-- Sidebar Tabs -->
+    <div style="width: 260px; background: var(--bg-secondary); border-radius: 20px; border: 1px solid var(--border-light); overflow: hidden;">
+        <div style="padding: 24px; text-align: center; border-bottom: 1px solid var(--border-light);">
+            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                <span style="font-size: 28px; color: white;">{{ session.username[0]|upper }}</span>
+            </div>
+            <h3>{{ session.username }}</h3>
+            <p style="font-size: 12px; color: var(--text-secondary);">{{ session.role|capitalize }} • {{ session.plan_name }} Plan</p>
+        </div>
+        
+        <div>
+            <a href="#" class="profile-nav active" data-tab="profile"><i class="fas fa-user"></i> Profile</a>
+            <a href="#" class="profile-nav" data-tab="plan"><i class="fas fa-crown"></i> Billing & Plan</a>
+            <a href="#" class="profile-nav" data-tab="appearance"><i class="fas fa-palette"></i> Appearance</a>
+            {% if session.role == 'admin' %}
+            <a href="#" class="profile-nav" data-tab="team"><i class="fas fa-users"></i> Team</a>
+            <a href="#" class="profile-nav" data-tab="restore"><i class="fas fa-trash-restore"></i> Restore</a>
+            {% endif %}
+            <div style="height: 1px; background: var(--border-light); margin: 8px 0;"></div>
+            <a href="/logout" class="profile-nav" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <!-- Content Area -->
+    <div style="flex: 1; background: var(--bg-secondary); border-radius: 20px; border: 1px solid var(--border-light); padding: 24px;">
+        
+        <!-- Profile Tab -->
+        <div id="tab-profile" class="profile-tab-content active">
+            <h2 style="margin-bottom: 24px;">Profile Information</h2>
+            <div class="form-grid">
+                <div class="form-group"><label>Username</label><input type="text" value="{{ session.username }}" disabled style="background:var(--bg-primary);"></div>
+                <div class="form-group"><label>Full Name</label><input type="text" value="{{ user.full_name or session.username }}"></div>
+                <div class="form-group"><label>Role</label><input type="text" value="{{ session.role|capitalize }}" disabled style="background:var(--bg-primary);"></div>
+                <div class="form-group"><label>Industry</label>
+                    <select name="industry">
+                        <option value="retail" {% if user.industry == 'retail' %}selected{% endif %}>Retail</option>
+                        <option value="restaurant" {% if user.industry == 'restaurant' %}selected{% endif %}>Restaurant</option>
+                        <option value="freelancer" {% if user.industry == 'freelancer' %}selected{% endif %}>Freelancer</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary">Save Changes</button>
+        </div>
+        
+        <!-- Plan Tab -->
+        <div id="tab-plan" class="profile-tab-content" style="display: none;">
+            <h2 style="margin-bottom: 24px;">Current Plan: {{ session.plan_name }}</h2>
+            <div style="background: rgba(16,185,129,0.1); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
+                <ul style="margin-left: 20px;">
+                    <li>✅ Cash Management</li>
+                    <li>✅ Sales Management</li>
+                    <li>✅ General Journal</li>
+                    <li>✅ Business Insights</li>
+                    {% if session.plan != 'basic' %}
+                    <li>✅ Accounts Receivable</li>
+                    <li>✅ Accounts Payable</li>
+                    <li>✅ Inventory Management</li>
+                    {% endif %}
+                </ul>
+            </div>
+            <button class="btn btn-primary" onclick="alert('Contact support to upgrade')">Upgrade Plan</button>
+        </div>
+        
+        <!-- Appearance Tab -->
+        <div id="tab-appearance" class="profile-tab-content" style="display: none;">
+            <h2 style="margin-bottom: 24px;">Appearance</h2>
+            <div style="display: flex; gap: 16px;">
+                <button class="btn {% if theme == 'light' %}btn-primary{% else %}btn-secondary{% endif %}" id="lightModeBtn">
+                    <i class="fas fa-sun"></i> Light Mode
+                </button>
+                <button class="btn {% if theme == 'dark' %}btn-primary{% else %}btn-secondary{% endif %}" id="darkModeBtn">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+            </div>
+        </div>
+        
+        <!-- Team Tab (Admin only) -->
+        {% if session.role == 'admin' %}
+        <div id="tab-team" class="profile-tab-content" style="display: none;">
+            <h2 style="margin-bottom: 24px;">Team Members</h2>
+            <iframe src="/admin/users" style="width: 100%; height: 400px; border: none; border-radius: 12px;"></iframe>
+        </div>
+        
+        <!-- Restore Tab (Admin only) -->
+        <div id="tab-restore" class="profile-tab-content" style="display: none;">
+            <h2 style="margin-bottom: 24px;">Restore Deleted Items</h2>
+            <iframe src="/admin/restore" style="width: 100%; height: 400px; border: none; border-radius: 12px;"></iframe>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.profile-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.profile-nav:hover { background: rgba(16,185,129,0.08); color: #10b981; }
+.profile-nav.active { background: rgba(16,185,129,0.12); color: #10b981; border-right: 3px solid #10b981; }
+.profile-tab-content { display: none; }
+.profile-tab-content.active { display: block; }
+</style>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.profile-nav').forEach(nav => {
+        nav.addEventListener('click', function(e) {
+            if (this.getAttribute('href') === '/logout') return;
+            e.preventDefault();
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.profile-nav').forEach(n => n.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        });
+    });
+    
+    // Dark mode toggle inside profile
+    const lightBtn = document.getElementById('lightModeBtn');
+    const darkBtn = document.getElementById('darkModeBtn');
+    
+    if (lightBtn && darkBtn) {
+        lightBtn.addEventListener('click', () => {
+            document.body.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            lightBtn.classList.add('btn-primary');
+            lightBtn.classList.remove('btn-secondary');
+            darkBtn.classList.add('btn-secondary');
+            darkBtn.classList.remove('btn-primary');
+        });
+        darkBtn.addEventListener('click', () => {
+            document.body.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            darkBtn.classList.add('btn-primary');
+            darkBtn.classList.remove('btn-secondary');
+            lightBtn.classList.add('btn-secondary');
+            lightBtn.classList.remove('btn-primary');
+        });
+    }
+</script>
+{% endblock %}

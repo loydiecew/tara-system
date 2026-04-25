@@ -106,11 +106,11 @@
                     <td>{{ s.description or '-' }}</td>
                     <td style="color: #10b981;">₱ {{ "{:,.2f}".format(s.amount) }}</td>
                     <td>
-                        <a href="/edit_sale/{{ s.id }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; margin-right: 5px; background: #3b82f6; color: white; border-radius: 6px;">
-                            ✏️ Edit
+                        <a href="/edit_sale/{{ s.id }}" class="btn-icon" title="Edit">
+                            <i class="fas fa-pen"></i>
                         </a>
-                        <a href="/delete_sale/{{ s.id }}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; background: #ef4444; color: white; border-radius: 6px;" onclick="return confirm('Delete this sale?')">
-                            🗑️ Delete
+                        <a href="/delete_sale/{{ s.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete this sale?')">
+                            <i class="fas fa-trash-alt"></i>
                         </a>
                     </td>
                 </tr>

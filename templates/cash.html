@@ -36,21 +36,21 @@
             </div>
             <div class="form-group">
                 <label>Type</label>
-                <select name="type" id="transactionType" onchange="toggleCategoryDropdown()">
-                    <option value="income">💰 Income (Money In)</option>
-                    <option value="expense">💸 Expense (Money Out)</option>
+                <select name="type" id="transactionType">
+                    <option value="income"><i class="fas fa-arrow-trend-up"></i> Income (Money In)</option>
+                    <option value="expense"><i class="fas fa-arrow-trend-down"></i> Expense (Money Out)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>Category</label>
                 <select name="category" id="transactionCategory" required>
                     <option value="">Select a category</option>
-                    <optgroup label="Income Categories" id="incomeOptGroup">
+                    <optgroup label="Income Categories">
                         {% for cat in income_categories %}
                         <option value="{{ cat.name }}">{{ cat.name }}</option>
                         {% endfor %}
                     </optgroup>
-                    <optgroup label="Expense Categories" id="expenseOptGroup">
+                    <optgroup label="Expense Categories">
                         {% for cat in expense_categories %}
                         <option value="{{ cat.name }}">{{ cat.name }}</option>
                         {% endfor %}
@@ -69,12 +69,6 @@
             </div>
         </div>
     </form>
-    
-    <div style="margin-top: 15px; text-align: center;">
-        <button type="button" id="voiceBtn" class="btn btn-secondary">
-            <i class="fas fa-microphone"></i> Voice Input (Beta)
-        </button>
-    </div>
 </div>
 
 <div class="card">
@@ -102,8 +96,12 @@
                     <td><span class="badge {{ 'badge-success' if t.type == 'income' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
                     <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">₱ {{ "{:,.2f}".format(t.amount) }}</td>
                     <td>
-                        <a href="/edit_transaction/{{ t.id }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;">✏️ Edit</a>
-                        <a href="/delete_transaction/{{ t.id }}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="return confirm('Delete this transaction?')">🗑️ Delete</a>
+                        <a href="/edit_transaction/{{ t.id }}" class="btn-icon" title="Edit">
+                            <i class="fas fa-pen"></i>
+                        </a>
+                        <a href="/delete_transaction/{{ t.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete this transaction?')">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
                     </td>
                 </tr>
                 {% else %}
@@ -114,35 +112,30 @@
 </div>
 
 <script>
-    // Toggle between income/expense categories
-    function toggleCategoryDropdown() {
+    // Toggle categories based on transaction type
+    function updateCategoryDropdown() {
         const type = document.getElementById('transactionType').value;
-        const incomeOptGroup = document.getElementById('incomeOptGroup');
-        const expenseOptGroup = document.getElementById('expenseOptGroup');
         const categorySelect = document.getElementById('transactionCategory');
         
-        if (type === 'income') {
-            incomeOptGroup.style.display = '';
-            expenseOptGroup.style.display = 'none';
-            // Select first income category if available
-            const firstIncome = incomeOptGroup.querySelector('option');
-            if (firstIncome && firstIncome.value) {
-                categorySelect.value = firstIncome.value;
-            }
-        } else {
-            incomeOptGroup.style.display = 'none';
-            expenseOptGroup.style.display = '';
-            // Select first expense category if available
-            const firstExpense = expenseOptGroup.querySelector('option');
-            if (firstExpense && firstExpense.value) {
-                categorySelect.value = firstExpense.value;
-            }
+        // Show/hide optgroups based on type
+        const incomeOpt = categorySelect.querySelector('optgroup[label="Income Categories"]');
+        const expenseOpt = categorySelect.querySelector('optgroup[label="Expense Categories"]');
+        
+        if (incomeOpt) incomeOpt.style.display = type === 'income' ? '' : 'none';
+        if (expenseOpt) expenseOpt.style.display = type === 'expense' ? '' : 'none';
+        
+        // Auto-select first available option
+        if (type === 'income' && incomeOpt && incomeOpt.options.length > 0) {
+            categorySelect.value = incomeOpt.options[0].value;
+        } else if (type === 'expense' && expenseOpt && expenseOpt.options.length > 0) {
+            categorySelect.value = expenseOpt.options[0].value;
         }
     }
     
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-        toggleCategoryDropdown();
+        updateCategoryDropdown();
+        document.getElementById('transactionType').addEventListener('change', updateCategoryDropdown);
     });
     
     // Voice Input
@@ -168,7 +161,7 @@
                     if (data.amount) document.querySelector('input[name="amount"]').value = data.amount;
                     if (data.type) document.querySelector('select[name="type"]').value = data.type;
                     alert(`Voice recognized: "${text}"`);
-                    toggleCategoryDropdown();
+                    updateCategoryDropdown();
                 });
             };
             recognition.onerror = function() { alert('Could not recognize. Try again.'); };

@@ -241,3 +241,17 @@ def admin_audit():
                          tables=tables,
                          current_action=action_filter,
                          current_table=table_filter)
+
+@admin_bp.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    cursor.close()
+    db.close()
+    
+    return render_template('profile.html', username=session['username'], user=user)
