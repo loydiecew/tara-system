@@ -1,0 +1,219 @@
+from flask import Blueprint, render_template, request, session, redirect, url_for
+from datetime import date
+from models.database import get_db
+from models.audit import log_audit
+
+ar_bp = Blueprint('ar', __name__)
+
+@ar_bp.route('/ar')
+def ar():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # Get all customers (excluding soft-deleted)
+    cursor.execute("SELECT * FROM customers WHERE user_id = %s AND deleted_at IS NULL", (session['user_id'],))
+    customers = cursor.fetchall()
+    
+    # Get all invoices with customer names (excluding soft-deleted)
+    cursor.execute("""
+        SELECT i.*, c.name as customer_name 
+        FROM invoices i
+        JOIN customers c ON i.customer_id = c.id
+        WHERE i.user_id = %s AND i.deleted_at IS NULL
+        ORDER BY i.due_date ASC
+    """, (session['user_id'],))
+    invoices = cursor.fetchall()
+    
+    # Calculate total outstanding (unpaid, not deleted)
+    cursor.execute("""
+        SELECT SUM(amount) as total FROM invoices 
+        WHERE user_id = %s AND status = 'unpaid' AND deleted_at IS NULL
+    """, (session['user_id'],))
+    total_outstanding = cursor.fetchone()['total'] or 0
+    
+    cursor.close()
+    db.close()
+    
+    return render_template('ar.html',
+                         username=session['username'],
+                         customers=customers,
+                         invoices=invoices,
+                         total_outstanding=total_outstanding)
+
+@ar_bp.route('/delete_invoice/<int:invoice_id>')
+def delete_invoice(invoice_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("SELECT * FROM invoices WHERE id = %s AND user_id = %s", 
+                   (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if invoice and invoice.get('deleted_at') is None:
+        cursor.execute("""
+            UPDATE invoices SET deleted_at = NOW() 
+            WHERE id = %s AND user_id = %s AND deleted_at IS NULL
+        """, (invoice_id, session['user_id']))
+        db.commit()
+        
+        log_audit(session['user_id'], session['username'], 'DELETE', 'invoices', 
+                  invoice_id, old_values=invoice)
+    
+    cursor.close()
+    db.close()
+    
+    return redirect(url_for('ar.ar'))
+
+@ar_bp.route('/edit_invoice/<int:invoice_id>', methods=['GET', 'POST'])
+def edit_invoice(invoice_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    if request.method == 'POST':
+        cursor.execute("SELECT * FROM invoices WHERE id = %s AND user_id = %s AND deleted_at IS NULL", 
+                       (invoice_id, session['user_id']))
+        old_invoice = cursor.fetchone()
+        
+        if not old_invoice:
+            cursor.close()
+            db.close()
+            return redirect(url_for('ar.ar'))
+        
+        customer_id = request.form['customer_id']
+        amount = float(request.form['amount'])
+        due_date = request.form['due_date']
+        status = request.form['status']
+        
+        cursor.execute("""
+            UPDATE invoices 
+            SET customer_id = %s, amount = %s, due_date = %s, status = %s
+            WHERE id = %s AND user_id = %s AND deleted_at IS NULL
+        """, (customer_id, amount, due_date, status, invoice_id, session['user_id']))
+        db.commit()
+        
+        cursor.execute("SELECT * FROM invoices WHERE id = %s", (invoice_id,))
+        new_invoice = cursor.fetchone()
+        
+        log_audit(session['user_id'], session['username'], 'UPDATE', 'invoices', 
+                  invoice_id, old_values=old_invoice, new_values=new_invoice)
+        
+        cursor.close()
+        db.close()
+        return redirect(url_for('ar.ar'))
+    
+    cursor.execute("""
+        SELECT i.*, c.name as customer_name 
+        FROM invoices i
+        JOIN customers c ON i.customer_id = c.id
+        WHERE i.id = %s AND i.user_id = %s AND i.deleted_at IS NULL
+    """, (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if not invoice:
+        cursor.close()
+        db.close()
+        return redirect(url_for('ar.ar'))
+    
+    cursor.execute("SELECT id, name FROM customers WHERE user_id = %s AND deleted_at IS NULL", (session['user_id'],))
+    customers = cursor.fetchall()
+    
+    cursor.close()
+    db.close()
+    
+    return render_template('edit_invoice.html',
+                         username=session['username'],
+                         invoice=invoice,
+                         customers=customers)
+
+@ar_bp.route('/add_customer', methods=['POST'])
+def add_customer():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    name = request.form['name']
+    email = request.form.get('email', '')
+    phone = request.form.get('phone', '')
+    
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        INSERT INTO customers (user_id, name, email, phone)
+        VALUES (%s, %s, %s, %s)
+    """, (session['user_id'], name, email, phone))
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    return redirect(url_for('ar.ar'))
+
+@ar_bp.route('/add_invoice', methods=['POST'])
+def add_invoice():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    customer_id = request.form['customer_id']
+    amount = float(request.form['amount'])
+    due_date = request.form['due_date']
+    invoice_number = request.form.get('invoice_number', f"INV-{customer_id}-{due_date}")
+    
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        INSERT INTO invoices (user_id, customer_id, invoice_number, amount, due_date)
+        VALUES (%s, %s, %s, %s, %s)
+    """, (session['user_id'], customer_id, invoice_number, amount, due_date))
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    return redirect(url_for('ar.ar'))
+
+@ar_bp.route('/pay_invoice/<int:invoice_id>')
+def pay_invoice(invoice_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT i.*, c.name as customer_name 
+        FROM invoices i
+        JOIN customers c ON i.customer_id = c.id
+        WHERE i.id = %s AND i.user_id = %s
+    """, (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if invoice and invoice['status'] == 'unpaid':
+        cursor.execute("""
+            UPDATE invoices SET status = 'paid' 
+            WHERE id = %s AND user_id = %s
+        """, (invoice_id, session['user_id']))
+        
+        cursor.execute("""
+            INSERT INTO transactions (user_id, description, amount, type, category, transaction_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            session['user_id'],
+            f"Payment received from {invoice['customer_name']} - Invoice #{invoice['invoice_number'] or invoice['id']}",
+            invoice['amount'],
+            'income',
+            'Sales',
+            date.today()
+        ))
+        
+        db.commit()
+    
+    cursor.close()
+    db.close()
+    
+    return redirect(url_for('ar.ar'))
