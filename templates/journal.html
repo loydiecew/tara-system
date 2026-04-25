@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+
+{% block title %}General Journal{% endblock %}
+{% block page_title %}General Journal{% endblock %}
+{% block page_subtitle %}Complete record of all financial transactions{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Income</div>
+        <div class="stat-value" style="color: #10b981;">₱ {{ "{:,.2f}".format(total_income|default(0)) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Expenses</div>
+        <div class="stat-value" style="color: #ef4444;">₱ {{ "{:,.2f}".format(total_expense|default(0)) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Net (Profit/Loss)</div>
+        <div class="stat-value" style="color: {{ '#10b981' if net >= 0 else '#ef4444' }};">₱ {{ "{:,.2f}".format(net|default(0)) }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list-alt"></i> All Transactions</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.date if t.date else '-' }}</td>
+                    <td>{{ t.description }}</td>
+                    <td>{{ t.category or '-' }}</td>
+                    <td><span class="badge {{ 'badge-info' if t.source == 'sales' else 'badge-warning' }}">{{ t.source|capitalize }}</span></td>
+                    <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">{{ '+' if t.type == 'income' else '-' }} ₱ {{ "{:,.2f}".format(t.amount) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center;">No transactions yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

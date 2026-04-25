@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage team members and their access levels{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-user-plus"></i> Add New User</h2>
+    </div>
+    <form method="POST" action="/admin/add_user">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" required>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select name="role">
+                    <option value="cashier">Cashier (Sales only)</option>
+                    <option value="manager">Manager (View reports)</option>
+                    <option value="admin">Admin (Full access)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add User</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-users"></i> Team Members</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Name</th><th>Username</th><th>Role</th><th>Joined</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ u.full_name or u.username }}</td>
+                    <td>{{ u.username }}</td>
+                    <td><span class="badge {{ 'badge-success' if u.role == 'admin' else 'badge-info' if u.role == 'manager' else 'badge-warning' }}">
+                        {{ u.role|capitalize }}
+                    </span></td>
+                    <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '-' }}</td>
+                    <td>
+                        {% if u.id != session.user_id %}
+                        <a href="/admin/delete_user/{{ u.id }}" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="return confirm('Delete this user?')">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        {% else %}
+                        <span style="color: #94a3b8;">Current</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

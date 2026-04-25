@@ -1,0 +1,211 @@
+{% extends "layout.html" %}
+
+{% block title %}Business Insights{% endblock %}
+{% block page_title %}Business Insights{% endblock %}
+{% block page_subtitle %}Analytics, alerts, and what-if planning{% endblock %}
+
+{% block content %}
+<!-- SECTION 1: WEEKLY INSIGHTS -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-chart-line"></i> Weekly Insights</h2>
+    </div>
+    <p style="color: #64748b; margin-bottom: 20px; font-size: 13px;">Week: {{ week_display }}</p>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Total Sales</div>
+            <div class="stat-value">₱ {{ "{:,.2f}".format(current_sales|default(0)) }}</div>
+            <div class="stat-change {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
+                {% if sales_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(sales_change|abs) }}% from last week
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Total Expenses</div>
+            <div class="stat-value">₱ {{ "{:,.2f}".format(current_expenses|default(0)) }}</div>
+            <div class="stat-change {% if expense_change <= 0 %}positive{% else %}negative{% endif %}">
+                {% if expense_change <= 0 %}▼{% else %}▲{% endif %} {{ "%.1f"|format(expense_change|abs) }}% from last week
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Profit</div>
+            <div class="stat-value" style="color: {% if current_profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.2f}".format(current_profit|default(0)) }}</div>
+            <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
+                {% if profit_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(profit_change|abs) }}% from last week
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Profit Margin</div>
+            <div class="stat-value">{{ "%.1f"|format(profit_margin|default(0)) }}%</div>
+            <div class="stat-change">of total sales</div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2: SMART ALERTS -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-bell"></i> Smart Alerts</h2>
+    </div>
+    {% if alerts %}
+        {% for alert in alerts %}
+        <div style="padding: 15px; margin-bottom: 10px; border-radius: 12px; background: {% if alert.severity == 'high' %}#fef2f2{% else %}#fffbeb{% endif %}; border-left: 4px solid {% if alert.severity == 'high' %}#ef4444{% else %}#f59e0b{% endif %};">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 24px;">{% if alert.type == 'expense_spike' %}🔴{% elif alert.type == 'sales_drop' %}🟡{% else %}🔴{% endif %}</span>
+                <div style="flex: 1;">
+                    <strong>{% if alert.type == 'expense_spike' %}High Expense Detected{% elif alert.type == 'sales_drop' %}Sales Drop Detected{% else %}Profit Decline Detected{% endif %}</strong>
+                    <div style="font-size: 13px; color: #666;">{{ alert.message }}</div>
+                </div>
+                <div style="font-size: 12px; color: #888; text-align: right;">
+                    {% if alert.type == 'expense_spike' %}
+                        Current: ₱{{ "%.0f"|format(alert.current) }}<br>
+                        Last week: ₱{{ "%.0f"|format(alert.last) }}
+                    {% elif alert.type == 'sales_drop' %}
+                        Current: ₱{{ "%.0f"|format(alert.current) }}<br>
+                        Last week: ₱{{ "%.0f"|format(alert.last) }}
+                    {% elif alert.type == 'profit_decline' %}
+                        Current: ₱{{ "%.0f"|format(alert.current) }}<br>
+                        Last week: ₱{{ "%.0f"|format(alert.last) }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: #10b981; background: #f0fdf4; border-radius: 12px;">
+            ✅ No issues detected. Your business is doing well!
+        </div>
+    {% endif %}
+</div>
+
+<!-- SECTION 3: RECOMMENDATIONS -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-lightbulb"></i> Recommendations</h2>
+    </div>
+    {% for rec in recommendations %}
+    <div style="padding: 15px; margin-bottom: 10px; border-radius: 12px; background: #f0fdf4; border-left: 4px solid #10b981; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1;">
+            <strong>
+                {% if rec.type == 'cost_cutting' %}💰 Cost Cutting Opportunity
+                {% elif rec.type == 'sales_improvement' %}📈 Sales Improvement
+                {% elif rec.type == 'profit_improvement' %}🎯 Profit Recovery
+                {% elif rec.type == 'margin_improvement' %}⚡ Margin Improvement
+                {% else %}💡 Suggestion{% endif %}
+            </strong>
+            <div style="font-size: 13px; color: #666; margin-top: 4px;">{{ rec.action }}</div>
+        </div>
+        {% if rec.potential_savings %}
+        <div style="background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">Save ~₱{{ "%.0f"|format(rec.potential_savings) }}</div>
+        {% elif rec.potential_gain %}
+        <div style="background: #10b981; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">Potential +₱{{ "%.0f"|format(rec.potential_gain) }}</div>
+        {% else %}
+        <div style="background: #f59e0b; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">Action Required</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- SECTION 4: PREDICTIVE PLANNER -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-chart-simple"></i> Predictive Planner</h2>
+    </div>
+    <p style="color: #64748b; margin-bottom: 20px; font-size: 13px;">Test different business scenarios before making decisions</p>
+    
+    <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="stat-card" style="text-align: center;">
+            <h3 style="font-size: 16px; margin-bottom: 15px;">📈 Raise Prices 10%</h3>
+            <div class="stat-value" style="font-size: 20px;">₱ {{ "{:,.0f}".format(scenarios.price_up_10.new_sales) }}</div>
+            <div style="font-size: 14px; color: {% if scenarios.price_up_10.profit_change >= 0 %}#10b981{% else %}#ef4444{% endif %}; margin-top: 10px;">
+                {% if scenarios.price_up_10.profit_change >= 0 %}▲{% else %}▼{% endif %}
+                ₱ {{ "{:,.0f}".format(scenarios.price_up_10.profit_change|abs) }}
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: 8px;">Assumes 3% customer loss</div>
+        </div>
+        <div class="stat-card" style="text-align: center;">
+            <h3 style="font-size: 16px; margin-bottom: 15px;">📉 Lower Prices 5%</h3>
+            <div class="stat-value" style="font-size: 20px;">₱ {{ "{:,.0f}".format(scenarios.price_down_5.new_sales) }}</div>
+            <div style="font-size: 14px; color: {% if scenarios.price_down_5.profit_change >= 0 %}#10b981{% else %}#ef4444{% endif %}; margin-top: 10px;">
+                {% if scenarios.price_down_5.profit_change >= 0 %}▲{% else %}▼{% endif %}
+                ₱ {{ "{:,.0f}".format(scenarios.price_down_5.profit_change|abs) }}
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: 8px;">Assumes 8% more customers</div>
+        </div>
+        <div class="stat-card" style="text-align: center;">
+            <h3 style="font-size: 16px; margin-bottom: 15px;">✂️ Cut Expenses 10%</h3>
+            <div class="stat-value" style="font-size: 20px;">₱ {{ "{:,.0f}".format(scenarios.cut_expenses_10.new_profit) }}</div>
+            <div style="font-size: 14px; color: {% if scenarios.cut_expenses_10.profit_change >= 0 %}#10b981{% else %}#ef4444{% endif %}; margin-top: 10px;">
+                {% if scenarios.cut_expenses_10.profit_change >= 0 %}▲{% else %}▼{% endif %}
+                ₱ {{ "{:,.0f}".format(scenarios.cut_expenses_10.profit_change|abs) }}
+            </div>
+            <div style="font-size: 11px; color: #888; margin-top: 8px;">New profit after cost reduction</div>
+        </div>
+    </div>
+    
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+    
+    <h3 style="margin-bottom: 15px;">🎛️ Custom Scenario</h3>
+    <div style="margin-bottom: 15px;">
+        <label>Price Change: <span id="priceValue" class="slider-value" style="color: #10b981;">0%</span></label>
+        <input type="range" id="priceSlider" min="-30" max="30" value="0" step="1" style="width: 100%; margin: 10px 0;">
+    </div>
+    <div style="margin-bottom: 15px;">
+        <label>Volume Change: <span id="volumeValue" class="slider-value" style="color: #10b981;">0%</span></label>
+        <input type="range" id="volumeSlider" min="-30" max="30" value="0" step="1" style="width: 100%; margin: 10px 0;">
+    </div>
+    <div style="margin-bottom: 15px;">
+        <label>Expense Change: <span id="expenseValue" class="slider-value" style="color: #10b981;">0%</span></label>
+        <input type="range" id="expenseSlider" min="-30" max="30" value="0" step="1" style="width: 100%; margin: 10px 0;">
+    </div>
+    <div style="background: #f8f9fa; border-radius: 12px; padding: 15px; text-align: center;">
+        <strong>Projected Profit:</strong> ₱ <span id="projectedProfit">{{ "{:,.0f}".format(current_profit_baseline|default(0)) }}</span><br>
+        <strong>Change:</strong> <span id="profitChange" style="color: #10b981;">₱ 0</span>
+    </div>
+</div>
+
+<script>
+    const baselineSales = {{ baseline_sales|default(100000) }};
+    const baselineExpenses = {{ baseline_expenses|default(70000) }};
+    const baselineProfit = {{ current_profit_baseline|default(0) }};
+    
+    const priceSlider = document.getElementById('priceSlider');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const expenseSlider = document.getElementById('expenseSlider');
+    const priceValue = document.getElementById('priceValue');
+    const volumeValue = document.getElementById('volumeValue');
+    const expenseValue = document.getElementById('expenseValue');
+    const projectedProfitSpan = document.getElementById('projectedProfit');
+    const profitChangeSpan = document.getElementById('profitChange');
+    
+    function updateScenario() {
+        const priceChange = parseFloat(priceSlider.value) / 100;
+        const volumeChange = parseFloat(volumeSlider.value) / 100;
+        const expenseChange = parseFloat(expenseSlider.value) / 100;
+        
+        const newSales = baselineSales * (1 + priceChange) * (1 + volumeChange);
+        const newExpenses = baselineExpenses * (1 + expenseChange);
+        const newProfit = newSales - newExpenses;
+        const profitDifference = newProfit - baselineProfit;
+        
+        projectedProfitSpan.textContent = newProfit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        
+        if (profitDifference >= 0) {
+            profitChangeSpan.innerHTML = `▲ ₱ ${profitDifference.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            profitChangeSpan.style.color = '#10b981';
+        } else {
+            profitChangeSpan.innerHTML = `▼ ₱ ${Math.abs(profitDifference).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+            profitChangeSpan.style.color = '#ef4444';
+        }
+        
+        priceValue.textContent = priceSlider.value + '%';
+        volumeValue.textContent = volumeSlider.value + '%';
+        expenseValue.textContent = expenseSlider.value + '%';
+    }
+    
+    priceSlider.addEventListener('input', updateScenario);
+    volumeSlider.addEventListener('input', updateScenario);
+    expenseSlider.addEventListener('input', updateScenario);
+    updateScenario();
+</script>
+{% endblock %}

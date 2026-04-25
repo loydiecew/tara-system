@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+
+{% block title %}Admin Restore{% endblock %}
+{% block page_title %}Restore Deleted Items{% endblock %}
+{% block page_subtitle %}View, filter, and restore soft-deleted records{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-filter"></i> Filters</h2>
+    </div>
+    
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/admin/restore?filter=all" class="btn {% if current_filter == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                All ({{ deleted_items|length }})
+            </a>
+            <a href="/admin/restore?filter=transactions" class="btn {% if current_filter == 'transactions' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                💰 Transactions ({{ module_counts.transactions }})
+            </a>
+            <a href="/admin/restore?filter=sales" class="btn {% if current_filter == 'sales' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                📈 Sales ({{ module_counts.sales }})
+            </a>
+            <a href="/admin/restore?filter=invoices" class="btn {% if current_filter == 'invoices' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                📄 Invoices ({{ module_counts.invoices }})
+            </a>
+            <a href="/admin/restore?filter=bills" class="btn {% if current_filter == 'bills' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                📃 Bills ({{ module_counts.bills }})
+            </a>
+            <a href="/admin/restore?filter=products" class="btn {% if current_filter == 'products' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                📦 Products ({{ module_counts.products }})
+            </a>
+        </div>
+        
+        <form method="GET" action="/admin/restore" style="display: flex; gap: 10px;">
+            <input type="hidden" name="filter" value="{{ current_filter }}">
+            <input type="text" name="search" placeholder="Search description..." value="{{ search_query }}" style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; width: 200px;">
+            <button type="submit" class="btn btn-primary" style="padding: 8px 16px;">🔍 Search</button>
+            {% if search_query %}
+            <a href="/admin/restore?filter={{ current_filter }}" class="btn btn-secondary" style="padding: 8px 16px;">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Deleted Items Table -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-trash-restore"></i> Deleted Items</h2>
+    </div>
+    
+    {% if deleted_items %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in deleted_items %}
+                <tr>
+                    <td>{{ item.module_type }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>₱ {{ "{:,.2f}".format(item.amount) }}</td>
+                    <td>{{ item.date }}</td>
+                    <td>
+                        <a href="/admin/restore/{{ item.type_code }}/{{ item.id }}" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;" onclick="return confirm('Restore this item? It will reappear in the main list.')">
+                            <i class="fas fa-undo"></i> Restore
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: #10b981;">
+        <i class="fas fa-check-circle" style="font-size: 48px;"></i>
+        <p style="margin-top: 15px;">No deleted items found in this category. All records are active.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card" style="background: #f0fdf4;">
+    <div class="card-header">
+        <h2><i class="fas fa-info-circle"></i> About Restore</h2>
+    </div>
+    <p style="font-size: 14px; color: #166534;">
+        <strong>Soft Delete:</strong> Items are not permanently removed. They are hidden from normal views.<br>
+        <strong>Restore:</strong> Click Restore to bring an item back. It will immediately reappear in its module.<br>
+        <strong>Filters:</strong> Use the filter buttons to show only specific modules.<br>
+        <strong>Search:</strong> Type any keyword to find specific deleted items.
+    </p>
+</div>
+{% endblock %}

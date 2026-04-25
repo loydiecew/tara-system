@@ -1,0 +1,216 @@
+{% extends "layout.html" %}
+
+{% block title %}Plans & Pricing{% endblock %}
+{% block page_title %}Plans & Pricing{% endblock %}
+{% block page_subtitle %}Choose the plan that fits your business{% endblock %}
+
+{% block content %}
+<!-- Current Plan Banner -->
+<div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-align: center;">
+    <h2 style="color: white;">Current Plan: {{ current_plan.name if current_plan else 'Basic' }}</h2>
+    <p style="margin-top: 10px;">
+        You are on the <strong>{{ current_plan.name if current_plan else 'Basic' }}</strong> plan.
+        Upgrade to access more features.
+    </p>
+</div>
+
+<!-- Tier Comparison Table -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-crown"></i> Compare Plans</h2>
+    </div>
+    <div class="table-wrapper">
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Feature</th>
+                    <th style="width: 23%; text-align: center;">Basic</th>
+                    <th style="width: 23%; text-align: center;">Pro</th>
+                    <th style="width: 24%; text-align: center;">Enterprise</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Price</strong></td>
+                    <td style="text-align: center;">₱500<span style="font-size: 12px;">/month</span></td>
+                    <td style="text-align: center;">₱1,500<span style="font-size: 12px;">/month</span></td>
+                    <td style="text-align: center;">₱5,000<span style="font-size: 12px;">/month</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Max Users</strong></td>
+                    <td style="text-align: center;">1</td>
+                    <td style="text-align: center;">10</td>
+                    <td style="text-align: center;">Unlimited</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Cash Management</strong></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Sales Management</strong></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>General Journal</strong></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Business Insights</strong></td>
+                    <td style="text-align: center;">✅ Basic</td>
+                    <td style="text-align: center;">✅ Basic</td>
+                    <td style="text-align: center;">✅ Advanced</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Accounts Receivable (AR)</strong></td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Accounts Payable (AP)</strong></td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Inventory Management</strong></td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Double-Entry Accounting</strong></td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Bank Reconciliation</strong></td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Multi-Branch Support</strong></td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>API Access</strong></td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌ <span style="color: #f59e0b;">Add-on</span></td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>BIR Integration</strong></td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Voice Input</strong></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Offline Mode</strong></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td><strong>Soft Delete + Restore</strong></td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+                <tr>
+                    <td><strong>Audit Log</strong></td>
+                    <td style="text-align: center;">❌</td>
+                    <td style="text-align: center;">✅</td>
+                    <td style="text-align: center;">✅</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add-Ons Section -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-puzzle-piece"></i> Add-Ons (Available for All Plans)</h2>
+    </div>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+        <div class="stat-card">
+            <h3>📊 Accounts Receivable</h3>
+            <p style="font-size: 12px; color: #666;">Track customers who owe you</p>
+            <div style="font-size: 20px; font-weight: bold; color: #10b981;">₱250<span style="font-size: 12px;">/month</span></div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="alert('Payment integration coming soon')">Add to Plan</button>
+        </div>
+        <div class="stat-card">
+            <h3>💰 Accounts Payable</h3>
+            <p style="font-size: 12px; color: #666;">Track suppliers you owe</p>
+            <div style="font-size: 20px; font-weight: bold; color: #10b981;">₱250<span style="font-size: 12px;">/month</span></div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="alert('Payment integration coming soon')">Add to Plan</button>
+        </div>
+        <div class="stat-card">
+            <h3>📦 Inventory Management</h3>
+            <p style="font-size: 12px; color: #666;">Track products and stock</p>
+            <div style="font-size: 20px; font-weight: bold; color: #10b981;">₱300<span style="font-size: 12px;">/month</span></div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="alert('Payment integration coming soon')">Add to Plan</button>
+        </div>
+        <div class="stat-card">
+            <h3>👥 Multi-User (per user)</h3>
+            <p style="font-size: 12px; color: #666;">Add additional team members</p>
+            <div style="font-size: 20px; font-weight: bold; color: #10b981;">₱200<span style="font-size: 12px;">/month</span></div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="alert('Payment integration coming soon')">Add to Plan</button>
+        </div>
+        <div class="stat-card">
+            <h3>📎 CSV Import</h3>
+            <p style="font-size: 12px; color: #666;">Upload from spreadsheets</p>
+            <div style="font-size: 20px; font-weight: bold; color: #10b981;">₱150<span style="font-size: 12px;">/month</span></div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="alert('Payment integration coming soon')">Add to Plan</button>
+        </div>
+        <div class="stat-card">
+            <h3>🔓 Double-Entry Accounting</h3>
+            <p style="font-size: 12px; color: #666;">Professional accounting standard</p>
+            <div style="font-size: 20px; font-weight: bold; color: #10b981;">₱400<span style="font-size: 12px;">/month</span></div>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 10px;" onclick="alert('Payment integration coming soon')">Add to Plan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Upgrade Actions -->
+<div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+    <div class="card" style="text-align: center;">
+        <h3>🚀 Upgrade to Pro</h3>
+        <p>Get AR, AP, Inventory, Multi-User, Audit Log, and more</p>
+        <div style="font-size: 28px; font-weight: bold; color: #10b981; margin: 15px 0;">₱1,500<span style="font-size: 14px;">/month</span></div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="alert('Payment integration coming soon. Contact support for upgrade.')">
+            Upgrade to Pro
+        </button>
+    </div>
+    <div class="card" style="text-align: center;">
+        <h3>🏢 Upgrade to Enterprise</h3>
+        <p>Get everything + Multi-Branch, API, BIR Integration</p>
+        <div style="font-size: 28px; font-weight: bold; color: #10b981; margin: 15px 0;">₱5,000<span style="font-size: 14px;">/month</span></div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="alert('Payment integration coming soon. Contact support for upgrade.')">
+            Upgrade to Enterprise
+        </button>
+    </div>
+</div>
+
+<div class="card" style="background: #f0fdf4; text-align: center;">
+    <h3><i class="fas fa-question-circle"></i> Need a custom plan?</h3>
+    <p>Contact us for enterprise pricing, annual discounts, or custom feature development.</p>
+    <button class="btn btn-secondary" onclick="alert('Please email sales@tara.com for custom pricing')">Contact Sales</button>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}Upgrade Required{% endblock %}
+{% block page_title %}Feature Not Available{% endblock %}
+{% block page_subtitle %}Upgrade your plan to access this feature{% endblock %}
+
+{% block content %}
+<div class="card" style="text-align: center; padding: 60px 40px;">
+    <div style="font-size: 64px; margin-bottom: 20px;">
+        <i class="fas fa-lock" style="color: #f59e0b;"></i>
+    </div>
+    <h2>{{ feature_name }} is not available on your current plan</h2>
+    <p style="margin: 20px 0; color: #666;">
+        You are on the <strong>{{ session.get('plan_name', 'Basic') }}</strong> plan.
+        Upgrade to Pro or Enterprise to unlock this feature.
+    </p>
+    <div style="display: flex; gap: 15px; justify-content: center;">
+        <a href="/plan" class="btn btn-primary">View Upgrade Options</a>
+        <a href="/dashboard" class="btn btn-secondary">Go to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

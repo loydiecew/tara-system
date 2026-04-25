@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block title %}Accounts Payable{% endblock %}
+{% block page_title %}Accounts Payable{% endblock %}
+{% block page_subtitle %}Track suppliers you owe money to{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Outstanding</div>
+        <div class="stat-value" style="color: #ef4444;">₱ {{ "{:,.2f}".format(total_outstanding|default(0)) }}</div>
+        <div class="stat-title" style="font-size: 12px; margin-top: 8px;">You owe suppliers</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2><i class="fas fa-truck"></i> Add Supplier</h2></div>
+    <form method="POST" action="/add_supplier">
+        <div class="form-grid">
+            <div class="form-group"><label>Supplier Name</label><input type="text" name="name" required></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email"></div>
+            <div class="form-group"><label>Phone</label><input type="text" name="phone"></div>
+            <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-primary">+ Add Supplier</button></div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2><i class="fas fa-receipt"></i> Create Bill</h2></div>
+    <form method="POST" action="/add_bill">
+        <div class="form-grid">
+            <div class="form-group"><label>Supplier</label><select name="supplier_id" required><option value="">Select</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label>Amount</label><input type="number" name="amount" step="0.01" required></div>
+            <div class="form-group"><label>Due Date</label><input type="date" name="due_date" required></div>
+            <div class="form-group"><label>Description</label><input type="text" name="description" placeholder="What is this for?"></div>
+            <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-primary">+ Create Bill</button></div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2><i class="fas fa-file-invoice"></i> Bills</h2></div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bill #</th>
+                    <th>Supplier</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                    <th>Manage</th>
+                </tr>
+            </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td>{{ bill.bill_number or 'BILL-' + bill.id|string }}</td>
+                        <td>{{ bill.supplier_name }}</td>
+                        <td>{{ bill.description or '-' }}</td>
+                        <td>₱ {{ "{:,.2f}".format(bill.amount) }}</td>
+                        <td>{{ bill.due_date }}</td>
+                        <td>{% if bill.status == 'paid' %}<span class="badge badge-success">✅ Paid</span>{% else %}<span class="badge badge-danger">⚠️ Unpaid</span>{% endif %}</td>
+                        <td>
+                            {% if bill.status == 'unpaid' %}
+                            <a href="/pay_bill/{{ bill.id }}" class="btn btn-primary" style="padding: 5px 12px; font-size: 12px;" onclick="return confirm('Pay this bill? This will record expense and decrease cash.')">Mark Paid</a>
+                            {% else %}
+                            <span style="color: #888;">Paid</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/edit_bill/{{ bill.id }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; margin-right: 5px; background: #3b82f6; color: white; border-radius: 6px;">
+                                ✏️ Edit
+                            </a>
+                            <a href="/delete_bill/{{ bill.id }}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; background: #ef4444; color: white; border-radius: 6px;" onclick="return confirm('Delete this bill?')">
+                                🗑️ Delete
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

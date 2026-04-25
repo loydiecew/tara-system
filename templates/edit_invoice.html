@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit Invoice{% endblock %}
+{% block page_title %}Edit Invoice{% endblock %}
+{% block page_subtitle %}Modify invoice details{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-edit"></i> Edit Invoice</h2>
+    </div>
+    
+    <form method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Customer</label>
+                <select name="customer_id" required>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}" {% if c.id == invoice.customer_id %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Amount (₱)</label>
+                <input type="number" name="amount" step="0.01" value="{{ invoice.amount }}" required>
+            </div>
+            <div class="form-group">
+                <label>Due Date</label>
+                <input type="date" name="due_date" value="{{ invoice.due_date }}" required>
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                    <option value="unpaid" {% if invoice.status == 'unpaid' %}selected{% endif %}>⚠️ Unpaid</option>
+                    <option value="paid" {% if invoice.status == 'paid' %}selected{% endif %}>✅ Paid</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <a href="/ar" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="background: #fef2f2; border: 1px solid #fee2e2;">
+    <div class="card-header">
+        <h2><i class="fas fa-trash"></i> Danger Zone</h2>
+    </div>
+    <p style="margin-bottom: 15px;">Once deleted, this invoice can be restored by an admin.</p>
+    <a href="/delete_invoice/{{ invoice.id }}" class="btn btn-danger" onclick="return confirm('Delete this invoice? You can restore it later.')">
+        <i class="fas fa-trash"></i> Delete Invoice
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit Bill{% endblock %}
+{% block page_title %}Edit Bill{% endblock %}
+{% block page_subtitle %}Modify bill details{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-edit"></i> Edit Bill</h2>
+    </div>
+    
+    <form method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Supplier</label>
+                <select name="supplier_id" required>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}" {% if s.id == bill.supplier_id %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Amount (₱)</label>
+                <input type="number" name="amount" step="0.01" value="{{ bill.amount }}" required>
+            </div>
+            <div class="form-group">
+                <label>Due Date</label>
+                <input type="date" name="due_date" value="{{ bill.due_date }}" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" value="{{ bill.description or '' }}">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                    <option value="unpaid" {% if bill.status == 'unpaid' %}selected{% endif %}>⚠️ Unpaid</option>
+                    <option value="paid" {% if bill.status == 'paid' %}selected{% endif %}>✅ Paid</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <a href="/ap" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="background: #fef2f2; border: 1px solid #fee2e2;">
+    <div class="card-header">
+        <h2><i class="fas fa-trash"></i> Danger Zone</h2>
+    </div>
+    <p style="margin-bottom: 15px;">Once deleted, this bill can be restored by an admin.</p>
+    <a href="/delete_bill/{{ bill.id }}" class="btn btn-danger" onclick="return confirm('Delete this bill? You can restore it later.')">
+        <i class="fas fa-trash"></i> Delete Bill
+    </a>
+</div>
+{% endblock %}

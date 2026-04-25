@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+
+{% block title %}Sales Management{% endblock %}
+{% block page_title %}Sales Management{% endblock %}
+{% block page_subtitle %}Record and track all sales transactions{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Sales (All Time)</div>
+        <div class="stat-value">₱ {{ "{:,.2f}".format(total_sales|default(0)) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">This Month</div>
+        <div class="stat-value">₱ {{ "{:,.2f}".format(monthly_sales|default(0)) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Transactions</div>
+        <div class="stat-value">{{ sales|length }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-cart-plus"></i> Record New Sale</h2>
+    </div>
+    <form method="POST" action="/add_sale">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Sale Method</label>
+                <select id="saleMethod" name="sale_method" onchange="toggleSaleMethod()">
+                    <option value="inventory">From Inventory (Product)</option>
+                    <option value="manual">Manual Entry</option>
+                </select>
+            </div>
+            
+            <div id="inventoryFields">
+                <div class="form-group">
+                    <label>Select Product</label>
+                    <select name="product_id">
+                        <option value="">-- Select Product --</option>
+                        {% for p in products %}
+                        <option value="{{ p.id }}">{{ p.name }} (₱{{ p.price }} | Stock: {{ p.quantity }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <input type="text" name="customer_name" placeholder="Customer name">
+                </div>
+            </div>
+            
+            <div id="manualFields" style="display: none;">
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <input type="text" name="customer_name_manual" placeholder="Customer name">
+                </div>
+                <div class="form-group">
+                    <label>Amount (₱)</label>
+                    <input type="number" name="amount_manual" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" name="description_manual" placeholder="Product or service">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Sale Date</label>
+                <input type="date" name="sale_date" value="{{ today }}">
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-save"></i> Record Sale
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-history"></i> Sales History</h2>
+    </div>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sales %}
+                <tr>
+                    <td>{{ s.sale_date }}</td>
+                    <td>{{ s.customer_name }}</td>
+                    <td>{{ s.description or '-' }}</td>
+                    <td style="color: #10b981;">₱ {{ "{:,.2f}".format(s.amount) }}</td>
+                    <td>
+                        <a href="/edit_sale/{{ s.id }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; margin-right: 5px; background: #3b82f6; color: white; border-radius: 6px;">
+                            ✏️ Edit
+                        </a>
+                        <a href="/delete_sale/{{ s.id }}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; background: #ef4444; color: white; border-radius: 6px;" onclick="return confirm('Delete this sale?')">
+                            🗑️ Delete
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center;">No sales yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function toggleSaleMethod() {
+        const methodSelect = document.getElementById('saleMethod');
+        const method = methodSelect ? methodSelect.value : 'inventory';
+        const inventoryFields = document.getElementById('inventoryFields');
+        const manualFields = document.getElementById('manualFields');
+        
+        if (inventoryFields) inventoryFields.style.display = method === 'inventory' ? 'block' : 'none';
+        if (manualFields) manualFields.style.display = method === 'manual' ? 'block' : 'none';
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleSaleMethod();
+    });
+</script>
+{% endblock %}

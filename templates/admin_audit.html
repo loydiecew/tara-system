@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block page_subtitle %}Track all user actions and changes{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-filter"></i> Filters</h2>
+    </div>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/admin/audit?action=all&table={{ current_table }}" class="btn {% if current_action == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">All Actions</a>
+            {% for action in actions %}
+            <a href="/admin/audit?action={{ action }}&table={{ current_table }}" class="btn {% if current_action == action %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                {{ action }}
+            </a>
+            {% endfor %}
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/admin/audit?action={{ current_action }}&table=all" class="btn {% if current_table == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">All Tables</a>
+            {% for table in tables %}
+            <a href="/admin/audit?action={{ current_action }}&table={{ table }}" class="btn {% if current_table == table %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
+                {{ table }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Audit Log Table -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-history"></i> Activity Log</h2>
+    </div>
+    
+    {% if logs %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Table</th>
+                    <th>Record ID</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
+                    <td>{{ log.username }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if log.action == 'CREATE' %}badge-success
+                            {% elif log.action == 'UPDATE' %}badge-info
+                            {% elif log.action == 'DELETE' %}badge-danger
+                            {% elif log.action == 'RESTORE' %}badge-warning
+                            {% else %}badge-secondary{% endif %}">
+                            {{ log.action }}
+                        </span>
+                    </td>
+                    <td>{{ log.table_name }}</td>
+                    <td>{{ log.record_id }}</td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showDetails({{ loop.index0 }})">View</button>
+                        <div id="details-{{ loop.index0 }}" style="display: none; margin-top: 10px; background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 12px;">
+                            {% if log.old_values %}
+                            <strong>Before:</strong> <pre style="display: inline; white-space: pre-wrap;">{{ log.old_values }}</pre><br>
+                            {% endif %}
+                            {% if log.new_values %}
+                            <strong>After:</strong> <pre style="display: inline; white-space: pre-wrap;">{{ log.new_values }}</pre>
+                            {% endif %}
+                            {% if not log.old_values and not log.new_values %}
+                            No additional details
+                            {% endif %}
+                        </div>
+                        <script>
+                            function showDetails(idx) {
+                                const el = document.getElementById('details-' + idx);
+                                el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                            }
+                        </script>
+                     </td>
+                    <td>{{ log.ip_address or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 40px; color: #888;">
+        <i class="fas fa-chart-line" style="font-size: 48px;"></i>
+        <p style="margin-top: 15px;">No audit logs found. Start making changes to see activity.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card" style="background: #f0fdf4;">
+    <div class="card-header">
+        <h2><i class="fas fa-info-circle"></i> About Audit Log</h2>
+    </div>
+    <p style="font-size: 14px; color: #166534;">
+        <strong>CREATE:</strong> A new record was added.<br>
+        <strong>UPDATE:</strong> An existing record was modified. Click "View" to see before/after values.<br>
+        <strong>DELETE:</strong> A record was soft-deleted.<br>
+        <strong>RESTORE:</strong> A deleted record was restored.<br>
+        <strong>IP Address:</strong> The user's IP address at the time of action.
+    </p>
+</div>
+{% endblock %}

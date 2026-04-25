@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block title %}Edit Transaction{% endblock %}
+{% block page_title %}Edit Transaction{% endblock %}
+{% block page_subtitle %}Modify transaction details{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-edit"></i> Edit Transaction</h2>
+    </div>
+    
+    <form method="POST">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" value="{{ transaction.description }}" required>
+            </div>
+            <div class="form-group">
+                <label>Amount (₱)</label>
+                <input type="number" name="amount" step="0.01" value="{{ transaction.amount }}" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="type" id="transactionType">
+                    <option value="income" {% if transaction.type == 'income' %}selected{% endif %}>💰 Income</option>
+                    <option value="expense" {% if transaction.type == 'expense' %}selected{% endif %}>💸 Expense</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" name="category" value="{{ transaction.category or '' }}" placeholder="e.g., Rent, Supplies">
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="transaction_date" value="{{ transaction.transaction_date }}" required>
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <a href="/cash" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="background: #fef2f2; border: 1px solid #fee2e2;">
+    <div class="card-header">
+        <h2><i class="fas fa-trash"></i> Danger Zone</h2>
+    </div>
+    <p style="margin-bottom: 15px;">Once deleted, this transaction can be restored by an admin.</p>
+    <a href="/delete_transaction/{{ transaction.id }}" class="btn btn-danger" onclick="return confirm('Delete this transaction? You can restore it later.')">
+        <i class="fas fa-trash"></i> Delete Transaction
+    </a>
+</div>
+{% endblock %}
