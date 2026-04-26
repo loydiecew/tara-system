@@ -2,97 +2,266 @@
 
 {% block title %}Profile{% endblock %}
 {% block page_title %}Profile Settings{% endblock %}
-{% block page_subtitle %}Manage your account{% endblock %}
+{% block page_subtitle %}Manage your account and preferences{% endblock %}
 
 {% block content %}
 <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-    <!-- Sidebar Tabs -->
-    <div style="width: 260px; background: var(--bg-secondary); border-radius: 20px; border: 1px solid var(--border-light); overflow: hidden;">
-        <div style="padding: 24px; text-align: center; border-bottom: 1px solid var(--border-light);">
-            <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
-                <span style="font-size: 28px; color: white;">{{ session.username[0]|upper }}</span>
+    <!-- Sidebar Tabs - Clean vertical menu -->
+    <div style="width: 280px; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); overflow: hidden;">
+        <div style="padding: 28px; text-align: center; border-bottom: 1px solid var(--border-light); background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(5,150,105,0.02) 100%);">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 8px 20px rgba(16,185,129,0.3);">
+                <span style="font-size: 32px; font-weight: 600; color: white;">{{ session.username[0]|upper }}</span>
             </div>
-            <h3>{{ session.username }}</h3>
-            <p style="font-size: 12px; color: var(--text-secondary);">{{ session.role|capitalize }} • {{ session.plan_name }} Plan</p>
+            <h3 style="margin-top: 12px; font-size: 18px;">{{ session.username }}</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                <span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; padding: 4px 12px;">{{ session.role|capitalize }}</span>
+                <span class="badge" style="background: rgba(16,185,129,0.1); color: var(--text-secondary); padding: 4px 12px;">{{ session.plan_name }} Plan</span>
+            </p>
         </div>
         
-        <div>
-            <a href="#" class="profile-nav active" data-tab="profile"><i class="fas fa-user"></i> Profile</a>
-            <a href="#" class="profile-nav" data-tab="plan"><i class="fas fa-crown"></i> Billing & Plan</a>
-            <a href="#" class="profile-nav" data-tab="appearance"><i class="fas fa-palette"></i> Appearance</a>
-            {% if session.role == 'admin' %}
-            <a href="#" class="profile-nav" data-tab="team"><i class="fas fa-users"></i> Team</a>
-            <a href="#" class="profile-nav" data-tab="restore"><i class="fas fa-trash-restore"></i> Restore</a>
+        <div style="padding: 12px 0;">
+            <a href="#" class="profile-nav active" data-tab="profile">
+                <i class="fas fa-user-circle"></i> Profile
+            </a>
+            <a href="#" class="profile-nav" data-tab="plan">
+                <i class="fas fa-crown"></i> Billing & Plan
+            </a>
+            <a href="#" class="profile-nav" data-tab="appearance">
+                <i class="fas fa-palette"></i> Appearance
+            </a>
+            
+            {% if session.role == 'admin' and session.plan != 'basic' %}
+            <a href="#" class="profile-nav" data-tab="team">
+                <i class="fas fa-users"></i> Team Management
+            </a>
             {% endif %}
-            <div style="height: 1px; background: var(--border-light); margin: 8px 0;"></div>
-            <a href="/logout" class="profile-nav" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            
+            {% if session.role == 'admin' %}
+            <a href="#" class="profile-nav" data-tab="restore">
+                <i class="fas fa-trash-restore"></i> Restore Data
+            </a>
+            {% endif %}
+            
+            <div style="height: 1px; background: var(--border-light); margin: 12px 16px;"></div>
+            
+            <a href="/logout" class="profile-nav" style="color: #ef4444;">
+                <i class="fas fa-sign-out-alt"></i> Sign Out
+            </a>
         </div>
     </div>
     
     <!-- Content Area -->
-    <div style="flex: 1; background: var(--bg-secondary); border-radius: 20px; border: 1px solid var(--border-light); padding: 24px;">
+    <div style="flex: 1; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px;">
         
-        <!-- Profile Tab -->
+        <!-- ========== TAB 1: PROFILE ========== -->
         <div id="tab-profile" class="profile-tab-content active">
-            <h2 style="margin-bottom: 24px;">Profile Information</h2>
-            <div class="form-grid">
-                <div class="form-group"><label>Username</label><input type="text" value="{{ session.username }}" disabled style="background:var(--bg-primary);"></div>
-                <div class="form-group"><label>Full Name</label><input type="text" value="{{ user.full_name or session.username }}"></div>
-                <div class="form-group"><label>Role</label><input type="text" value="{{ session.role|capitalize }}" disabled style="background:var(--bg-primary);"></div>
-                <div class="form-group"><label>Industry</label>
-                    <select name="industry">
-                        <option value="retail" {% if user.industry == 'retail' %}selected{% endif %}>Retail</option>
-                        <option value="restaurant" {% if user.industry == 'restaurant' %}selected{% endif %}>Restaurant</option>
-                        <option value="freelancer" {% if user.industry == 'freelancer' %}selected{% endif %}>Freelancer</option>
-                    </select>
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Profile Information</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Update your personal information and preferences</p>
+            
+            <form method="POST" action="/update_profile">
+                <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Username</label>
+                        <input type="text" value="{{ session.username }}" disabled style="background:var(--bg-primary);">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-user-tag"></i> Full Name</label>
+                        <input type="text" name="full_name" value="{{ user.full_name or session.username }}" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> Email Address</label>
+                        <input type="email" name="email" value="{{ user.email or '' }}" placeholder="your@email.com" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-briefcase"></i> Role</label>
+                        <input type="text" value="{{ session.role|capitalize }}" disabled style="background:var(--bg-primary);">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-store"></i> Industry</label>
+                        <select name="industry" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                            <option value="retail" {% if user.industry == 'retail' %}selected{% endif %}>🏪 Retail Store</option>
+                            <option value="restaurant" {% if user.industry == 'restaurant' %}selected{% endif %}>🍽️ Restaurant / Cafe</option>
+                            <option value="freelancer" {% if user.industry == 'freelancer' %}selected{% endif %}>💻 Freelancer</option>
+                            <option value="construction" {% if user.industry == 'construction' %}selected{% endif %}>🏗️ Construction</option>
+                            <option value="other" {% if user.industry == 'other' %}selected{% endif %}>📋 Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-alt"></i> Member Since</label>
+                        <input type="text" value="{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}" disabled style="background:var(--bg-primary);">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-light);">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- ========== TAB 2: BILLING & PLAN ========== -->
+        <div id="tab-plan" class="profile-tab-content">
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Billing & Subscription</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Manage your plan and billing information</p>
+            
+            <!-- Current Plan Card -->
+            <div style="background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid var(--border-light);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h3 style="font-size: 20px; margin-bottom: 4px;">{{ session.plan_name }} Plan</h3>
+                        <p style="color: var(--text-secondary);">Active • <span id="planPrice">{% if session.plan == 'basic' %}₱500{% elif session.plan == 'pro' %}₱1,500{% else %}₱5,000{% endif %}</span>/month</p>
+                    </div>
+                    <div>
+                        <span class="badge" style="background: #10b981; color: white; padding: 6px 16px;">Current Plan</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4 style="margin-bottom: 12px;">✅ Features included:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Cash Management</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Sales Management</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> General Journal</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Business Insights</div>
+                        {% if session.plan != 'basic' %}
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Receivable</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Payable</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Inventory Management</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Audit Log</div>
+                        {% endif %}
+                        {% if session.plan == 'enterprise' %}
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Multi-Branch Support</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> API Access</div>
+                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> BIR Integration</div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
-            <button class="btn btn-primary">Save Changes</button>
-        </div>
-        
-        <!-- Plan Tab -->
-        <div id="tab-plan" class="profile-tab-content" style="display: none;">
-            <h2 style="margin-bottom: 24px;">Current Plan: {{ session.plan_name }}</h2>
-            <div style="background: rgba(16,185,129,0.1); padding: 20px; border-radius: 16px; margin-bottom: 20px;">
-                <ul style="margin-left: 20px;">
-                    <li>✅ Cash Management</li>
-                    <li>✅ Sales Management</li>
-                    <li>✅ General Journal</li>
-                    <li>✅ Business Insights</li>
-                    {% if session.plan != 'basic' %}
-                    <li>✅ Accounts Receivable</li>
-                    <li>✅ Accounts Payable</li>
-                    <li>✅ Inventory Management</li>
-                    {% endif %}
-                </ul>
+            
+            <!-- Upgrade Options -->
+            {% if session.plan != 'enterprise' %}
+            <h3 style="margin-bottom: 20px;">Upgrade Options</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                {% if session.plan == 'basic' %}
+                <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; border: 2px solid transparent; transition: all 0.2s; position: relative;">
+                    <div style="position: absolute; top: -10px; right: 20px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
+                    <h3 style="font-size: 22px; margin-bottom: 8px;">Pro Plan</h3>
+                    <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱1,500<span style="font-size: 14px;">/month</span></div>
+                    <ul style="margin: 20px 0; padding-left: 20px;">
+                        <li>AR, AP, Inventory</li>
+                        <li>Multi-user (up to 10)</li>
+                        <li>Audit Log</li>
+                        <li>CSV Import</li>
+                    </ul>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="alert('Contact support@tara.com to upgrade')">Upgrade to Pro</button>
+                </div>
+                {% endif %}
+                <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; border: 1px solid var(--border-light);">
+                    <h3 style="font-size: 22px; margin-bottom: 8px;">Enterprise Plan</h3>
+                    <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱5,000<span style="font-size: 14px;">/month</span></div>
+                    <ul style="margin: 20px 0; padding-left: 20px;">
+                        <li>All Pro features</li>
+                        <li>Multi-branch</li>
+                        <li>API Access</li>
+                        <li>BIR Integration</li>
+                        <li>Priority Support</li>
+                    </ul>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="alert('Contact support@tara.com to upgrade')">Upgrade to Enterprise</button>
+                </div>
             </div>
-            <button class="btn btn-primary" onclick="alert('Contact support to upgrade')">Upgrade Plan</button>
+            {% else %}
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; padding: 40px; text-align: center;">
+                <i class="fas fa-check-circle" style="font-size: 48px; color: white;"></i>
+                <h3 style="color: white; margin-top: 16px;">You're on the best plan!</h3>
+                <p style="color: rgba(255,255,255,0.9); margin-top: 8px;">You have access to all features.</p>
+            </div>
+            {% endif %}
         </div>
         
-        <!-- Appearance Tab -->
-        <div id="tab-appearance" class="profile-tab-content" style="display: none;">
-            <h2 style="margin-bottom: 24px;">Appearance</h2>
-            <div style="display: flex; gap: 16px;">
-                <button class="btn {% if theme == 'light' %}btn-primary{% else %}btn-secondary{% endif %}" id="lightModeBtn">
-                    <i class="fas fa-sun"></i> Light Mode
-                </button>
-                <button class="btn {% if theme == 'dark' %}btn-primary{% else %}btn-secondary{% endif %}" id="darkModeBtn">
-                    <i class="fas fa-moon"></i> Dark Mode
-                </button>
+        <!-- ========== TAB 3: APPEARANCE ========== -->
+        <div id="tab-appearance" class="profile-tab-content">
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Appearance</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Choose your preferred theme</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                <div id="lightModeCard" style="background: var(--bg-primary); border-radius: 20px; padding: 32px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">
+                    <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <i class="fas fa-sun" style="font-size: 48px; color: #f59e0b;"></i>
+                    </div>
+                    <h3>Light Mode</h3>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Bright and clean interface</p>
+                    <button id="lightModeBtn" class="btn btn-primary" style="margin-top: 20px;">Apply Light Mode</button>
+                </div>
+                
+                <div id="darkModeCard" style="background: var(--bg-primary); border-radius: 20px; padding: 32px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">
+                    <div style="background: #1e293b; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <i class="fas fa-moon" style="font-size: 48px; color: #10b981;"></i>
+                    </div>
+                    <h3>Dark Mode</h3>
+                    <p style="color: var(--text-secondary); margin-top: 8px;">Easier on the eyes at night</p>
+                    <button id="darkModeBtnProfile" class="btn btn-secondary" style="margin-top: 20px;">Apply Dark Mode</button>
+                </div>
+            </div>
+            
+            <div style="margin-top: 28px; padding: 16px; background: var(--bg-primary); border-radius: 12px;">
+                <p><i class="fas fa-info-circle" style="color: #10b981;"></i> Your preference is saved automatically and applies across all devices.</p>
             </div>
         </div>
         
-        <!-- Team Tab (Admin only) -->
+        <!-- ========== TAB 4: TEAM ========== -->
+        {% if session.role == 'admin' and session.plan != 'basic' %}
+        <div id="tab-team" class="profile-tab-content">
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Team Management</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Manage your team members and their access levels</p>
+            
+            <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; margin-bottom: 24px;">
+                <h3 style="margin-bottom: 20px;">Current Team Members</h3>
+                <div id="teamContainer" style="overflow-x: auto;">
+                    <p style="color: var(--text-secondary);">Loading team members...</p>
+                </div>
+            </div>
+            
+            <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
+                <h3 style="margin-bottom: 20px;">Add New Team Member</h3>
+                <form id="addUserForm">
+                    <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" name="full_name" id="fullName" required placeholder="Juan Dela Cruz" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" id="username" required placeholder="juan123" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password" id="password" required placeholder="••••••" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select name="role" id="role" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
+                                <option value="cashier">Cashier</option>
+                                <option value="manager">Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;"><i class="fas fa-plus"></i> Add User</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- ========== TAB 5: RESTORE ========== -->
         {% if session.role == 'admin' %}
-        <div id="tab-team" class="profile-tab-content" style="display: none;">
-            <h2 style="margin-bottom: 24px;">Team Members</h2>
-            <iframe src="/admin/users" style="width: 100%; height: 400px; border: none; border-radius: 12px;"></iframe>
-        </div>
-        
-        <!-- Restore Tab (Admin only) -->
-        <div id="tab-restore" class="profile-tab-content" style="display: none;">
-            <h2 style="margin-bottom: 24px;">Restore Deleted Items</h2>
-            <iframe src="/admin/restore" style="width: 100%; height: 400px; border: none; border-radius: 12px;"></iframe>
+        <div id="tab-restore" class="profile-tab-content">
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Restore Deleted Items</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Recover accidentally deleted records</p>
+            
+            <div id="restoreContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
+                <p style="color: var(--text-secondary);">Loading deleted items...</p>
+            </div>
         </div>
         {% endif %}
     </div>
@@ -104,51 +273,190 @@
     align-items: center;
     gap: 12px;
     padding: 12px 20px;
+    margin: 4px 12px;
+    border-radius: 12px;
     color: var(--text-secondary);
     text-decoration: none;
     transition: all 0.2s;
 }
 .profile-nav:hover { background: rgba(16,185,129,0.08); color: #10b981; }
-.profile-nav.active { background: rgba(16,185,129,0.12); color: #10b981; border-right: 3px solid #10b981; }
+.profile-nav.active { background: rgba(16,185,129,0.12); color: #10b981; }
+.profile-nav i { width: 20px; }
 .profile-tab-content { display: none; }
 .profile-tab-content.active { display: block; }
 </style>
 
 <script>
-    // Tab switching
-    document.querySelectorAll('.profile-nav').forEach(nav => {
-        nav.addEventListener('click', function(e) {
-            if (this.getAttribute('href') === '/logout') return;
+document.addEventListener('DOMContentLoaded', function () {
+
+    const tabs = document.querySelectorAll('.profile-nav');
+    const contents = document.querySelectorAll('.profile-tab-content');
+
+    // Fix: safe user id injection
+    const currentUserId = {{ session.user_id|tojson }};
+
+    tabs.forEach(tab => {
+        if (tab.getAttribute('href') === '/logout') return;
+
+        tab.addEventListener('click', function (e) {
             e.preventDefault();
-            const tab = this.dataset.tab;
-            document.querySelectorAll('.profile-nav').forEach(n => n.classList.remove('active'));
+
+            const targetTab = this.dataset.tab;
+
+            // Remove active states
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+
+            // Activate selected tab
             this.classList.add('active');
-            document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(`tab-${tab}`).classList.add('active');
+
+            const activeContent = document.getElementById(`tab-${targetTab}`);
+            if (activeContent) activeContent.classList.add('active');
+
+            // Save tab (optional persistence)
+            localStorage.setItem('profileTab', targetTab);
+
+            // Lazy load
+            if (targetTab === 'team') loadTeamData();
+            if (targetTab === 'restore') loadRestoreData();
         });
     });
-    
-    // Dark mode toggle inside profile
-    const lightBtn = document.getElementById('lightModeBtn');
-    const darkBtn = document.getElementById('darkModeBtn');
-    
-    if (lightBtn && darkBtn) {
-        lightBtn.addEventListener('click', () => {
-            document.body.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-            lightBtn.classList.add('btn-primary');
-            lightBtn.classList.remove('btn-secondary');
-            darkBtn.classList.add('btn-secondary');
-            darkBtn.classList.remove('btn-primary');
-        });
-        darkBtn.addEventListener('click', () => {
-            document.body.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-            darkBtn.classList.add('btn-primary');
-            darkBtn.classList.remove('btn-secondary');
-            lightBtn.classList.add('btn-secondary');
-            lightBtn.classList.remove('btn-primary');
+
+    // Restore last opened tab
+    const savedTab = localStorage.getItem('profileTab');
+    if (savedTab) {
+        const targetNav = document.querySelector(`.profile-nav[data-tab="${savedTab}"]`);
+        if (targetNav) targetNav.click();
+    }
+
+    // ========== TEAM ==========
+    window.loadTeamData = function () {
+        const container = document.getElementById('teamContainer');
+        if (!container) return;
+
+        container.innerHTML = 'Loading...';
+
+        fetch('/admin/users/api')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.length) {
+                    container.innerHTML = '<p>No team members found.</p>';
+                    return;
+                }
+
+                let html = `<table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead><tbody>`;
+
+                data.forEach(u => {
+                    html += `<tr>
+                        <td>${u.full_name || u.username}</td>
+                        <td>${u.username}</td>
+                        <td><span class="badge">${u.role}</span></td>
+                        <td>
+                            ${u.id != currentUserId 
+                                ? `<a href="/admin/delete_user/${u.id}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>` 
+                                : '-'}
+                        </td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            })
+            .catch(() => {
+                container.innerHTML = '<p>Error loading team data.</p>';
+            });
+    };
+
+    // ========== RESTORE ==========
+    window.loadRestoreData = function () {
+        const container = document.getElementById('restoreContainer');
+        if (!container) return;
+
+        container.innerHTML = 'Loading...';
+
+        fetch('/admin/restore/data?filter=all')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.items || !data.items.length) {
+                    container.innerHTML = '<p>No deleted items found.</p>';
+                    return;
+                }
+
+                let html = `<table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead><tbody>`;
+
+                data.items.forEach(item => {
+                    html += `<tr>
+                        <td>${item.module_type || '-'}</td>
+                        <td>${item.description || '-'}</td>
+                        <td>₱${parseFloat(item.amount).toFixed(2)}</td>
+                        <td>${item.date || '-'}</td>
+                        <td>
+                            <a href="/admin/restore/${item.type_code}/${item.id}" 
+                               class="btn btn-primary" 
+                               onclick="return confirm('Restore?')">Restore</a>
+                        </td>
+                    </tr>`;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            })
+            .catch(() => {
+                container.innerHTML = '<p>Error loading restore data.</p>';
+            });
+    };
+
+    // ========== DARK MODE ==========
+    const setLight = () => {
+        document.body.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    };
+
+    const setDark = () => {
+        document.body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    };
+
+    document.getElementById('lightModeBtn')?.addEventListener('click', setLight);
+    document.getElementById('darkModeBtnProfile')?.addEventListener('click', setDark);
+    document.getElementById('lightModeCard')?.addEventListener('click', setLight);
+    document.getElementById('darkModeCard')?.addEventListener('click', setDark);
+
+    // ========== ADD USER ==========
+    const addForm = document.getElementById('addUserForm');
+    if (addForm) {
+        addForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const data = new FormData(this);
+
+            fetch('/admin/add_user', {
+                method: 'POST',
+                body: data
+            }).then(() => {
+                loadTeamData();
+                this.reset();
+            });
         });
     }
+
+});
 </script>
+
 {% endblock %}

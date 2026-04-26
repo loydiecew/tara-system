@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
 from datetime import date, timedelta
 from models.database import get_db
 from models.helpers import get_week_range
@@ -239,3 +239,114 @@ def insights():
                          baseline_expenses=baseline_expenses,
                          current_profit_baseline=baseline_profit,
                          scenarios=scenarios)
+
+@insights_bp.route('/api/chart-data')
+def chart_data():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    period = request.args.get('period', '7')
+    days = int(period)
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    end_date = date.today()
+    start_date = end_date - timedelta(days=days)
+    
+    # Get daily sales and expenses
+    cursor.execute("""
+        SELECT 
+            transaction_date as date,
+            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as sales,
+            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses
+        FROM transactions 
+        WHERE user_id = %s AND transaction_date BETWEEN %s AND %s
+        GROUP BY transaction_date
+        ORDER BY transaction_date ASC
+    """, (session['user_id'], start_date, end_date))
+    daily_data = cursor.fetchall()
+    
+    # Get expense categories (top 5)
+    cursor.execute("""
+        SELECT 
+            COALESCE(category, 'Other') as category,
+            SUM(amount) as total
+        FROM transactions 
+        WHERE user_id = %s AND type = 'expense' 
+        AND transaction_date BETWEEN %s AND %s
+        GROUP BY category
+        ORDER BY total DESC
+        LIMIT 5
+    """, (session['user_id'], start_date, end_date))
+    category_data = cursor.fetchall()
+    
+    cursor.close()
+    db.close()
+    
+    # Format dates
+    labels = [d['date'].strftime('%b %d') for d in daily_data]
+    sales = [float(d['sales'] or 0) for d in daily_data]
+    expenses = [float(d['expenses'] or 0) for d in daily_data]
+    
+    category_labels = [c['category'] for c in category_data]
+    category_values = [float(c['total'] or 0) for c in category_data]
+    
+    return jsonify({
+        'labels': labels,
+        'sales': sales,
+        'expenses': expenses,
+        'categoryLabels': category_labels,
+        'categoryValues': category_values,
+        'period': days
+    })
+
+@insights_bp.route('/api/stats-detail/<stat_type>')
+def stats_detail(stat_type):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    week_end = week_start + timedelta(days=6)
+    
+    if stat_type == 'sales':
+        cursor.execute("""
+            SELECT id, customer_name as name, amount, sale_date as date, description
+            FROM sales 
+            WHERE user_id = %s AND sale_date BETWEEN %s AND %s
+            ORDER BY sale_date DESC
+        """, (session['user_id'], week_start, week_end))
+        items = cursor.fetchall()
+        title = "This Week's Sales"
+    elif stat_type == 'expenses':
+        cursor.execute("""
+            SELECT id, description, amount, transaction_date as date, category
+            FROM transactions 
+            WHERE user_id = %s AND type = 'expense' 
+            AND transaction_date BETWEEN %s AND %s
+            ORDER BY transaction_date DESC
+        """, (session['user_id'], week_start, week_end))
+        items = cursor.fetchall()
+        title = "This Week's Expenses"
+    elif stat_type == 'profit':
+        cursor.execute("""
+            SELECT id, description, amount, transaction_date as date, 
+                   CASE WHEN type = 'income' THEN 'Income' ELSE 'Expense' END as type
+            FROM transactions 
+            WHERE user_id = %s AND transaction_date BETWEEN %s AND %s
+            ORDER BY transaction_date DESC
+        """, (session['user_id'], week_start, week_end))
+        items = cursor.fetchall()
+        title = "This Week's Transactions"
+    else:
+        items = []
+        title = "Details"
+    
+    cursor.close()
+    db.close()
+    
+    return jsonify({'title': title, 'items': items})

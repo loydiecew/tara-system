@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restore Deleted Items</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: transparent; color: var(--text-primary); }
+        :root {
+            --bg-primary: #f5f7fc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-light: #e2e8f0;
+            --accent: #10b981;
+        }
+        body.dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-light: #334155;
+        }
+        .card { background: var(--bg-secondary); border-radius: 20px; padding: 24px; border: 1px solid var(--border-light); margin-bottom: 16px; }
+        .btn { padding: 8px 16px; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; }
+        .btn-primary { background: #10b981; color: white; }
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 16px; border-radius: 20px; background: var(--bg-primary); border: 1px solid var(--border-light); cursor: pointer; }
+        .filter-btn.active { background: #10b981; color: white; border-color: #10b981; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
+        .restore-btn { color: #10b981; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <script>
+        fetch('/admin/restore/data')
+            .then(res => res.json())
+            .then(data => render(data))
+            .catch(err => console.error(err));
+        
+        function render(data) {
+            const html = `
+                <div class="filter-bar">
+                    ${['all', 'transactions', 'sales', 'invoices', 'bills', 'products'].map(f => `
+                        <button class="filter-btn ${data.current_filter === f ? 'active' : ''}" onclick="location.href='/admin/restore?filter=${f}'">${f}</button>
+                    `).join('')}
+                </div>
+                ${data.items.length === 0 ? '<div class="card">No deleted items found.</div>' : `
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead>
+                        <tbody>
+                            ${data.items.map(item => `
+                                <tr>
+                                    <td>${item.module_type}</td>
+                                    <td>${item.description}</td>
+                                    <td>₱${parseFloat(item.amount).toFixed(2)}</td>
+                                    <td>${item.date}</td>
+                                    <td><a href="/admin/restore/${item.type_code}/${item.id}" class="restore-btn" onclick="return confirm('Restore this item?')">Restore</a></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                `}
+            `;
+            document.getElementById('app').innerHTML = html;
+        }
+    </script>
+    <script>const savedTheme = localStorage.getItem('theme') || 'light'; if (savedTheme === 'dark') document.body.classList.add('dark');</script>
+</body>
+</html>

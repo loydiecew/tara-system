@@ -1,5 +1,6 @@
 from flask import Flask, session, redirect, url_for
 from models.helpers import user_has_feature
+from models.database import get_db  # ADD THIS LINE
 from routes import (
     auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp
@@ -45,3 +46,39 @@ def home():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+
+@app.route('/upgrade_to_pro')
+def upgrade_to_pro():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    # Update database
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("UPDATE users SET plan_id = 2 WHERE id = %s", (session['user_id'],))
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    # Update session
+    session['plan'] = 'pro'
+    session['plan_name'] = 'Pro'
+    
+    return redirect(url_for('plan.plan'))
+
+@app.route('/switch_to_basic')
+def switch_to_basic():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("UPDATE users SET plan_id = 1 WHERE id = %s", (session['user_id'],))
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    session['plan'] = 'basic'
+    session['plan_name'] = 'Basic'
+    
+    return redirect(url_for('plan.plan'))

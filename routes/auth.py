@@ -48,6 +48,14 @@ def register():
         industry = request.form['industry']
         business_size = request.form['business_size']
         
+        # Map business size to plan_id
+        plan_map = {
+            'solo': 1,      # Basic
+            'small': 2,     # Pro
+            'medium': 3     # Enterprise
+        }
+        plan_id = plan_map.get(business_size, 1)
+        
         hashed = hashlib.sha256(password.encode()).hexdigest()
         
         db = get_db()
@@ -56,8 +64,8 @@ def register():
         try:
             cursor.execute("""
                 INSERT INTO users (username, password, role, full_name, industry, business_size, plan_id)
-                VALUES (%s, %s, 'admin', %s, %s, %s, 1)
-            """, (username, hashed, full_name, industry, business_size))
+                VALUES (%s, %s, 'admin', %s, %s, %s, %s)
+            """, (username, hashed, full_name, industry, business_size, plan_id))
             db.commit()
             
             cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
@@ -66,8 +74,18 @@ def register():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
-            session['plan'] = 'basic'
-            session['plan_name'] = 'Basic'
+            session['business_size'] = business_size
+            
+            # Set plan in session based on business_size
+            if business_size == 'solo':
+                session['plan'] = 'basic'
+                session['plan_name'] = 'Basic'
+            elif business_size == 'small':
+                session['plan'] = 'pro'
+                session['plan_name'] = 'Pro'
+            else:
+                session['plan'] = 'enterprise'
+                session['plan_name'] = 'Enterprise'
             
             cursor.close()
             db.close()

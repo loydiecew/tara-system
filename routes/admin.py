@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session, redirect, url_for, jsonify
 from datetime import datetime
 from models.database import get_db
 from models.audit import log_audit
@@ -89,11 +89,12 @@ def admin_restore():
     
     deleted_items = []
     
-    def add_items(items, module_name, type_code):
+    def add_items(items, module_name, type_code, module_type_display):
         if module_filter == 'all' or module_filter == module_name:
             for item in items:
                 item['module_display'] = module_name
                 item['type_code'] = type_code
+                item['module_type'] = module_type_display
                 if search_query:
                     if search_query.lower() in str(item.get('description', '')).lower():
                         deleted_items.append(item)
@@ -102,68 +103,59 @@ def admin_restore():
     
     if module_filter == 'all' or module_filter == 'transactions':
         cursor.execute("""
-            SELECT id, description, amount, transaction_date as date, 'transaction' as module, '💰 Transaction' as module_type
+            SELECT id, description, amount, transaction_date as date, 'transaction' as module
             FROM transactions 
             WHERE user_id = %s AND deleted_at IS NOT NULL
             ORDER BY deleted_at DESC
         """, (session['user_id'],))
-        add_items(cursor.fetchall(), 'transactions', 1)
+        add_items(cursor.fetchall(), 'transactions', 1, '💰 Transaction')
     
     if module_filter == 'all' or module_filter == 'sales':
         cursor.execute("""
-            SELECT id, customer_name as description, amount, sale_date as date, 'sale' as module, '📈 Sale' as module_type
+            SELECT id, customer_name as description, amount, sale_date as date, 'sale' as module
             FROM sales 
             WHERE user_id = %s AND deleted_at IS NOT NULL
             ORDER BY deleted_at DESC
         """, (session['user_id'],))
-        add_items(cursor.fetchall(), 'sales', 2)
+        add_items(cursor.fetchall(), 'sales', 2, '📈 Sale')
     
     if module_filter == 'all' or module_filter == 'invoices':
         cursor.execute("""
-            SELECT i.id, CONCAT(c.name, ' - ₱', i.amount) as description, i.amount, i.due_date as date, 'invoice' as module, '📄 Invoice' as module_type
+            SELECT i.id, CONCAT(c.name, ' - ₱', i.amount) as description, i.amount, i.due_date as date, 'invoice' as module
             FROM invoices i
             JOIN customers c ON i.customer_id = c.id
             WHERE i.user_id = %s AND i.deleted_at IS NOT NULL
             ORDER BY i.deleted_at DESC
         """, (session['user_id'],))
-        add_items(cursor.fetchall(), 'invoices', 3)
+        add_items(cursor.fetchall(), 'invoices', 3, '📄 Invoice')
     
     if module_filter == 'all' or module_filter == 'bills':
         cursor.execute("""
-            SELECT b.id, CONCAT(s.name, ' - ₱', b.amount) as description, b.amount, b.due_date as date, 'bill' as module, '📃 Bill' as module_type
+            SELECT b.id, CONCAT(s.name, ' - ₱', b.amount) as description, b.amount, b.due_date as date, 'bill' as module
             FROM bills b
             JOIN suppliers s ON b.supplier_id = s.id
             WHERE b.user_id = %s AND b.deleted_at IS NOT NULL
             ORDER BY b.deleted_at DESC
         """, (session['user_id'],))
-        add_items(cursor.fetchall(), 'bills', 4)
+        add_items(cursor.fetchall(), 'bills', 4, '📃 Bill')
     
     if module_filter == 'all' or module_filter == 'products':
         cursor.execute("""
-            SELECT id, CONCAT(name, ' (', quantity, ' in stock)') as description, price as amount, created_at as date, 'product' as module, '📦 Product' as module_type
+            SELECT id, CONCAT(name, ' (', quantity, ' in stock)') as description, price as amount, created_at as date, 'product' as module
             FROM products 
             WHERE user_id = %s AND deleted_at IS NOT NULL
             ORDER BY deleted_at DESC
         """, (session['user_id'],))
-        add_items(cursor.fetchall(), 'products', 5)
+        add_items(cursor.fetchall(), 'products', 5, '📦 Product')
     
     cursor.close()
     db.close()
-    
-    module_counts = {
-        'transactions': len([i for i in deleted_items if i.get('module') == 'transaction']),
-        'sales': len([i for i in deleted_items if i.get('module') == 'sale']),
-        'invoices': len([i for i in deleted_items if i.get('module') == 'invoice']),
-        'bills': len([i for i in deleted_items if i.get('module') == 'bill']),
-        'products': len([i for i in deleted_items if i.get('module') == 'product'])
-    }
     
     return render_template('admin_restore.html',
                          username=session['username'],
                          deleted_items=deleted_items,
                          current_filter=module_filter,
-                         search_query=search_query,
-                         module_counts=module_counts)
+                         search_query=search_query)
 
 @admin_bp.route('/admin/restore/<int:type_code>/<int:record_id>')
 def admin_restore_item(type_code, record_id):
@@ -254,4 +246,113 @@ def profile():
     cursor.close()
     db.close()
     
-    return render_template('profile.html', username=session['username'], user=user)
+    if user:
+        if 'full_name' not in user or not user['full_name']:
+            user['full_name'] = session['username']
+        if 'email' not in user:
+            user['email'] = ''
+        if 'industry' not in user or not user['industry']:
+            user['industry'] = 'retail'
+        if 'created_at' not in user:
+            user['created_at'] = datetime.now()
+    
+    return render_template('profile.html', 
+                         username=session['username'], 
+                         user=user)
+
+@admin_bp.route('/admin/users/api')
+def admin_users_api():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT id, username, full_name, role, created_at FROM users ORDER BY created_at ASC")
+    users = cursor.fetchall()
+    cursor.close()
+    db.close()
+    
+    for u in users:
+        if u.get('created_at'):
+            u['created_at'] = u['created_at'].isoformat()
+    
+    return jsonify(users)
+
+@admin_bp.route('/admin/restore/data')
+def admin_restore_data():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    module_filter = request.args.get('filter', 'all')
+    search_query = request.args.get('search', '')
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    deleted_items = []
+    
+    def add_items(items, module_name, type_code, module_type_display):
+        if module_filter == 'all' or module_filter == module_name:
+            for item in items:
+                item['type_code'] = type_code
+                item['module_type'] = module_type_display
+                if search_query:
+                    if search_query.lower() in str(item.get('description', '')).lower():
+                        deleted_items.append(item)
+                else:
+                    deleted_items.append(item)
+    
+    if module_filter == 'all' or module_filter == 'transactions':
+        cursor.execute("""
+            SELECT id, description, amount, transaction_date as date
+            FROM transactions 
+            WHERE user_id = %s AND deleted_at IS NOT NULL
+            ORDER BY deleted_at DESC
+        """, (session['user_id'],))
+        add_items(cursor.fetchall(), 'transactions', 1, '💰 Transaction')
+    
+    if module_filter == 'all' or module_filter == 'sales':
+        cursor.execute("""
+            SELECT id, customer_name as description, amount, sale_date as date
+            FROM sales 
+            WHERE user_id = %s AND deleted_at IS NOT NULL
+            ORDER BY deleted_at DESC
+        """, (session['user_id'],))
+        add_items(cursor.fetchall(), 'sales', 2, '📈 Sale')
+    
+    if module_filter == 'all' or module_filter == 'invoices':
+        cursor.execute("""
+            SELECT i.id, CONCAT(c.name, ' - ₱', i.amount) as description, i.amount, i.due_date as date
+            FROM invoices i
+            JOIN customers c ON i.customer_id = c.id
+            WHERE i.user_id = %s AND i.deleted_at IS NOT NULL
+            ORDER BY i.deleted_at DESC
+        """, (session['user_id'],))
+        add_items(cursor.fetchall(), 'invoices', 3, '📄 Invoice')
+    
+    if module_filter == 'all' or module_filter == 'bills':
+        cursor.execute("""
+            SELECT b.id, CONCAT(s.name, ' - ₱', b.amount) as description, b.amount, b.due_date as date
+            FROM bills b
+            JOIN suppliers s ON b.supplier_id = s.id
+            WHERE b.user_id = %s AND b.deleted_at IS NOT NULL
+            ORDER BY b.deleted_at DESC
+        """, (session['user_id'],))
+        add_items(cursor.fetchall(), 'bills', 4, '📃 Bill')
+    
+    if module_filter == 'all' or module_filter == 'products':
+        cursor.execute("""
+            SELECT id, CONCAT(name, ' (', quantity, ' in stock)') as description, price as amount, created_at as date
+            FROM products 
+            WHERE user_id = %s AND deleted_at IS NOT NULL
+            ORDER BY deleted_at DESC
+        """, (session['user_id'],))
+        add_items(cursor.fetchall(), 'products', 5, '📦 Product')
+    
+    cursor.close()
+    db.close()
+    
+    return jsonify({
+        'items': deleted_items,
+        'current_filter': module_filter
+    })
