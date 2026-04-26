@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date
 from models.database import get_db
 from models.audit import log_audit
@@ -13,12 +13,14 @@ def cash():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # Get user's industry
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get user's industry for categories
     cursor.execute("SELECT industry FROM users WHERE id = %s", (session['user_id'],))
     user = cursor.fetchone()
     industry = user['industry'] if user else 'retail'
     
-    # Get categories from database
+    # Get categories
     cursor.execute("""
         SELECT name, type FROM categories 
         WHERE (user_id IS NULL OR user_id = %s) 
@@ -29,26 +31,27 @@ def cash():
     """, (session['user_id'], industry))
     categories = cursor.fetchall()
     
-    # Separate income and expense categories
     income_categories = [c for c in categories if c['type'] == 'income']
     expense_categories = [c for c in categories if c['type'] == 'expense']
     
-    # Get transactions
+    # Get transactions for this business
     cursor.execute("""
-        SELECT * FROM transactions 
-        WHERE user_id = %s AND deleted_at IS NULL
-        ORDER BY transaction_date DESC
-    """, (session['user_id'],))
+        SELECT t.* FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.deleted_at IS NULL
+        ORDER BY t.transaction_date DESC
+    """, (business_id,))
     transactions = cursor.fetchall()
     
     # Calculate totals
     cursor.execute("""
         SELECT 
-            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
-            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense
-        FROM transactions 
-        WHERE user_id = %s AND deleted_at IS NULL
-    """, (session['user_id'],))
+            SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as total_income,
+            SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as total_expense
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.deleted_at IS NULL
+    """, (business_id,))
     totals = cursor.fetchone()
     
     total_income = float(totals['total_income']) if totals['total_income'] is not None else 0.0
@@ -80,6 +83,11 @@ def add_transaction():
     trans_type = request.form['type']
     category = request.form.get('category', '')
     transaction_date = request.form.get('transaction_date', date.today())
+    
+    # CHECK: Cashiers cannot add expenses
+    if session.get('role') == 'cashier' and trans_type == 'expense':
+        flash("Cashiers cannot add expenses. Only owners and admins can.")
+        return redirect(url_for('cash.cash'))
     
     db = get_db()
     cursor = db.cursor()
@@ -173,7 +181,6 @@ def edit_transaction(transaction_id):
         db.close()
         return redirect(url_for('cash.cash'))
     
-    # GET request - show edit form
     cursor.execute("SELECT * FROM transactions WHERE id = %s AND user_id = %s AND deleted_at IS NULL", 
                    (transaction_id, session['user_id']))
     transaction = cursor.fetchone()

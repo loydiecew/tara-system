@@ -17,8 +17,9 @@ def admin_users():
     cursor.execute("""
         SELECT id, username, full_name, role, created_at 
         FROM users 
+        WHERE business_id = %s
         ORDER BY created_at ASC
-    """)
+    """, (session.get('business_id'),))
     
     users = cursor.fetchall()
     
@@ -43,10 +44,14 @@ def admin_add_user():
     cursor = db.cursor()
     
     try:
+        # New user gets same business_id, business_password, business_name, plan_id as the admin
         cursor.execute("""
-            INSERT INTO users (username, password, role, full_name, created_by)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (username, hashed, role, full_name, session['user_id']))
+            INSERT INTO users (username, password, role, full_name, created_by, 
+                               business_id, business_password, business_name, plan_id)
+            SELECT %s, %s, %s, %s, %s, 
+                   business_id, business_password, business_name, plan_id
+            FROM users WHERE id = %s
+        """, (username, hashed, role, full_name, session['user_id'], session['user_id']))
         db.commit()
     except Exception as e:
         db.rollback()
@@ -86,13 +91,13 @@ def admin_restore():
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id')
     
     deleted_items = []
     
     def add_items(items, module_name, type_code, module_type_display):
         if module_filter == 'all' or module_filter == module_name:
             for item in items:
-                item['module_display'] = module_name
                 item['type_code'] = type_code
                 item['module_type'] = module_type_display
                 if search_query:
@@ -103,73 +108,80 @@ def admin_restore():
     
     if module_filter == 'all' or module_filter == 'transactions':
         cursor.execute("""
-            SELECT id, description, amount, transaction_date as date, 'transaction' as module
-            FROM transactions 
-            WHERE user_id = %s AND deleted_at IS NOT NULL
-            ORDER BY deleted_at DESC
-        """, (session['user_id'],))
+            SELECT t.id, t.description, t.amount, t.transaction_date as date
+            FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.deleted_at IS NOT NULL
+            ORDER BY t.deleted_at DESC
+        """, (business_id,))
         add_items(cursor.fetchall(), 'transactions', 1, '💰 Transaction')
     
     if module_filter == 'all' or module_filter == 'sales':
         cursor.execute("""
-            SELECT id, customer_name as description, amount, sale_date as date, 'sale' as module
-            FROM sales 
-            WHERE user_id = %s AND deleted_at IS NOT NULL
-            ORDER BY deleted_at DESC
-        """, (session['user_id'],))
+            SELECT s.id, s.customer_name as description, s.amount, s.sale_date as date
+            FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.deleted_at IS NOT NULL
+            ORDER BY s.deleted_at DESC
+        """, (business_id,))
         add_items(cursor.fetchall(), 'sales', 2, '📈 Sale')
     
     if module_filter == 'all' or module_filter == 'invoices':
         cursor.execute("""
-            SELECT i.id, CONCAT(c.name, ' - ₱', i.amount) as description, i.amount, i.due_date as date, 'invoice' as module
+            SELECT i.id, CONCAT(c.name, ' - ₱', i.amount) as description, i.amount, i.due_date as date
             FROM invoices i
             JOIN customers c ON i.customer_id = c.id
-            WHERE i.user_id = %s AND i.deleted_at IS NOT NULL
+            JOIN users u ON i.user_id = u.id
+            WHERE u.business_id = %s AND i.deleted_at IS NOT NULL
             ORDER BY i.deleted_at DESC
-        """, (session['user_id'],))
+        """, (business_id,))
         add_items(cursor.fetchall(), 'invoices', 3, '📄 Invoice')
     
     if module_filter == 'all' or module_filter == 'bills':
         cursor.execute("""
-            SELECT b.id, CONCAT(s.name, ' - ₱', b.amount) as description, b.amount, b.due_date as date, 'bill' as module
+            SELECT b.id, CONCAT(s.name, ' - ₱', b.amount) as description, b.amount, b.due_date as date
             FROM bills b
             JOIN suppliers s ON b.supplier_id = s.id
-            WHERE b.user_id = %s AND b.deleted_at IS NOT NULL
+            JOIN users u ON b.user_id = u.id
+            WHERE u.business_id = %s AND b.deleted_at IS NOT NULL
             ORDER BY b.deleted_at DESC
-        """, (session['user_id'],))
+        """, (business_id,))
         add_items(cursor.fetchall(), 'bills', 4, '📃 Bill')
     
     if module_filter == 'all' or module_filter == 'products':
         cursor.execute("""
-            SELECT id, CONCAT(name, ' (', quantity, ' in stock)') as description, price as amount, created_at as date, 'product' as module
-            FROM products 
-            WHERE user_id = %s AND deleted_at IS NOT NULL
-            ORDER BY deleted_at DESC
-        """, (session['user_id'],))
+            SELECT p.id, CONCAT(p.name, ' (', p.quantity, ' in stock)') as description, p.price as amount, p.created_at as date
+            FROM products p
+            JOIN users u ON p.user_id = u.id
+            WHERE u.business_id = %s AND p.deleted_at IS NOT NULL
+            ORDER BY p.deleted_at DESC
+        """, (business_id,))
         add_items(cursor.fetchall(), 'products', 5, '📦 Product')
     
     cursor.close()
     db.close()
     
+    module_counts = {
+        'transactions': len([i for i in deleted_items if i.get('module') == 'transaction']),
+        'sales': len([i for i in deleted_items if i.get('module') == 'sale']),
+        'invoices': len([i for i in deleted_items if i.get('module') == 'invoice']),
+        'bills': len([i for i in deleted_items if i.get('module') == 'bill']),
+        'products': len([i for i in deleted_items if i.get('module') == 'product'])
+    }
+    
     return render_template('admin_restore.html',
                          username=session['username'],
                          deleted_items=deleted_items,
                          current_filter=module_filter,
-                         search_query=search_query)
+                         search_query=search_query,
+                         module_counts=module_counts)
 
 @admin_bp.route('/admin/restore/<int:type_code>/<int:record_id>')
 def admin_restore_item(type_code, record_id):
     if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('auth.login'))
     
-    table_map = {
-        1: 'transactions',
-        2: 'sales',
-        3: 'invoices',
-        4: 'bills',
-        5: 'products'
-    }
-    
+    table_map = {1: 'transactions', 2: 'sales', 3: 'invoices', 4: 'bills', 5: 'products'}
     table_name = table_map.get(type_code)
     if not table_name:
         return f"Invalid type code: {type_code}", 400
@@ -197,42 +209,36 @@ def admin_audit():
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id')
     
     query = """
-        SELECT * FROM audit_log 
-        WHERE user_id = %s
+        SELECT a.* FROM audit_log a
+        JOIN users u ON a.user_id = u.id
+        WHERE u.business_id = %s
     """
-    params = [session['user_id']]
+    params = [business_id]
     
     if action_filter != 'all':
-        query += " AND action = %s"
+        query += " AND a.action = %s"
         params.append(action_filter)
-    
     if table_filter != 'all':
-        query += " AND table_name = %s"
+        query += " AND a.table_name = %s"
         params.append(table_filter)
-    
-    query += " ORDER BY created_at DESC LIMIT 500"
+    query += " ORDER BY a.created_at DESC LIMIT 500"
     
     cursor.execute(query, params)
     logs = cursor.fetchall()
     
-    cursor.execute("SELECT DISTINCT action FROM audit_log WHERE user_id = %s", (session['user_id'],))
+    cursor.execute("SELECT DISTINCT action FROM audit_log a JOIN users u ON a.user_id = u.id WHERE u.business_id = %s", (business_id,))
     actions = [row['action'] for row in cursor.fetchall()]
-    
-    cursor.execute("SELECT DISTINCT table_name FROM audit_log WHERE user_id = %s", (session['user_id'],))
+    cursor.execute("SELECT DISTINCT table_name FROM audit_log a JOIN users u ON a.user_id = u.id WHERE u.business_id = %s", (business_id,))
     tables = [row['table_name'] for row in cursor.fetchall()]
     
     cursor.close()
     db.close()
     
-    return render_template('admin_audit.html',
-                         username=session['username'],
-                         logs=logs,
-                         actions=actions,
-                         tables=tables,
-                         current_action=action_filter,
-                         current_table=table_filter)
+    return render_template('admin_audit.html', username=session['username'], logs=logs,
+                         actions=actions, tables=tables, current_action=action_filter, current_table=table_filter)
 
 @admin_bp.route('/profile')
 def profile():
@@ -256,9 +262,7 @@ def profile():
         if 'created_at' not in user:
             user['created_at'] = datetime.now()
     
-    return render_template('profile.html', 
-                         username=session['username'], 
-                         user=user)
+    return render_template('profile.html', username=session['username'], user=user)
 
 @admin_bp.route('/admin/users/api')
 def admin_users_api():
@@ -267,7 +271,12 @@ def admin_users_api():
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT id, username, full_name, role, created_at FROM users ORDER BY created_at ASC")
+    cursor.execute("""
+        SELECT id, username, full_name, role, created_at 
+        FROM users 
+        WHERE business_id = %s
+        ORDER BY created_at ASC
+    """, (session.get('business_id'),))
     users = cursor.fetchall()
     cursor.close()
     db.close()
@@ -284,7 +293,7 @@ def admin_restore_data():
         return jsonify({'error': 'Unauthorized'}), 401
     
     module_filter = request.args.get('filter', 'all')
-    search_query = request.args.get('search', '')
+    business_id = session.get('business_id')
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
@@ -296,28 +305,26 @@ def admin_restore_data():
             for item in items:
                 item['type_code'] = type_code
                 item['module_type'] = module_type_display
-                if search_query:
-                    if search_query.lower() in str(item.get('description', '')).lower():
-                        deleted_items.append(item)
-                else:
-                    deleted_items.append(item)
+                deleted_items.append(item)
     
     if module_filter == 'all' or module_filter == 'transactions':
         cursor.execute("""
-            SELECT id, description, amount, transaction_date as date
-            FROM transactions 
-            WHERE user_id = %s AND deleted_at IS NOT NULL
-            ORDER BY deleted_at DESC
-        """, (session['user_id'],))
+            SELECT t.id, t.description, t.amount, t.transaction_date as date
+            FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.deleted_at IS NOT NULL
+            ORDER BY t.deleted_at DESC
+        """, (business_id,))
         add_items(cursor.fetchall(), 'transactions', 1, '💰 Transaction')
     
     if module_filter == 'all' or module_filter == 'sales':
         cursor.execute("""
-            SELECT id, customer_name as description, amount, sale_date as date
-            FROM sales 
-            WHERE user_id = %s AND deleted_at IS NOT NULL
-            ORDER BY deleted_at DESC
-        """, (session['user_id'],))
+            SELECT s.id, s.customer_name as description, s.amount, s.sale_date as date
+            FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.deleted_at IS NOT NULL
+            ORDER BY s.deleted_at DESC
+        """, (business_id,))
         add_items(cursor.fetchall(), 'sales', 2, '📈 Sale')
     
     if module_filter == 'all' or module_filter == 'invoices':
@@ -325,9 +332,10 @@ def admin_restore_data():
             SELECT i.id, CONCAT(c.name, ' - ₱', i.amount) as description, i.amount, i.due_date as date
             FROM invoices i
             JOIN customers c ON i.customer_id = c.id
-            WHERE i.user_id = %s AND i.deleted_at IS NOT NULL
+            JOIN users u ON i.user_id = u.id
+            WHERE u.business_id = %s AND i.deleted_at IS NOT NULL
             ORDER BY i.deleted_at DESC
-        """, (session['user_id'],))
+        """, (business_id,))
         add_items(cursor.fetchall(), 'invoices', 3, '📄 Invoice')
     
     if module_filter == 'all' or module_filter == 'bills':
@@ -335,24 +343,23 @@ def admin_restore_data():
             SELECT b.id, CONCAT(s.name, ' - ₱', b.amount) as description, b.amount, b.due_date as date
             FROM bills b
             JOIN suppliers s ON b.supplier_id = s.id
-            WHERE b.user_id = %s AND b.deleted_at IS NOT NULL
+            JOIN users u ON b.user_id = u.id
+            WHERE u.business_id = %s AND b.deleted_at IS NOT NULL
             ORDER BY b.deleted_at DESC
-        """, (session['user_id'],))
+        """, (business_id,))
         add_items(cursor.fetchall(), 'bills', 4, '📃 Bill')
     
     if module_filter == 'all' or module_filter == 'products':
         cursor.execute("""
-            SELECT id, CONCAT(name, ' (', quantity, ' in stock)') as description, price as amount, created_at as date
-            FROM products 
-            WHERE user_id = %s AND deleted_at IS NOT NULL
-            ORDER BY deleted_at DESC
-        """, (session['user_id'],))
+            SELECT p.id, CONCAT(p.name, ' (', p.quantity, ' in stock)') as description, p.price as amount, p.created_at as date
+            FROM products p
+            JOIN users u ON p.user_id = u.id
+            WHERE u.business_id = %s AND p.deleted_at IS NOT NULL
+            ORDER BY p.deleted_at DESC
+        """, (business_id,))
         add_items(cursor.fetchall(), 'products', 5, '📦 Product')
     
     cursor.close()
     db.close()
     
-    return jsonify({
-        'items': deleted_items,
-        'current_filter': module_filter
-    })
+    return jsonify({'items': deleted_items, 'current_filter': module_filter})

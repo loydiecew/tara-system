@@ -69,6 +69,19 @@
                         <input type="text" name="full_name" value="{{ user.full_name or session.username }}" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
                     </div>
                     <div class="form-group">
+                        <label><i class="fas fa-building"></i> Business ID</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" value="{{ session.business_id }}" readonly disabled style="background:var(--bg-primary); flex: 1; font-family: monospace;">
+                            <button class="btn btn-secondary" onclick="copyBusinessId()" style="padding: 8px 16px;">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-building"></i> Business Name</label>
+                        <input type="text" value="{{ session.business_name }}" disabled style="background:var(--bg-primary);">
+                    </div>
+                    <div class="form-group">
                         <label><i class="fas fa-envelope"></i> Email Address</label>
                         <input type="email" name="email" value="{{ user.email or '' }}" placeholder="your@email.com" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
                     </div>
@@ -457,6 +470,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 });
+
+function copyBusinessId() {
+    const input = document.querySelector('input[value="{{ session.business_id }}"]');
+    if (input) {
+        navigator.clipboard.writeText(input.value).then(() => {
+            alert('Business ID copied to clipboard!');
+        });
+    }
+}
 </script>
 
 {% endblock %}

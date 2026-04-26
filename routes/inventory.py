@@ -14,10 +14,11 @@ def inventory():
     
     # Get all products (excluding soft-deleted)
     cursor.execute("""
-        SELECT * FROM products 
-        WHERE user_id = %s AND deleted_at IS NULL
-        ORDER BY name
-    """, (session['user_id'],))
+        SELECT p.* FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.deleted_at IS NULL
+        ORDER BY p.name
+    """, (session['business_id'],))
     products = cursor.fetchall()
     
     # Calculate total stock value (excluding soft-deleted)

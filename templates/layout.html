@@ -433,7 +433,7 @@
                 </button>
             </div>
             
-            <div class="nav-section">
+                        <div class="nav-section">
                 <div class="nav-label">MAIN</div>
                 <a href="/dashboard" class="nav-item {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
                     <i class="fas fa-chart-pie"></i><span>Dashboard</span>
@@ -456,6 +456,8 @@
                 </a>
             </div>
 
+            <!-- RECEIVABLES & PAYABLES - Only for Owner/Admin -->
+            {% if session.role == 'owner' or session.role == 'admin' %}
             {% if has_feature('accounts_receivable') or has_feature('accounts_payable') %}
             <div class="nav-section">
                 <div class="nav-label">RECEIVABLES & PAYABLES</div>
@@ -467,18 +469,25 @@
                 {% endif %}
             </div>
             {% endif %}
+            {% endif %}
 
+            <!-- INVENTORY - Only for Owner/Admin -->
+            {% if session.role == 'owner' or session.role == 'admin' %}
             {% if has_feature('inventory_management') %}
             <div class="nav-section">
                 <div class="nav-label">OPERATIONS</div>
                 <a href="/inventory" class="nav-item"><i class="fas fa-boxes-stacked"></i><span>Inventory Management</span></a>
             </div>
             {% endif %}
+            {% endif %}
 
-            {% if session.role == 'admin' and has_feature('multi_user_basic') %}
+            <!-- ADMIN - Only for Owner/Admin -->
+            {% if session.role == 'owner' or session.role == 'admin' %}
             <div class="nav-section">
                 <div class="nav-label">ADMIN</div>
                 <a href="/admin/users" class="nav-item"><i class="fas fa-users-gear"></i><span>User Management</span></a>
+                <a href="/admin/restore" class="nav-item"><i class="fas fa-trash-restore"></i><span>Restore Deleted</span></a>
+                <a href="/admin/audit" class="nav-item"><i class="fas fa-history"></i><span>Audit Log</span></a>
             </div>
             {% endif %}
 
@@ -510,6 +519,17 @@
                 </div>
             </div>
             
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for message in messages %}
+                            <div class="flash-message" style="background: #fef2f2; color: #ef4444; padding: 12px; border-radius: 12px; margin-bottom: 20px;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </main>
     </div>

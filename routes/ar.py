@@ -13,8 +13,14 @@ def ar():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # Get all customers (excluding soft-deleted)
-    cursor.execute("SELECT * FROM customers WHERE user_id = %s AND deleted_at IS NULL", (session['user_id'],))
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get all customers for this business (excluding soft-deleted)
+    cursor.execute("""
+        SELECT c.* FROM customers c
+        JOIN users u ON c.user_id = u.id
+        WHERE u.business_id = %s AND c.deleted_at IS NULL
+    """, (business_id,))
     customers = cursor.fetchall()
     
     # Get all invoices with customer names (excluding soft-deleted)
@@ -22,16 +28,18 @@ def ar():
         SELECT i.*, c.name as customer_name 
         FROM invoices i
         JOIN customers c ON i.customer_id = c.id
-        WHERE i.user_id = %s AND i.deleted_at IS NULL
+        JOIN users u ON i.user_id = u.id
+        WHERE u.business_id = %s AND i.deleted_at IS NULL
         ORDER BY i.due_date ASC
-    """, (session['user_id'],))
+    """, (business_id,))
     invoices = cursor.fetchall()
     
-    # Calculate total outstanding (unpaid, not deleted)
+    # Calculate total outstanding (unpaid, not deleted) for this business
     cursor.execute("""
-        SELECT SUM(amount) as total FROM invoices 
-        WHERE user_id = %s AND status = 'unpaid' AND deleted_at IS NULL
-    """, (session['user_id'],))
+        SELECT SUM(i.amount) as total FROM invoices i
+        JOIN users u ON i.user_id = u.id
+        WHERE u.business_id = %s AND i.status = 'unpaid' AND i.deleted_at IS NULL
+    """, (business_id,))
     total_outstanding = cursor.fetchone()['total'] or 0
     
     cursor.close()
@@ -110,6 +118,7 @@ def edit_invoice(invoice_id):
         db.close()
         return redirect(url_for('ar.ar'))
     
+    # GET request - show edit form
     cursor.execute("""
         SELECT i.*, c.name as customer_name 
         FROM invoices i
@@ -123,7 +132,12 @@ def edit_invoice(invoice_id):
         db.close()
         return redirect(url_for('ar.ar'))
     
-    cursor.execute("SELECT id, name FROM customers WHERE user_id = %s AND deleted_at IS NULL", (session['user_id'],))
+    business_id = session.get('business_id', session['user_id'])
+    cursor.execute("""
+        SELECT c.id, c.name FROM customers c
+        JOIN users u ON c.user_id = u.id
+        WHERE u.business_id = %s AND c.deleted_at IS NULL
+    """, (business_id,))
     customers = cursor.fetchall()
     
     cursor.close()

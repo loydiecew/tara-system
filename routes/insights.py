@@ -13,72 +13,82 @@ def insights():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    business_id = session.get('business_id', session['user_id'])
+    
     # Get current date and week ranges
     today = date.today()
     current_week_start, current_week_end = get_week_range(today)
     last_week_start = current_week_start - timedelta(days=7)
     last_week_end = current_week_end - timedelta(days=7)
     
-    # ========== SALES DATA ==========
+    # Current week sales
     cursor.execute("""
-        SELECT SUM(amount) as total FROM sales 
-        WHERE user_id = %s AND sale_date BETWEEN %s AND %s
-    """, (session['user_id'], current_week_start, current_week_end))
+        SELECT SUM(s.amount) as total FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+    """, (business_id, current_week_start, current_week_end))
     result = cursor.fetchone()
     current_sales = float(result['total']) if result['total'] else 0.0
     
+    # Last week sales
     cursor.execute("""
-        SELECT SUM(amount) as total FROM sales 
-        WHERE user_id = %s AND sale_date BETWEEN %s AND %s
-    """, (session['user_id'], last_week_start, last_week_end))
+        SELECT SUM(s.amount) as total FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+    """, (business_id, last_week_start, last_week_end))
     result = cursor.fetchone()
     last_sales = float(result['total']) if result['total'] else 0.0
     
-    # ========== EXPENSE DATA ==========
+    # Current week expenses
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-    """, (session['user_id'], current_week_start, current_week_end))
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, current_week_start, current_week_end))
     result = cursor.fetchone()
     current_expenses = float(result['total']) if result['total'] else 0.0
     
+    # Last week expenses
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-    """, (session['user_id'], last_week_start, last_week_end))
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, last_week_start, last_week_end))
     result = cursor.fetchone()
     last_expenses = float(result['total']) if result['total'] else 0.0
     
-    # ========== EXPENSES BY CATEGORY (for alerts) ==========
+    # Current week expenses by category
     cursor.execute("""
-        SELECT category, SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-        GROUP BY category
-    """, (session['user_id'], current_week_start, current_week_end))
+        SELECT t.category, SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+        GROUP BY t.category
+    """, (business_id, current_week_start, current_week_end))
     current_expenses_by_category = {}
     for row in cursor.fetchall():
         if row['category']:
             current_expenses_by_category[row['category']] = float(row['total'])
     
+    # Last week expenses by category
     cursor.execute("""
-        SELECT category, SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-        GROUP BY category
-    """, (session['user_id'], last_week_start, last_week_end))
+        SELECT t.category, SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+        GROUP BY t.category
+    """, (business_id, last_week_start, last_week_end))
     last_expenses_by_category = {}
     for row in cursor.fetchall():
         if row['category']:
             last_expenses_by_category[row['category']] = float(row['total'])
     
-    # ========== PROFIT CALCULATIONS ==========
+    # Profit calculations
     current_profit = current_sales - current_expenses
     last_profit = last_sales - last_expenses
     
-    # ========== HELPER FUNCTION FOR PERCENTAGE CHANGE ==========
     def calc_change(current, last):
         if last == 0:
             return 0.0 if current == 0 else 100.0
@@ -87,14 +97,11 @@ def insights():
     sales_change = calc_change(current_sales, last_sales)
     expense_change = calc_change(current_expenses, last_expenses)
     profit_change = calc_change(current_profit, last_profit)
-    
-    # ========== PROFIT MARGIN ==========
     profit_margin = (current_profit / current_sales * 100.0) if current_sales > 0 else 0.0
     
-    # ========== SECTION 2: SMART ALERTS ==========
+    # Smart Alerts
     alerts = []
     
-    # Alert 1: Expense category spikes (>20% increase)
     for category, current_amount in current_expenses_by_category.items():
         last_amount = last_expenses_by_category.get(category, 0.0)
         if last_amount > 0:
@@ -110,7 +117,6 @@ def insights():
                     'message': f"{category} increased by {increase_pct:.0f}% this week"
                 })
     
-    # Alert 2: Sales drop (>10% decrease)
     if last_sales > 0 and sales_change < -10:
         alerts.append({
             'type': 'sales_drop',
@@ -121,7 +127,6 @@ def insights():
             'message': f"Sales dropped by {-sales_change:.0f}% this week"
         })
     
-    # Alert 3: Profit decline (>10% decrease)
     if last_profit > 0 and profit_change < -10:
         alerts.append({
             'type': 'profit_decline',
@@ -132,7 +137,7 @@ def insights():
             'message': f"Profit declined by {-profit_change:.0f}% this week"
         })
     
-    # ========== SECTION 3: RECOMMENDATIONS ==========
+    # Recommendations
     recommendations = []
     
     for alert in alerts:
@@ -140,7 +145,6 @@ def insights():
             normal_amount = alert['last']
             spike_amount = alert['current']
             excess = spike_amount - normal_amount
-            
             recommendations.append({
                 'type': 'cost_cutting',
                 'category': alert['category'],
@@ -151,7 +155,6 @@ def insights():
                 'potential_savings': excess * 0.5,
                 'message': f"Reduce {alert['category']} by 50% to save ₱{excess * 0.5:,.0f}"
             })
-        
         elif alert['type'] == 'sales_drop':
             recommendations.append({
                 'type': 'sales_improvement',
@@ -162,7 +165,6 @@ def insights():
                 'potential_gain': alert['last'] * 0.1,
                 'message': f"A 10% sales increase would add ₱{alert['last'] * 0.1:,.0f}"
             })
-        
         elif alert['type'] == 'profit_decline':
             recommendations.append({
                 'type': 'profit_improvement',
@@ -185,7 +187,7 @@ def insights():
                 'message': "Keep tracking expenses and look for growth opportunities"
             })
     
-    # ========== SECTION 4: PREDICTIVE PLANNER ==========
+    # Predictive Planner
     baseline_sales = float(current_sales) if current_sales > 0 else 100000.0
     baseline_expenses = float(current_expenses) if current_expenses > 0 else 70000.0
     baseline_profit = float(current_profit)
@@ -251,44 +253,45 @@ def chart_data():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    business_id = session.get('business_id', session['user_id'])
     end_date = date.today()
     start_date = end_date - timedelta(days=days)
     
-    # Get daily sales and expenses
+    # Daily sales and expenses for the business
     cursor.execute("""
         SELECT 
-            transaction_date as date,
-            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as sales,
-            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expenses
-        FROM transactions 
-        WHERE user_id = %s AND transaction_date BETWEEN %s AND %s
-        GROUP BY transaction_date
-        ORDER BY transaction_date ASC
-    """, (session['user_id'], start_date, end_date))
+            t.transaction_date as date,
+            SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as sales,
+            SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as expenses
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.transaction_date BETWEEN %s AND %s
+        GROUP BY t.transaction_date
+        ORDER BY t.transaction_date ASC
+    """, (business_id, start_date, end_date))
     daily_data = cursor.fetchall()
     
-    # Get expense categories (top 5)
+    # Expense categories for the business
     cursor.execute("""
         SELECT 
-            COALESCE(category, 'Other') as category,
-            SUM(amount) as total
-        FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-        GROUP BY category
+            COALESCE(t.category, 'Other') as category,
+            SUM(t.amount) as total
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+        GROUP BY t.category
         ORDER BY total DESC
         LIMIT 5
-    """, (session['user_id'], start_date, end_date))
+    """, (business_id, start_date, end_date))
     category_data = cursor.fetchall()
     
     cursor.close()
     db.close()
     
-    # Format dates
     labels = [d['date'].strftime('%b %d') for d in daily_data]
     sales = [float(d['sales'] or 0) for d in daily_data]
     expenses = [float(d['expenses'] or 0) for d in daily_data]
-    
     category_labels = [c['category'] for c in category_data]
     category_values = [float(c['total'] or 0) for c in category_data]
     
@@ -309,37 +312,41 @@ def stats_detail(stat_type):
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    business_id = session.get('business_id', session['user_id'])
     today = date.today()
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
     
     if stat_type == 'sales':
         cursor.execute("""
-            SELECT id, customer_name as name, amount, sale_date as date, description
-            FROM sales 
-            WHERE user_id = %s AND sale_date BETWEEN %s AND %s
-            ORDER BY sale_date DESC
-        """, (session['user_id'], week_start, week_end))
+            SELECT s.id, s.customer_name as name, s.amount, s.sale_date as date, s.description
+            FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+            ORDER BY s.sale_date DESC
+        """, (business_id, week_start, week_end))
         items = cursor.fetchall()
         title = "This Week's Sales"
     elif stat_type == 'expenses':
         cursor.execute("""
-            SELECT id, description, amount, transaction_date as date, category
-            FROM transactions 
-            WHERE user_id = %s AND type = 'expense' 
-            AND transaction_date BETWEEN %s AND %s
-            ORDER BY transaction_date DESC
-        """, (session['user_id'], week_start, week_end))
+            SELECT t.id, t.description, t.amount, t.transaction_date as date, t.category
+            FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'expense' 
+            AND t.transaction_date BETWEEN %s AND %s
+            ORDER BY t.transaction_date DESC
+        """, (business_id, week_start, week_end))
         items = cursor.fetchall()
         title = "This Week's Expenses"
     elif stat_type == 'profit':
         cursor.execute("""
-            SELECT id, description, amount, transaction_date as date, 
-                   CASE WHEN type = 'income' THEN 'Income' ELSE 'Expense' END as type
-            FROM transactions 
-            WHERE user_id = %s AND transaction_date BETWEEN %s AND %s
-            ORDER BY transaction_date DESC
-        """, (session['user_id'], week_start, week_end))
+            SELECT t.id, t.description, t.amount, t.transaction_date as date, 
+                   CASE WHEN t.type = 'income' THEN 'Income' ELSE 'Expense' END as type
+            FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.transaction_date BETWEEN %s AND %s
+            ORDER BY t.transaction_date DESC
+        """, (business_id, week_start, week_end))
         items = cursor.fetchall()
         title = "This Week's Transactions"
     else:
@@ -348,5 +355,10 @@ def stats_detail(stat_type):
     
     cursor.close()
     db.close()
+    
+    # Convert date objects to string for JSON
+    for item in items:
+        if 'date' in item and hasattr(item['date'], 'isoformat'):
+            item['date'] = item['date'].isoformat()
     
     return jsonify({'title': title, 'items': items})

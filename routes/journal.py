@@ -11,32 +11,34 @@ def journal():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # Get cash transactions
+    # Cash transactions
     cursor.execute("""
         SELECT 
-            transaction_date as date,
-            description,
-            category,
-            type,
-            amount,
+            t.transaction_date as date,
+            t.description,
+            t.category,
+            t.type,
+            t.amount,
             'cash' as source
-        FROM transactions 
-        WHERE user_id = %s
-    """, (session['user_id'],))
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s
+    """, (session['business_id'],))
     cash_transactions = cursor.fetchall()
     
-    # Get sales
+    # Sales
     cursor.execute("""
         SELECT 
-            sale_date as date,
-            CONCAT('Sale to ', customer_name) as description,
+            s.sale_date as date,
+            CONCAT('Sale to ', s.customer_name) as description,
             'Sales' as category,
             'income' as type,
-            amount,
+            s.amount,
             'sales' as source
-        FROM sales 
-        WHERE user_id = %s
-    """, (session['user_id'],))
+        FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s
+    """, (session['business_id'],))
     sales_transactions = cursor.fetchall()
     
     # Combine both lists

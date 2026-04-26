@@ -13,39 +13,45 @@ def sales():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # Get all sales (excluding soft-deleted)
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get all sales for this business (excluding soft-deleted)
     cursor.execute("""
-        SELECT * FROM sales 
-        WHERE user_id = %s AND deleted_at IS NULL
-        ORDER BY sale_date DESC
-    """, (session['user_id'],))
+        SELECT s.* FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.deleted_at IS NULL
+        ORDER BY s.sale_date DESC
+    """, (business_id,))
     sales_list = cursor.fetchall()
     
-    # Get total sales (all time, excluding soft-deleted)
+    # Get total sales (all time, excluding soft-deleted) for this business
     cursor.execute("""
-        SELECT SUM(amount) as total FROM sales 
-        WHERE user_id = %s AND deleted_at IS NULL
-    """, (session['user_id'],))
+        SELECT SUM(s.amount) as total FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.deleted_at IS NULL
+    """, (business_id,))
     total_result = cursor.fetchone()
     total_sales = float(total_result['total']) if total_result['total'] is not None else 0.0
     
-    # Get this month's sales (excluding soft-deleted)
+    # Get this month's sales for this business
     today = date.today()
     first_day = today.replace(day=1)
     
     cursor.execute("""
-        SELECT SUM(amount) as total FROM sales 
-        WHERE user_id = %s AND deleted_at IS NULL
-        AND sale_date BETWEEN %s AND %s
-    """, (session['user_id'], first_day, today))
+        SELECT SUM(s.amount) as total FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.deleted_at IS NULL
+        AND s.sale_date BETWEEN %s AND %s
+    """, (business_id, first_day, today))
     monthly_result = cursor.fetchone()
     monthly_sales = float(monthly_result['total']) if monthly_result['total'] is not None else 0.0
     
-    # Get products for dropdown (excluding soft-deleted)
+    # Get products for dropdown for this business (excluding soft-deleted)
     cursor.execute("""
-        SELECT id, name, price, quantity FROM products 
-        WHERE user_id = %s AND deleted_at IS NULL
-    """, (session['user_id'],))
+        SELECT p.id, p.name, p.price, p.quantity FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.deleted_at IS NULL
+    """, (business_id,))
     products = cursor.fetchall()
     
     cursor.close()
@@ -73,8 +79,12 @@ def add_sale():
         db = get_db()
         cursor = db.cursor(dictionary=True)
         
-        cursor.execute("SELECT name, price FROM products WHERE id = %s AND user_id = %s", 
-                       (product_id, session['user_id']))
+        # Verify product belongs to user's business
+        cursor.execute("""
+            SELECT p.name, p.price FROM products p
+            JOIN users u ON p.user_id = u.id
+            WHERE p.id = %s AND u.business_id = %s
+        """, (product_id, session.get('business_id', session['user_id'])))
         product = cursor.fetchone()
         
         if product:

@@ -13,8 +13,14 @@ def ap():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    # Get all suppliers (excluding soft-deleted)
-    cursor.execute("SELECT * FROM suppliers WHERE user_id = %s AND deleted_at IS NULL", (session['user_id'],))
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get all suppliers for this business (excluding soft-deleted)
+    cursor.execute("""
+        SELECT s.* FROM suppliers s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.deleted_at IS NULL
+    """, (business_id,))
     suppliers = cursor.fetchall()
     
     # Get all bills with supplier names (excluding soft-deleted)
@@ -22,16 +28,18 @@ def ap():
         SELECT b.*, s.name as supplier_name 
         FROM bills b
         JOIN suppliers s ON b.supplier_id = s.id
-        WHERE b.user_id = %s AND b.deleted_at IS NULL
+        JOIN users u ON b.user_id = u.id
+        WHERE u.business_id = %s AND b.deleted_at IS NULL
         ORDER BY b.due_date ASC
-    """, (session['user_id'],))
+    """, (business_id,))
     bills = cursor.fetchall()
     
-    # Calculate total outstanding (unpaid, not deleted)
+    # Calculate total outstanding (unpaid, not deleted) for this business
     cursor.execute("""
-        SELECT SUM(amount) as total FROM bills 
-        WHERE user_id = %s AND status = 'unpaid' AND deleted_at IS NULL
-    """, (session['user_id'],))
+        SELECT SUM(b.amount) as total FROM bills b
+        JOIN users u ON b.user_id = u.id
+        WHERE u.business_id = %s AND b.status = 'unpaid' AND b.deleted_at IS NULL
+    """, (business_id,))
     total_outstanding = cursor.fetchone()['total'] or 0
     
     cursor.close()
@@ -51,6 +59,7 @@ def delete_bill(bill_id):
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # First check if bill belongs to user
     cursor.execute("SELECT * FROM bills WHERE id = %s AND user_id = %s", 
                    (bill_id, session['user_id']))
     bill = cursor.fetchone()
@@ -111,6 +120,7 @@ def edit_bill(bill_id):
         db.close()
         return redirect(url_for('ap.ap'))
     
+    # GET request - show edit form
     cursor.execute("""
         SELECT b.*, s.name as supplier_name 
         FROM bills b
@@ -124,7 +134,12 @@ def edit_bill(bill_id):
         db.close()
         return redirect(url_for('ap.ap'))
     
-    cursor.execute("SELECT id, name FROM suppliers WHERE user_id = %s AND deleted_at IS NULL", (session['user_id'],))
+    business_id = session.get('business_id', session['user_id'])
+    cursor.execute("""
+        SELECT s.id, s.name FROM suppliers s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.deleted_at IS NULL
+    """, (business_id,))
     suppliers = cursor.fetchall()
     
     cursor.close()

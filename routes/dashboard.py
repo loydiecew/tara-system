@@ -12,6 +12,11 @@ def dashboard():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # Get business_id from session
+    business_id = session.get('business_id')
+    if not business_id:
+        business_id = session['user_id']
+    
     # Get current month's date range
     today = date.today()
     first_day = today.replace(day=1)
@@ -36,34 +41,42 @@ def dashboard():
         last_month_last = next_month_last - timedelta(days=1)
     
     # ========== CORE FINANCIAL ==========
+    # Monthly income
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'income' 
-        AND transaction_date BETWEEN %s AND %s
-    """, (session['user_id'], first_day, last_day))
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'income' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, first_day, last_day))
     monthly_income = float(cursor.fetchone()['total'] or 0)
     
+    # Monthly expense
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-    """, (session['user_id'], first_day, last_day))
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, first_day, last_day))
     monthly_expense = float(cursor.fetchone()['total'] or 0)
     
     current_profit = monthly_income - monthly_expense
     
+    # Last month income
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'income' 
-        AND transaction_date BETWEEN %s AND %s
-    """, (session['user_id'], last_month_first, last_month_last))
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'income' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, last_month_first, last_month_last))
     last_monthly_income = float(cursor.fetchone()['total'] or 0)
     
+    # Last month expense
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions 
-        WHERE user_id = %s AND type = 'expense' 
-        AND transaction_date BETWEEN %s AND %s
-    """, (session['user_id'], last_month_first, last_month_last))
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, last_month_first, last_month_last))
     last_monthly_expense = float(cursor.fetchone()['total'] or 0)
     
     last_profit = last_monthly_income - last_monthly_expense
@@ -78,51 +91,63 @@ def dashboard():
     profit_change = calc_change(current_profit, last_profit)
     profit_margin = (current_profit / monthly_income * 100) if monthly_income > 0 else 0
     
+    # Cash balance
     cursor.execute("""
         SELECT 
-            SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
-            SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense
-        FROM transactions WHERE user_id = %s
-    """, (session['user_id'],))
+            SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as total_income,
+            SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as total_expense
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s
+    """, (business_id,))
     totals = cursor.fetchone()
     cash_balance = (float(totals['total_income'] or 0)) - (float(totals['total_expense'] or 0))
     
+    # AR Outstanding
     cursor.execute("""
-        SELECT SUM(amount) as total FROM invoices 
-        WHERE user_id = %s AND status = 'unpaid'
-    """, (session['user_id'],))
+        SELECT SUM(i.amount) as total FROM invoices i
+        JOIN users u ON i.user_id = u.id
+        WHERE u.business_id = %s AND i.status = 'unpaid'
+    """, (business_id,))
     ar_outstanding = float(cursor.fetchone()['total'] or 0)
     
+    # AP Outstanding
     cursor.execute("""
-        SELECT SUM(amount) as total FROM bills 
-        WHERE user_id = %s AND status = 'unpaid'
-    """, (session['user_id'],))
+        SELECT SUM(b.amount) as total FROM bills b
+        JOIN users u ON b.user_id = u.id
+        WHERE u.business_id = %s AND b.status = 'unpaid'
+    """, (business_id,))
     ap_outstanding = float(cursor.fetchone()['total'] or 0)
     
+    # Inventory Summary
     cursor.execute("""
         SELECT 
-            SUM(quantity * price) as total_value,
+            SUM(p.quantity * p.price) as total_value,
             COUNT(*) as total_products,
-            SUM(CASE WHEN quantity < reorder_level THEN 1 ELSE 0 END) as low_stock_count
-        FROM products WHERE user_id = %s
-    """, (session['user_id'],))
+            SUM(CASE WHEN p.quantity < p.reorder_level THEN 1 ELSE 0 END) as low_stock_count
+        FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s
+    """, (business_id,))
     inv_summary = cursor.fetchone()
     inventory_value = float(inv_summary['total_value'] or 0)
     total_products = inv_summary['total_products'] or 0
     low_stock_count = inv_summary['low_stock_count'] or 0
     
+    # Recent transactions
     cursor.execute("""
-        SELECT * FROM transactions 
-        WHERE user_id = %s 
-        ORDER BY transaction_date DESC 
+        SELECT t.* FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s 
+        ORDER BY t.transaction_date DESC 
         LIMIT 10
-    """, (session['user_id'],))
+    """, (business_id,))
     recent = cursor.fetchall()
     
     cursor.close()
     db.close()
     
-    # Get current time for greeting
+    # Get greeting
     now = datetime.now()
     current_hour = now.hour
     if current_hour < 12:
