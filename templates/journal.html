@@ -20,14 +20,62 @@
     </div>
 </div>
 
+<!-- Filter Bar -->
 <div class="card">
     <div class="card-header">
-        <h2><i class="fas fa-list-alt"></i> All Transactions</h2>
+        <h2><i class="fas fa-filter"></i> Filters</h2>
+    </div>
+    <form method="GET" action="/journal" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Search</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="Description..." style="width: 180px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Type</label>
+            <select name="type">
+                <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All Transactions</option>
+                <option value="income" {% if type_filter == 'income' %}selected{% endif %}>Income Only</option>
+                <option value="expense" {% if type_filter == 'expense' %}selected{% endif %}>Expense Only</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Source</label>
+            <select name="source">
+                <option value="all" {% if source_filter == 'all' %}selected{% endif %}>All Sources</option>
+                <option value="cash" {% if source_filter == 'cash' %}selected{% endif %}>Cash Transactions</option>
+                <option value="sales" {% if source_filter == 'sales' %}selected{% endif %}>Sales</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Date From</label>
+            <input type="date" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Date To</label>
+            <input type="date" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <a href="/journal" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+</div>
+
+<!-- Transactions Table -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list-alt"></i> Transactions</h2>
     </div>
     <div class="table-wrapper">
-        <table>
+        <table class="data-table">
             <thead>
-                <tr><th>Date</th><th>Description</th><th>Category</th><th>Source</th><th>Amount</th></tr>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Source</th>
+                    <th>Amount</th>
+                </tr>
             </thead>
             <tbody>
                 {% for t in transactions %}
@@ -35,11 +83,19 @@
                     <td>{{ t.date if t.date else '-' }}</td>
                     <td>{{ t.description }}</td>
                     <td>{{ t.category or '-' }}</td>
-                    <td><span class="badge {{ 'badge-info' if t.source == 'sales' else 'badge-warning' }}">{{ t.source|capitalize }}</span></td>
-                    <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">{{ '+' if t.type == 'income' else '-' }} ₱ {{ "{:,.2f}".format(t.amount) }}</td>
+                    <td>
+                        <span class="badge {% if t.source == 'sales' %}badge-info{% else %}badge-warning{% endif %}">
+                            {{ t.source|capitalize }}
+                        </span>
+                    </td>
+                    <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">
+                        {{ '+' if t.type == 'income' else '-' }} ₱ {{ "{:,.2f}".format(t.amount) }}
+                    </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align: center;">No transactions yet</td></tr>
+                <tr>
+                    <td colspan="5" style="text-align: center;">No transactions found</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

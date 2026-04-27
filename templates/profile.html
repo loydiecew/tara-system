@@ -40,6 +40,9 @@
             <a href="#" class="profile-nav" data-tab="restore">
                 <i class="fas fa-trash-restore"></i> Restore Data
             </a>
+            <a href="#" class="profile-nav" data-tab="audit">
+                <i class="fas fa-history"></i> Audit Log
+            </a>
             {% endif %}
             
             <div style="height: 1px; background: var(--border-light); margin: 12px 16px;"></div>
@@ -50,8 +53,8 @@
         </div>
     </div>
     
-    <!-- Content Area -->
-    <div style="flex: 1; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px;">
+    <!-- Content Area - FIXED: Added min-width to prevent shrinking -->
+    <div style="flex: 1; min-width: 500px; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px;">
         
         <!-- ========== TAB 1: PROFILE ========== -->
         <div id="tab-profile" class="profile-tab-content active">
@@ -92,11 +95,11 @@
                     <div class="form-group">
                         <label><i class="fas fa-store"></i> Industry</label>
                         <select name="industry" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                            <option value="retail" {% if user.industry == 'retail' %}selected{% endif %}>🏪 Retail Store</option>
-                            <option value="restaurant" {% if user.industry == 'restaurant' %}selected{% endif %}>🍽️ Restaurant / Cafe</option>
-                            <option value="freelancer" {% if user.industry == 'freelancer' %}selected{% endif %}>💻 Freelancer</option>
-                            <option value="construction" {% if user.industry == 'construction' %}selected{% endif %}>🏗️ Construction</option>
-                            <option value="other" {% if user.industry == 'other' %}selected{% endif %}>📋 Other</option>
+                            <option value="retail" {% if user.industry == 'retail' %}selected{% endif %}>Retail Store</option>
+                            <option value="restaurant" {% if user.industry == 'restaurant' %}selected{% endif %}>Restaurant / Cafe</option>
+                            <option value="freelancer" {% if user.industry == 'freelancer' %}selected{% endif %}>Freelancer</option>
+                            <option value="construction" {% if user.industry == 'construction' %}selected{% endif %}>Construction</option>
+                            <option value="other" {% if user.industry == 'other' %}selected{% endif %}>Other</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -131,7 +134,7 @@
                 </div>
                 
                 <div style="margin-top: 20px;">
-                    <h4 style="margin-bottom: 12px;">✅ Features included:</h4>
+                    <h4 style="margin-bottom: 12px;">Features included:</h4>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
                         <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Cash Management</div>
                         <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Sales Management</div>
@@ -192,32 +195,27 @@
             {% endif %}
         </div>
         
-        <!-- ========== TAB 3: APPEARANCE ========== -->
+        <!-- ========== TAB 3: APPEARANCE (Simplified Toggle) ========== -->
         <div id="tab-appearance" class="profile-tab-content">
             <h2 style="font-size: 22px; margin-bottom: 8px;">Appearance</h2>
             <p style="color: var(--text-secondary); margin-bottom: 28px;">Choose your preferred theme</p>
             
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
-                <div id="lightModeCard" style="background: var(--bg-primary); border-radius: 20px; padding: 32px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">
-                    <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                        <i class="fas fa-sun" style="font-size: 48px; color: #f59e0b;"></i>
+            <div style="background: var(--bg-primary); border-radius: 20px; padding: 28px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+                    <div>
+                        <h3 style="margin-bottom: 4px;">Dark Mode</h3>
+                        <p style="color: var(--text-secondary); font-size: 13px;">Switch between light and dark theme</p>
                     </div>
-                    <h3>Light Mode</h3>
-                    <p style="color: var(--text-secondary); margin-top: 8px;">Bright and clean interface</p>
-                    <button id="lightModeBtn" class="btn btn-primary" style="margin-top: 20px;">Apply Light Mode</button>
-                </div>
-                
-                <div id="darkModeCard" style="background: var(--bg-primary); border-radius: 20px; padding: 32px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">
-                    <div style="background: #1e293b; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-                        <i class="fas fa-moon" style="font-size: 48px; color: #10b981;"></i>
+                    <div>
+                        <label class="theme-toggle-switch">
+                            <input type="checkbox" id="themeToggleCheckbox">
+                            <span class="theme-toggle-slider"></span>
+                        </label>
                     </div>
-                    <h3>Dark Mode</h3>
-                    <p style="color: var(--text-secondary); margin-top: 8px;">Easier on the eyes at night</p>
-                    <button id="darkModeBtnProfile" class="btn btn-secondary" style="margin-top: 20px;">Apply Dark Mode</button>
                 </div>
             </div>
             
-            <div style="margin-top: 28px; padding: 16px; background: var(--bg-primary); border-radius: 12px;">
+            <div style="margin-top: 20px; padding: 16px; background: var(--bg-primary); border-radius: 12px;">
                 <p><i class="fas fa-info-circle" style="color: #10b981;"></i> Your preference is saved automatically and applies across all devices.</p>
             </div>
         </div>
@@ -277,6 +275,18 @@
             </div>
         </div>
         {% endif %}
+        
+        <!-- ========== TAB 6: AUDIT LOG (NEW) ========== -->
+        {% if session.role == 'admin' %}
+        <div id="tab-audit" class="profile-tab-content">
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Audit Log</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Track all changes made to your data</p>
+            
+            <div id="auditContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
+                <p style="color: var(--text-secondary);">Loading audit log...</p>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -297,6 +307,65 @@
 .profile-nav i { width: 20px; }
 .profile-tab-content { display: none; }
 .profile-tab-content.active { display: block; }
+
+/* Toggle Switch CSS */
+.theme-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+}
+.theme-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.theme-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: 0.3s;
+    border-radius: 30px;
+}
+.theme-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+input:checked + .theme-toggle-slider {
+    background-color: #10b981;
+}
+input:checked + .theme-toggle-slider:before {
+    transform: translateX(30px);
+}
+
+#tab-plan .features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+#tab-plan .upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+/* Ensure content doesn't force container wider */
+.profile-tab-content {
+    max-width: 100%;
+    word-wrap: break-word;
+}
 </style>
 
 <script>
@@ -305,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tabs = document.querySelectorAll('.profile-nav');
     const contents = document.querySelectorAll('.profile-tab-content');
 
-    // Fix: safe user id injection
+    // Safe user id injection
     const currentUserId = {{ session.user_id|tojson }};
 
     tabs.forEach(tab => {
@@ -316,22 +385,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const targetTab = this.dataset.tab;
 
-            // Remove active states
             tabs.forEach(t => t.classList.remove('active'));
             contents.forEach(c => c.classList.remove('active'));
 
-            // Activate selected tab
             this.classList.add('active');
 
             const activeContent = document.getElementById(`tab-${targetTab}`);
             if (activeContent) activeContent.classList.add('active');
 
-            // Save tab (optional persistence)
             localStorage.setItem('profileTab', targetTab);
 
-            // Lazy load
             if (targetTab === 'team') loadTeamData();
             if (targetTab === 'restore') loadRestoreData();
+            if (targetTab === 'audit') loadAuditData();
         });
     });
 
@@ -346,9 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.loadTeamData = function () {
         const container = document.getElementById('teamContainer');
         if (!container) return;
-
         container.innerHTML = 'Loading...';
-
         fetch('/admin/users/api')
             .then(res => res.json())
             .then(data => {
@@ -356,45 +420,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     container.innerHTML = '<p>No team members found.</p>';
                     return;
                 }
-
                 let html = `<table style="width:100%; border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Username</th>
-                            <th>Role</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead><tbody>`;
-
+                    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Action</th></tr></thead><tbody>`;
                 data.forEach(u => {
                     html += `<tr>
                         <td>${u.full_name || u.username}</td>
                         <td>${u.username}</td>
                         <td><span class="badge">${u.role}</span></td>
-                        <td>
-                            ${u.id != currentUserId 
-                                ? `<a href="/admin/delete_user/${u.id}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>` 
-                                : '-'}
-                        </td>
+                        <td>${u.id != currentUserId ? `<a href="/admin/delete_user/${u.id}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>` : '-'}</td>
                     </tr>`;
                 });
-
                 html += '</tbody></table>';
                 container.innerHTML = html;
             })
-            .catch(() => {
-                container.innerHTML = '<p>Error loading team data.</p>';
-            });
+            .catch(() => container.innerHTML = '<p>Error loading team data.</p>');
     };
 
     // ========== RESTORE ==========
     window.loadRestoreData = function () {
         const container = document.getElementById('restoreContainer');
         if (!container) return;
-
         container.innerHTML = 'Loading...';
-
         fetch('/admin/restore/data?filter=all')
             .then(res => res.json())
             .then(data => {
@@ -402,55 +448,85 @@ document.addEventListener('DOMContentLoaded', function () {
                     container.innerHTML = '<p>No deleted items found.</p>';
                     return;
                 }
-
                 let html = `<table style="width:100%; border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Description</th>
-                            <th>Amount</th>
-                            <th>Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead><tbody>`;
-
+                    <thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
                 data.items.forEach(item => {
                     html += `<tr>
                         <td>${item.module_type || '-'}</td>
                         <td>${item.description || '-'}</td>
                         <td>₱${parseFloat(item.amount).toFixed(2)}</td>
                         <td>${item.date || '-'}</td>
-                        <td>
-                            <a href="/admin/restore/${item.type_code}/${item.id}" 
-                               class="btn btn-primary" 
-                               onclick="return confirm('Restore?')">Restore</a>
-                        </td>
+                        <td><a href="/admin/restore/${item.type_code}/${item.id}" class="btn btn-primary" onclick="return confirm('Restore?')">Restore</a></td>
                     </tr>`;
                 });
-
                 html += '</tbody></table>';
                 container.innerHTML = html;
             })
-            .catch(() => {
-                container.innerHTML = '<p>Error loading restore data.</p>';
-            });
+            .catch(() => container.innerHTML = '<p>Error loading restore data.</p>');
     };
 
-    // ========== DARK MODE ==========
+    // ========== AUDIT LOG (NEW) ==========
+    window.loadAuditData = function () {
+        const container = document.getElementById('auditContainer');
+        if (!container) return;
+        container.innerHTML = 'Loading...';
+        fetch('/admin/audit/api')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.length) {
+                    container.innerHTML = '<p>No audit records found.</p>';
+                    return;
+                }
+                let html = `<table style="width:100%; border-collapse: collapse;">
+                    <thead><td><th>Time</th><th>User</th><th>Action</th><th>Table</th><th>Record ID</th></tr></thead><tbody>`;
+                data.forEach(log => {
+                    html += `<tr>
+                        <td>${log.created_at || '-'}</td>
+                        <td>${log.username || '-'}</td>
+                        <td><span class="badge ${log.action === 'DELETE' ? 'badge-danger' : 'badge-success'}">${log.action || '-'}</span></td>
+                        <td>${log.table_name || '-'}</td>
+                        <td>${log.record_id || '-'}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            })
+            .catch(() => container.innerHTML = '<p>Error loading audit log.</p>');
+    };
+
+    // ========== DARK MODE (Simplified Toggle) ==========
+    const themeCheckbox = document.getElementById('themeToggleCheckbox');
+    
     const setLight = () => {
         document.body.classList.remove('dark');
         localStorage.setItem('theme', 'light');
+        if (themeCheckbox) themeCheckbox.checked = false;
     };
-
     const setDark = () => {
         document.body.classList.add('dark');
         localStorage.setItem('theme', 'dark');
+        if (themeCheckbox) themeCheckbox.checked = true;
     };
-
-    document.getElementById('lightModeBtn')?.addEventListener('click', setLight);
-    document.getElementById('darkModeBtnProfile')?.addEventListener('click', setDark);
-    document.getElementById('lightModeCard')?.addEventListener('click', setLight);
-    document.getElementById('darkModeCard')?.addEventListener('click', setDark);
+    
+    // Initialize checkbox based on current theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+        if (themeCheckbox) themeCheckbox.checked = true;
+        document.body.classList.add('dark');
+    } else {
+        if (themeCheckbox) themeCheckbox.checked = false;
+        document.body.classList.remove('dark');
+    }
+    
+    if (themeCheckbox) {
+        themeCheckbox.addEventListener('change', function(e) {
+            if (e.target.checked) {
+                setDark();
+            } else {
+                setLight();
+            }
+        });
+    }
 
     // ========== ADD USER ==========
     const addForm = document.getElementById('addUserForm');
@@ -458,27 +534,18 @@ document.addEventListener('DOMContentLoaded', function () {
         addForm.addEventListener('submit', function (e) {
             e.preventDefault();
             const data = new FormData(this);
-
-            fetch('/admin/add_user', {
-                method: 'POST',
-                body: data
-            }).then(() => {
-                loadTeamData();
-                this.reset();
-            });
+            fetch('/admin/add_user', { method: 'POST', body: data })
+                .then(() => { loadTeamData(); this.reset(); });
         });
     }
-
 });
 
 function copyBusinessId() {
     const input = document.querySelector('input[value="{{ session.business_id }}"]');
     if (input) {
-        navigator.clipboard.writeText(input.value).then(() => {
-            alert('Business ID copied to clipboard!');
-        });
+        navigator.clipboard.writeText(input.value);
+        alert('Business ID copied!');
     }
 }
 </script>
-
 {% endblock %}

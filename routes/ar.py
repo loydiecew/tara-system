@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date
 from models.database import get_db
 from models.audit import log_audit
@@ -99,13 +99,15 @@ def edit_invoice(invoice_id):
         customer_id = request.form['customer_id']
         amount = float(request.form['amount'])
         due_date = request.form['due_date']
+        invoice_number = request.form.get('invoice_number', '')
         status = request.form['status']
+        description = request.form.get('description', '')
         
         cursor.execute("""
             UPDATE invoices 
-            SET customer_id = %s, amount = %s, due_date = %s, status = %s
+            SET customer_id = %s, amount = %s, due_date = %s, invoice_number = %s, status = %s, description = %s
             WHERE id = %s AND user_id = %s AND deleted_at IS NULL
-        """, (customer_id, amount, due_date, status, invoice_id, session['user_id']))
+        """, (customer_id, amount, due_date, invoice_number, status, description, invoice_id, session['user_id']))
         db.commit()
         
         cursor.execute("SELECT * FROM invoices WHERE id = %s", (invoice_id,))
@@ -167,6 +169,7 @@ def add_customer():
     cursor.close()
     db.close()
     
+    flash(f'Customer "{name}" added successfully!', 'success')
     return redirect(url_for('ar.ar'))
 
 @ar_bp.route('/add_invoice', methods=['POST'])
@@ -177,18 +180,20 @@ def add_invoice():
     customer_id = request.form['customer_id']
     amount = float(request.form['amount'])
     due_date = request.form['due_date']
+    description = request.form.get('description', '') 
     invoice_number = request.form.get('invoice_number', f"INV-{customer_id}-{due_date}")
     
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO invoices (user_id, customer_id, invoice_number, amount, due_date)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (session['user_id'], customer_id, invoice_number, amount, due_date))
+        INSERT INTO invoices (user_id, customer_id, invoice_number, amount, description, due_date)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], customer_id, invoice_number, amount, description, due_date))
     db.commit()
     cursor.close()
     db.close()
     
+    flash(f'Invoice #{invoice_number} created successfully!', 'success')
     return redirect(url_for('ar.ar'))
 
 @ar_bp.route('/pay_invoice/<int:invoice_id>')

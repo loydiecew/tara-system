@@ -86,7 +86,7 @@ def add_transaction():
     
     # CHECK: Cashiers cannot add expenses
     if session.get('role') == 'cashier' and trans_type == 'expense':
-        flash("Cashiers cannot add expenses. Only owners and admins can.")
+        flash("Cashiers cannot add expenses. Only owners and admins can.", 'error')
         return redirect(url_for('cash.cash'))
     
     db = get_db()

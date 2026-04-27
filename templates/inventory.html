@@ -18,34 +18,57 @@
 </div>
 
 <div class="card">
-    <div class="card-header"><h2><i class="fas fa-box"></i> Add Product</h2></div>
+    <div class="card-header">
+        <h2><i class="fas fa-box"></i> Add Product</h2>
+    </div>
     <form method="POST" action="/add_product">
         <div class="form-grid">
-            <div class="form-group"><label>Product Name</label><input type="text" name="name" required></div>
-            <div class="form-group"><label>Price (₱)</label><input type="number" name="price" step="0.01" required></div>
-            <div class="form-group"><label>Initial Stock</label><input type="number" name="quantity" value="0"></div>
-            <div class="form-group"><label>Category</label><input type="text" name="category" placeholder="e.g., Beans, Cups"></div>
-            <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-primary">+ Add Product</button></div>
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Price (₱)</label>
+                <input type="number" name="price" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label>Initial Stock</label>
+                <input type="number" name="quantity" value="0">
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" name="category" placeholder="e.g., Beans, Cups">
+            </div>
         </div>
-        <div style="margin-top: 10px;">
-            <label>Reorder Level</label>
-            <input type="number" name="reorder_level" value="5" style="width: 150px;">
-            <label style="margin-left: 20px;">Description</label>
-            <input type="text" name="description" placeholder="Optional" style="width: 300px;">
+        <div style="margin-top: 16px; display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="flex: 1;">
+                <label>Reorder Level</label>
+                <input type="number" name="reorder_level" value="5" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
+            </div>
+            <div style="flex: 2;">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="Optional product description" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn btn-primary">Add Product</button>
+            </div>
         </div>
     </form>
 </div>
 
 <div class="card">
-    <div class="card-header"><h2><i class="fas fa-cubes"></i> Products</h2></div>
+    <div class="card-header">
+        <h2><i class="fas fa-cubes"></i> Products</h2>
+    </div>
     <div class="table-wrapper">
-        <table>
+        <table class="data-table">
             <thead>
-                <tr>
+                <table>
                     <th>Product</th>
                     <th>Category</th>
                     <th>Price</th>
                     <th>Quantity</th>
+                    <th>Adjust Stock</th>
                     <th>Stock Value</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -53,19 +76,35 @@
             </thead>
             <tbody>
                 {% for p in products %}
-                <tr {% if p.quantity < p.reorder_level %}style="background: #fef3c7;"{% endif %}>
+                <tr {% if p.quantity < p.reorder_level %}class="low-stock-row"{% endif %}>
                     <td>{{ p.name }}</td>
                     <td>{{ p.category or '-' }}</td>
                     <td>₱ {{ "{:,.2f}".format(p.price) }}</td>
                     <td><strong>{{ p.quantity }}</strong></td>
-                    <td>₱ {{ "{:,.2f}".format(p.quantity * p.price) }}</td>
-                    <td>{% if p.quantity < p.reorder_level %}<span class="badge badge-warning">⚠️ Low Stock</span>{% else %}<span class="badge badge-success">✅ OK</span>{% endif %}</td>
                     <td>
-                        <a href="/edit_product/{{ p.id }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; margin-right: 5px; background: #3b82f6; color: white; border-radius: 6px;">
-                            ✏️ Edit
+                        <form method="POST" action="/adjust_stock/{{ p.id }}" style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <input type="number" name="quantity" value="1" min="1" style="width: 70px; padding: 6px; border: 1px solid var(--border-light); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary);">
+                            <select name="action" style="padding: 6px; border: 1px solid var(--border-light); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary);">
+                                <option value="add">+ Add</option>
+                                <option value="remove">- Remove</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary" style="padding: 6px 12px; margin: 0;">Apply</button>
+                        </form>
+                    </td>
+                    <td>₱ {{ "{:,.2f}".format(p.quantity * p.price) }}</td>
+                    <td>
+                        {% if p.quantity < p.reorder_level %}
+                        <span class="badge badge-warning">Low Stock</span>
+                        {% else %}
+                        <span class="badge badge-success">OK</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        <a href="/edit_product/{{ p.id }}" class="btn-icon" title="Edit">
+                            <i class="fas fa-pen"></i>
                         </a>
-                        <a href="/delete_product/{{ p.id }}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none; display: inline-block; background: #ef4444; color: white; border-radius: 6px;" onclick="return confirm('Delete this product?')">
-                            🗑️ Delete
+                        <a href="/delete_product/{{ p.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete this product?')">
+                            <i class="fas fa-trash-alt"></i>
                         </a>
                     </td>
                 </tr>
@@ -74,4 +113,10 @@
         </table>
     </div>
 </div>
+
+<style>
+    .low-stock-row {
+        background: var(--accent-light);
+    }
+</style>
 {% endblock %}

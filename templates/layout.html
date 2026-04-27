@@ -48,7 +48,6 @@
             transition: background 0.3s, color 0.2s;
         }
 
-        /* Layout with padding around sidebar */
         .app {
             display: flex;
             min-height: 100vh;
@@ -56,7 +55,7 @@
             gap: 20px;
         }
 
-        /* ========== SIDEBAR - ROUNDED CORNERS ========== */
+        /* ========== SIDEBAR ========== */
         .sidebar {
             width: 260px;
             background: var(--sidebar-bg);
@@ -409,6 +408,17 @@
             color: #f1f5f9;
         }
 
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
         @media (max-width: 768px) {
             .app { padding: 10px; gap: 10px; }
             .sidebar { width: 70px; }
@@ -433,63 +443,61 @@
                 </button>
             </div>
             
-                        <div class="nav-section">
+            <div class="nav-section">
                 <div class="nav-label">MAIN</div>
-                <a href="/dashboard" class="nav-item {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+                <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
                     <i class="fas fa-chart-pie"></i><span>Dashboard</span>
                 </a>
-                <a href="/insights" class="nav-item {% if request.endpoint == 'insights.insights' %}active{% endif %}">
+                <a href="/insights" class="nav-item {{ is_active('insights') }}">
                     <i class="fas fa-chart-line"></i><span>Business Insights</span>
                 </a>
             </div>
 
             <div class="nav-section">
                 <div class="nav-label">FINANCIAL</div>
-                <a href="/cash" class="nav-item {% if request.endpoint == 'cash.cash' %}active{% endif %}">
+                <a href="/cash" class="nav-item {{ is_active('cash') }}">
                     <i class="fas fa-coins"></i><span>Cash Management</span>
                 </a>
-                <a href="/sales" class="nav-item {% if request.endpoint == 'sales.sales' %}active{% endif %}">
+                <a href="/sales" class="nav-item {{ is_active('sales') }}">
                     <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                 </a>
-                <a href="/journal" class="nav-item {% if request.endpoint == 'journal.journal' %}active{% endif %}">
+                <a href="/journal" class="nav-item {{ is_active('journal') }}">
                     <i class="fas fa-book-open"></i><span>General Journal</span>
                 </a>
             </div>
 
-            <!-- RECEIVABLES & PAYABLES - Only for Owner/Admin -->
+            <!-- RECEIVABLES & PAYABLES - Only for Owner/Admin (Pro/Enterprise) -->
             {% if session.role == 'owner' or session.role == 'admin' %}
             {% if has_feature('accounts_receivable') or has_feature('accounts_payable') %}
             <div class="nav-section">
                 <div class="nav-label">RECEIVABLES & PAYABLES</div>
                 {% if has_feature('accounts_receivable') %}
-                <a href="/ar" class="nav-item"><i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span></a>
+                <a href="/ar" class="nav-item {{ is_active('ar') }}">
+                    <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
+                </a>
                 {% endif %}
                 {% if has_feature('accounts_payable') %}
-                <a href="/ap" class="nav-item"><i class="fas fa-truck-fast"></i><span>Accounts Payable</span></a>
+                <a href="/ap" class="nav-item {{ is_active('ap') }}">
+                    <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
+                </a>
                 {% endif %}
             </div>
             {% endif %}
             {% endif %}
 
-            <!-- INVENTORY - Only for Owner/Admin -->
+            <!-- INVENTORY - Only for Owner/Admin (Pro/Enterprise) -->
             {% if session.role == 'owner' or session.role == 'admin' %}
             {% if has_feature('inventory_management') %}
             <div class="nav-section">
                 <div class="nav-label">OPERATIONS</div>
-                <a href="/inventory" class="nav-item"><i class="fas fa-boxes-stacked"></i><span>Inventory Management</span></a>
+                <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
+                    <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
+                </a>
             </div>
             {% endif %}
             {% endif %}
 
-            <!-- ADMIN - Only for Owner/Admin -->
-            {% if session.role == 'owner' or session.role == 'admin' %}
-            <div class="nav-section">
-                <div class="nav-label">ADMIN</div>
-                <a href="/admin/users" class="nav-item"><i class="fas fa-users-gear"></i><span>User Management</span></a>
-                <a href="/admin/restore" class="nav-item"><i class="fas fa-trash-restore"></i><span>Restore Deleted</span></a>
-                <a href="/admin/audit" class="nav-item"><i class="fas fa-history"></i><span>Audit Log</span></a>
-            </div>
-            {% endif %}
+            <!-- NOTE: ADMIN section removed - now in Profile page -->
 
             <div class="sidebar-footer">
                 <a href="/profile">
@@ -534,7 +542,7 @@
         </main>
     </div>
 
-  <script>
+    <script>
         // Sidebar Toggle with localStorage persistence
         const sidebar = document.querySelector('.sidebar');
         const toggleBtn = document.getElementById('sidebarToggle');

@@ -21,25 +21,51 @@ def insights():
     last_week_start = current_week_start - timedelta(days=7)
     last_week_end = current_week_end - timedelta(days=7)
     
-    # Current week sales
+    # ========== CURRENT WEEK - SALES REVENUE ==========
     cursor.execute("""
         SELECT SUM(s.amount) as total FROM sales s
         JOIN users u ON s.user_id = u.id
         WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
     """, (business_id, current_week_start, current_week_end))
     result = cursor.fetchone()
-    current_sales = float(result['total']) if result['total'] else 0.0
+    current_sales_revenue = float(result['total']) if result['total'] else 0.0
     
-    # Last week sales
+    # ========== CURRENT WEEK - OTHER INCOME (from transactions) ==========
+    cursor.execute("""
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'income' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, current_week_start, current_week_end))
+    result = cursor.fetchone()
+    current_other_income = float(result['total']) if result['total'] else 0.0
+    
+    # ========== TOTAL CURRENT WEEK INCOME ==========
+    current_total_income = current_sales_revenue + current_other_income
+    
+    # ========== LAST WEEK - SALES REVENUE ==========
     cursor.execute("""
         SELECT SUM(s.amount) as total FROM sales s
         JOIN users u ON s.user_id = u.id
         WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
     """, (business_id, last_week_start, last_week_end))
     result = cursor.fetchone()
-    last_sales = float(result['total']) if result['total'] else 0.0
+    last_sales_revenue = float(result['total']) if result['total'] else 0.0
     
-    # Current week expenses
+    # ========== LAST WEEK - OTHER INCOME (from transactions) ==========
+    cursor.execute("""
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'income' 
+        AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, last_week_start, last_week_end))
+    result = cursor.fetchone()
+    last_other_income = float(result['total']) if result['total'] else 0.0
+    
+    # ========== TOTAL LAST WEEK INCOME ==========
+    last_total_income = last_sales_revenue + last_other_income
+    
+    # ========== CURRENT WEEK EXPENSES ==========
     cursor.execute("""
         SELECT SUM(t.amount) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
@@ -49,7 +75,7 @@ def insights():
     result = cursor.fetchone()
     current_expenses = float(result['total']) if result['total'] else 0.0
     
-    # Last week expenses
+    # ========== LAST WEEK EXPENSES ==========
     cursor.execute("""
         SELECT SUM(t.amount) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
@@ -59,7 +85,11 @@ def insights():
     result = cursor.fetchone()
     last_expenses = float(result['total']) if result['total'] else 0.0
     
-    # Current week expenses by category
+    # ========== PROFIT CALCULATIONS (Income - Expenses) ==========
+    current_profit = current_total_income - current_expenses
+    last_profit = last_total_income - last_expenses
+    
+    # ========== CURRENT WEEK EXPENSES BY CATEGORY ==========
     cursor.execute("""
         SELECT t.category, SUM(t.amount) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
@@ -72,7 +102,7 @@ def insights():
         if row['category']:
             current_expenses_by_category[row['category']] = float(row['total'])
     
-    # Last week expenses by category
+    # ========== LAST WEEK EXPENSES BY CATEGORY ==========
     cursor.execute("""
         SELECT t.category, SUM(t.amount) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
@@ -85,23 +115,24 @@ def insights():
         if row['category']:
             last_expenses_by_category[row['category']] = float(row['total'])
     
-    # Profit calculations
-    current_profit = current_sales - current_expenses
-    last_profit = last_sales - last_expenses
-    
+    # ========== HELPER FUNCTION FOR PERCENTAGE CHANGE ==========
     def calc_change(current, last):
         if last == 0:
             return 0.0 if current == 0 else 100.0
         return ((current - last) / last) * 100.0
     
-    sales_change = calc_change(current_sales, last_sales)
+    # Calculate changes based on TOTAL income (not just sales)
+    sales_change = calc_change(current_total_income, last_total_income)
     expense_change = calc_change(current_expenses, last_expenses)
     profit_change = calc_change(current_profit, last_profit)
-    profit_margin = (current_profit / current_sales * 100.0) if current_sales > 0 else 0.0
     
-    # Smart Alerts
+    # Profit margin = Profit / Total Income * 100
+    profit_margin = (current_profit / current_total_income * 100.0) if current_total_income > 0 else 0.0
+    
+    # ========== SMART ALERTS ==========
     alerts = []
     
+    # Alert 1: Expense category spikes (>20% increase)
     for category, current_amount in current_expenses_by_category.items():
         last_amount = last_expenses_by_category.get(category, 0.0)
         if last_amount > 0:
@@ -117,16 +148,18 @@ def insights():
                     'message': f"{category} increased by {increase_pct:.0f}% this week"
                 })
     
-    if last_sales > 0 and sales_change < -10:
+    # Alert 2: Sales/Income drop (>10% decrease)
+    if last_total_income > 0 and sales_change < -10:
         alerts.append({
             'type': 'sales_drop',
             'severity': 'medium',
-            'current': current_sales,
-            'last': last_sales,
+            'current': current_total_income,
+            'last': last_total_income,
             'drop_pct': -sales_change,
-            'message': f"Sales dropped by {-sales_change:.0f}% this week"
+            'message': f"Income dropped by {-sales_change:.0f}% this week"
         })
     
+    # Alert 3: Profit decline (>10% decrease)
     if last_profit > 0 and profit_change < -10:
         alerts.append({
             'type': 'profit_decline',
@@ -137,7 +170,7 @@ def insights():
             'message': f"Profit declined by {-profit_change:.0f}% this week"
         })
     
-    # Recommendations
+    # ========== RECOMMENDATIONS ==========
     recommendations = []
     
     for alert in alerts:
@@ -161,15 +194,15 @@ def insights():
                 'drop_pct': alert['drop_pct'],
                 'current': alert['current'],
                 'last': alert['last'],
-                'action': f"Investigate why sales dropped by {alert['drop_pct']:.0f}%. Consider a promotion.",
+                'action': f"Investigate why income dropped by {alert['drop_pct']:.0f}%. Consider a promotion.",
                 'potential_gain': alert['last'] * 0.1,
-                'message': f"A 10% sales increase would add ₱{alert['last'] * 0.1:,.0f}"
+                'message': f"A 10% income increase would add ₱{alert['last'] * 0.1:,.0f}"
             })
         elif alert['type'] == 'profit_decline':
             recommendations.append({
                 'type': 'profit_improvement',
                 'decline_pct': alert['decline_pct'],
-                'action': f"Review both sales and expenses. Profit dropped {alert['decline_pct']:.0f}%.",
+                'action': f"Review both income and expenses. Profit dropped {alert['decline_pct']:.0f}%.",
                 'message': f"Focus on high-margin products and reduce unnecessary costs"
             })
     
@@ -187,8 +220,8 @@ def insights():
                 'message': "Keep tracking expenses and look for growth opportunities"
             })
     
-    # Predictive Planner
-    baseline_sales = float(current_sales) if current_sales > 0 else 100000.0
+    # ========== PREDICTIVE PLANNER ==========
+    baseline_sales = float(current_total_income) if current_total_income > 0 else 100000.0
     baseline_expenses = float(current_expenses) if current_expenses > 0 else 70000.0
     baseline_profit = float(current_profit)
     
@@ -225,10 +258,10 @@ def insights():
     return render_template('insights.html',
                          username=session['username'],
                          week_display=week_display,
-                         current_sales=current_sales,
+                         current_sales=current_total_income,
                          current_expenses=current_expenses,
                          current_profit=current_profit,
-                         last_sales=last_sales,
+                         last_sales=last_total_income,
                          last_expenses=last_expenses,
                          last_profit=last_profit,
                          sales_change=sales_change,
@@ -318,15 +351,32 @@ def stats_detail(stat_type):
     week_end = week_start + timedelta(days=6)
     
     if stat_type == 'sales':
+        # Get sales from sales table
         cursor.execute("""
-            SELECT s.id, s.customer_name as name, s.amount, s.sale_date as date, s.description
+            SELECT s.id, s.customer_name as name, s.amount, s.sale_date as date, s.description, 'Sale' as source
             FROM sales s
             JOIN users u ON s.user_id = u.id
             WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
             ORDER BY s.sale_date DESC
         """, (business_id, week_start, week_end))
-        items = cursor.fetchall()
-        title = "This Week's Sales"
+        sales_items = cursor.fetchall()
+        
+        # Get other income from transactions
+        cursor.execute("""
+            SELECT t.id, t.description as name, t.amount, t.transaction_date as date, '' as description, 'Other Income' as source
+            FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' 
+            AND t.transaction_date BETWEEN %s AND %s
+            ORDER BY t.transaction_date DESC
+        """, (business_id, week_start, week_end))
+        income_items = cursor.fetchall()
+        
+        # Combine both
+        items = sales_items + income_items
+        items.sort(key=lambda x: x['date'], reverse=True)
+        title = "This Week's Revenue (Sales + Other Income)"
+        
     elif stat_type == 'expenses':
         cursor.execute("""
             SELECT t.id, t.description, t.amount, t.transaction_date as date, t.category
@@ -338,6 +388,7 @@ def stats_detail(stat_type):
         """, (business_id, week_start, week_end))
         items = cursor.fetchall()
         title = "This Week's Expenses"
+        
     elif stat_type == 'profit':
         cursor.execute("""
             SELECT t.id, t.description, t.amount, t.transaction_date as date, 

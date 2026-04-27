@@ -114,7 +114,7 @@ def admin_restore():
             WHERE u.business_id = %s AND t.deleted_at IS NOT NULL
             ORDER BY t.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'transactions', 1, '💰 Transaction')
+        add_items(cursor.fetchall(), 'transactions', 1, 'Transaction')
     
     if module_filter == 'all' or module_filter == 'sales':
         cursor.execute("""
@@ -124,7 +124,7 @@ def admin_restore():
             WHERE u.business_id = %s AND s.deleted_at IS NOT NULL
             ORDER BY s.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'sales', 2, '📈 Sale')
+        add_items(cursor.fetchall(), 'sales', 2, 'Sale')
     
     if module_filter == 'all' or module_filter == 'invoices':
         cursor.execute("""
@@ -135,7 +135,7 @@ def admin_restore():
             WHERE u.business_id = %s AND i.deleted_at IS NOT NULL
             ORDER BY i.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'invoices', 3, '📄 Invoice')
+        add_items(cursor.fetchall(), 'invoices', 3, 'Invoice')
     
     if module_filter == 'all' or module_filter == 'bills':
         cursor.execute("""
@@ -146,7 +146,7 @@ def admin_restore():
             WHERE u.business_id = %s AND b.deleted_at IS NOT NULL
             ORDER BY b.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'bills', 4, '📃 Bill')
+        add_items(cursor.fetchall(), 'bills', 4, 'Bill')
     
     if module_filter == 'all' or module_filter == 'products':
         cursor.execute("""
@@ -156,7 +156,7 @@ def admin_restore():
             WHERE u.business_id = %s AND p.deleted_at IS NOT NULL
             ORDER BY p.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'products', 5, '📦 Product')
+        add_items(cursor.fetchall(), 'products', 5, 'Product')
     
     cursor.close()
     db.close()
@@ -240,6 +240,43 @@ def admin_audit():
     return render_template('admin_audit.html', username=session['username'], logs=logs,
                          actions=actions, tables=tables, current_action=action_filter, current_table=table_filter)
 
+@admin_bp.route('/admin/audit/api')
+def admin_audit_api():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    business_id = session.get('business_id')
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT a.*, u.username FROM audit_log a
+        JOIN users u ON a.user_id = u.id
+        WHERE u.business_id = %s
+        ORDER BY a.created_at DESC
+        LIMIT 500
+    """, (business_id,))
+    logs = cursor.fetchall()
+    cursor.close()
+    db.close()
+    
+    for log in logs:
+        if log.get('created_at'):
+            log['created_at'] = log['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+        import json
+        if log.get('old_values'):
+            try:
+                log['old_values_display'] = json.loads(log['old_values'])
+            except:
+                log['old_values_display'] = log['old_values']
+        if log.get('new_values'):
+            try:
+                log['new_values_display'] = json.loads(log['new_values'])
+            except:
+                log['new_values_display'] = log['new_values']
+    
+    return jsonify(logs)
+
 @admin_bp.route('/profile')
 def profile():
     if 'user_id' not in session:
@@ -315,7 +352,7 @@ def admin_restore_data():
             WHERE u.business_id = %s AND t.deleted_at IS NOT NULL
             ORDER BY t.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'transactions', 1, '💰 Transaction')
+        add_items(cursor.fetchall(), 'transactions', 1, 'Transaction')
     
     if module_filter == 'all' or module_filter == 'sales':
         cursor.execute("""
@@ -325,7 +362,7 @@ def admin_restore_data():
             WHERE u.business_id = %s AND s.deleted_at IS NOT NULL
             ORDER BY s.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'sales', 2, '📈 Sale')
+        add_items(cursor.fetchall(), 'sales', 2, 'Sale')
     
     if module_filter == 'all' or module_filter == 'invoices':
         cursor.execute("""
@@ -336,7 +373,7 @@ def admin_restore_data():
             WHERE u.business_id = %s AND i.deleted_at IS NOT NULL
             ORDER BY i.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'invoices', 3, '📄 Invoice')
+        add_items(cursor.fetchall(), 'invoices', 3, 'Invoice')
     
     if module_filter == 'all' or module_filter == 'bills':
         cursor.execute("""
@@ -347,7 +384,7 @@ def admin_restore_data():
             WHERE u.business_id = %s AND b.deleted_at IS NOT NULL
             ORDER BY b.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'bills', 4, '📃 Bill')
+        add_items(cursor.fetchall(), 'bills', 4, 'Bill')
     
     if module_filter == 'all' or module_filter == 'products':
         cursor.execute("""
@@ -357,9 +394,11 @@ def admin_restore_data():
             WHERE u.business_id = %s AND p.deleted_at IS NOT NULL
             ORDER BY p.deleted_at DESC
         """, (business_id,))
-        add_items(cursor.fetchall(), 'products', 5, '📦 Product')
+        add_items(cursor.fetchall(), 'products', 5, 'Product')
     
     cursor.close()
     db.close()
     
     return jsonify({'items': deleted_items, 'current_filter': module_filter})
+
+    

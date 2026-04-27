@@ -107,7 +107,7 @@
 <div class="kpi-grid">
     <div class="kpi-card" onclick="showStatDetail('sales')">
         <div class="kpi-value">₱{{ "{:,.0f}".format(current_sales|default(0)) }}</div>
-        <div class="kpi-label">Total Sales</div>
+        <div class="kpi-label">Total Revenue</div>
         <div class="trend-{% if sales_change >= 0 %}up{% else %}down{% endif %}" style="font-size: 12px; margin-top: 4px;">
             {% if sales_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(sales_change|abs) }}%
         </div>
@@ -204,9 +204,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
                     <div>
                         <strong>
-                            {% if alert.type == 'expense_spike' %}⚠️ Expense Spike ({{ alert.increase_pct|round }}% up)
-                            {% elif alert.type == 'sales_drop' %}📉 Sales Drop ({{ alert.drop_pct|round }}% down)
-                            {% elif alert.type == 'profit_decline' %}📊 Profit Decline ({{ alert.decline_pct|round }}% down)
+                            {% if alert.type == 'expense_spike' %} Expense Spike ({{ alert.increase_pct|round }}% up)
+                            {% elif alert.type == 'sales_drop' %} Sales Drop ({{ alert.drop_pct|round }}% down)
+                            {% elif alert.type == 'profit_decline' %} Profit Decline ({{ alert.decline_pct|round }}% down)
                             {% endif %}
                         </strong>
                         <div style="font-size: 13px; color: var(--text-secondary);">{{ alert.message }}</div>
@@ -238,11 +238,11 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                 <div>
                     <strong>
-                        {% if rec.type == 'cost_cutting' %}💰 {{ rec.category }} Cost Reduction
-                        {% elif rec.type == 'sales_improvement' %}📈 Sales Recovery
-                        {% elif rec.type == 'profit_improvement' %}🎯 Profit Protection
-                        {% elif rec.type == 'margin_improvement' %}📊 Margin Improvement
-                        {% else %}💡 Suggestion{% endif %}
+                        {% if rec.type == 'cost_cutting' %} {{ rec.category }} Cost Reduction
+                        {% elif rec.type == 'sales_improvement' %} Sales Recovery
+                        {% elif rec.type == 'profit_improvement' %} Profit Protection
+                        {% elif rec.type == 'margin_improvement' %} Margin Improvement
+                        {% else %} Suggestion{% endif %}
                     </strong>
                     <div style="font-size: 13px; color: var(--text-secondary);">{{ rec.action|truncate(100) }}</div>
                 </div>
@@ -271,10 +271,10 @@
     
     <!-- Quick Scenarios -->
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-        <button class="btn btn-secondary" onclick="setScenario('price_up')" style="padding: 8px;">📈 Raise Prices 10%</button>
-        <button class="btn btn-secondary" onclick="setScenario('price_down')" style="padding: 8px;">📉 Lower Prices 5%</button>
-        <button class="btn btn-secondary" onclick="setScenario('cut_expenses')" style="padding: 8px;">✂️ Cut Expenses 10%</button>
-        <button class="btn btn-secondary" onclick="setScenario('optimize')" style="padding: 8px;">🎯 Optimize All</button>
+        <button class="btn btn-secondary" onclick="setScenario('price_up')" style="padding: 8px;">Raise Prices 10%</button>
+        <button class="btn btn-secondary" onclick="setScenario('price_down')" style="padding: 8px;">Lower Prices 5%</button>
+        <button class="btn btn-secondary" onclick="setScenario('cut_expenses')" style="padding: 8px;">Cut Expenses 10%</button>
+        <button class="btn btn-secondary" onclick="setScenario('optimize')" style="padding: 8px;">Optimize All</button>
     </div>
     
     <!-- Detailed Sliders -->
@@ -415,7 +415,26 @@
                 if (data.items && data.items.length > 0) {
                     let html = '<table style="width:100%"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>';
                     data.items.forEach(item => {
-                        html += `<tr><td>${item.date}</td><td>${item.description || item.name || '-'}</td><td style="color:#10b981;">₱${parseFloat(item.amount).toFixed(2)}</td></tr>`;
+                        // Determine color based on item type
+                        let amountColor = '#10b981'; // default green for income
+                        let amountPrefix = '+';
+                        
+                        // Check if this is an expense (has 'type' field or negative logic)
+                        if (item.type === 'Expense' || item.source === 'Other Income' === false && item.amount < 0) {
+                            amountColor = '#ef4444'; // red for expenses
+                            amountPrefix = '-';
+                        }
+                        // Also check if it's an expense from the transactions table
+                        if (item.category && item.type !== 'Income') {
+                            amountColor = '#ef4444';
+                            amountPrefix = '-';
+                        }
+                        
+                        html += `<tr>
+                            <td>${item.date}</td>
+                            <td>${item.description || item.name || '-'}</td>
+                            <td style="color:${amountColor}; font-weight:500;">${amountPrefix}₱${parseFloat(item.amount).toFixed(2)}</td>
+                        </tr>`;
                     });
                     html += '</tbody></table>';
                     document.getElementById('modalBody').innerHTML = html;
@@ -425,7 +444,7 @@
                 document.getElementById('detailModal').style.display = 'flex';
             });
     }
-    
+        
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
     
     // Scenario presets

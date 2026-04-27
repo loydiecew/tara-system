@@ -13,10 +13,34 @@
             box-sizing: border-box;
         }
 
+        /* Light mode (default) */
+        :root {
+            --bg-page: #f5f7fc;
+            --bg-card: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --accent: #10b981;
+            --accent-dark: #059669;
+            --input-bg: #f8fafc;
+        }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-page: #0f172a;
+                --bg-card: #1e293b;
+                --text-primary: #f1f5f9;
+                --text-secondary: #94a3b8;
+                --border: #334155;
+                --input-bg: #0f172a;
+            }
+        }
+
         body {
             font-family: 'Inter', sans-serif;
+            background: var(--bg-page);
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -25,14 +49,15 @@
 
         .login-container {
             width: 100%;
-            max-width: 480px;
+            max-width: 440px;
         }
 
         .login-card {
-            background: white;
-            border-radius: 32px;
+            background: var(--bg-card);
+            border-radius: 28px;
             padding: 40px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
         }
 
         .logo {
@@ -41,35 +66,35 @@
         }
 
         .logo-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border-radius: 16px;
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 16px;
+            margin: 0 auto 14px;
         }
 
         .logo-icon span {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
             color: white;
         }
 
         .logo h1 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
-            color: #1e293b;
+            color: var(--text-primary);
         }
 
         .logo h1 span {
-            color: #10b981;
+            color: var(--accent);
         }
 
         .logo p {
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-secondary);
             margin-top: 6px;
         }
 
@@ -81,7 +106,7 @@
             display: block;
             font-size: 12px;
             font-weight: 600;
-            color: #334155;
+            color: var(--text-secondary);
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -96,50 +121,51 @@
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #94a3b8;
+            color: var(--text-secondary);
             font-size: 14px;
         }
 
         .input-group input {
             width: 100%;
-            padding: 14px 14px 14px 42px;
-            border: 1px solid #e2e8f0;
+            padding: 12px 14px 12px 42px;
+            border: 1px solid var(--border);
             border-radius: 14px;
             font-size: 14px;
             font-family: 'Inter', sans-serif;
+            background: var(--input-bg);
+            color: var(--text-primary);
             transition: all 0.2s;
-            background: #f8fafc;
         }
 
         .input-group input:focus {
             outline: none;
-            border-color: #10b981;
-            background: white;
+            border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
 
         .input-group input::placeholder {
-            color: #94a3b8;
+            color: var(--text-secondary);
+            opacity: 0.6;
         }
 
         .error-message {
-            background: #fef2f2;
-            color: #dc2626;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
             padding: 12px 16px;
             border-radius: 14px;
             margin-bottom: 24px;
             font-size: 13px;
-            border-left: 3px solid #dc2626;
+            border-left: 3px solid #ef4444;
         }
 
         .btn-login {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             border: none;
             border-radius: 14px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -148,36 +174,33 @@
 
         .btn-login:hover {
             transform: translateY(-1px);
-            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
         }
 
         .register-link {
             text-align: center;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid var(--border);
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-secondary);
         }
 
         .register-link a {
-            color: #10b981;
+            color: var(--accent);
             text-decoration: none;
             font-weight: 600;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
         }
 
         .demo-hint {
             margin-top: 20px;
             padding: 12px;
-            background: #f1f5f9;
+            background: var(--input-bg);
             border-radius: 14px;
             font-size: 12px;
-            color: #64748b;
+            color: var(--text-secondary);
             text-align: center;
+            border: 1px solid var(--border);
         }
     </style>
 </head>
@@ -239,7 +262,7 @@
             </div>
 
             <div class="demo-hint">
-                <i class="fas fa-flask"></i> Demo credentials provided by your business owner
+                <i class="fas fa-shield-alt"></i> Business credentials provided by your owner
             </div>
         </div>
     </div>

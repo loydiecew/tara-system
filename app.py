@@ -1,6 +1,5 @@
-from flask import Flask, session, redirect, url_for
+from flask import Flask, session, redirect, url_for, request
 from models.helpers import user_has_feature
-from models.database import get_db  # ADD THIS LINE
 from routes import (
     auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp
@@ -26,16 +25,22 @@ app.register_blueprint(api_bp)
 
 @app.context_processor
 def inject_plan():
+    def is_active(endpoint_name):
+        """Returns 'active' if current endpoint ends with the given name"""
+        return 'active' if request.endpoint and request.endpoint.endswith(endpoint_name) else ''
+    
     if 'user_id' in session:
         return {
             'user_plan': session.get('plan', 'basic'),
             'user_plan_name': session.get('plan_name', 'Basic'),
-            'has_feature': lambda feature: user_has_feature(session['user_id'], feature)
+            'has_feature': lambda feature: user_has_feature(session['user_id'], feature),
+            'is_active': is_active
         }
     return {
         'user_plan': 'basic',
         'user_plan_name': 'Basic',
-        'has_feature': lambda feature: False
+        'has_feature': lambda feature: False,
+        'is_active': is_active
     }
 
 @app.route('/')

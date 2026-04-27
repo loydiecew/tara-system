@@ -2,7 +2,7 @@
 
 {% block title %}Audit Log{% endblock %}
 {% block page_title %}Audit Log{% endblock %}
-{% block page_subtitle %}Track all user actions and changes{% endblock %}
+{% block page_subtitle %}Track all changes made to your data{% endblock %}
 
 {% block content %}
 <!-- Filter Bar -->
@@ -10,107 +10,284 @@
     <div class="card-header">
         <h2><i class="fas fa-filter"></i> Filters</h2>
     </div>
-    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="/admin/audit?action=all&table={{ current_table }}" class="btn {% if current_action == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">All Actions</a>
-            {% for action in actions %}
-            <a href="/admin/audit?action={{ action }}&table={{ current_table }}" class="btn {% if current_action == action %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
-                {{ action }}
-            </a>
-            {% endfor %}
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Action</label>
+            <select id="actionFilter">
+                <option value="all">All Actions</option>
+                <option value="CREATE">Create</option>
+                <option value="UPDATE">Update</option>
+                <option value="DELETE">Delete</option>
+                <option value="RESTORE">Restore</option>
+            </select>
         </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="/admin/audit?action={{ current_action }}&table=all" class="btn {% if current_table == 'all' %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">All Tables</a>
-            {% for table in tables %}
-            <a href="/admin/audit?action={{ current_action }}&table={{ table }}" class="btn {% if current_table == table %}btn-primary{% else %}btn-secondary{% endif %}" style="padding: 8px 16px;">
-                {{ table }}
-            </a>
-            {% endfor %}
+        <div class="form-group" style="margin-bottom: 0;">
+            <label>Table</label>
+            <select id="tableFilter">
+                <option value="all">All Tables</option>
+                <option value="transactions">Transactions</option>
+                <option value="sales">Sales</option>
+                <option value="invoices">Invoices</option>
+                <option value="bills">Bills</option>
+                <option value="products">Products</option>
+                <option value="customers">Customers</option>
+                <option value="suppliers">Suppliers</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <button id="applyFilters" class="btn btn-primary">Apply Filters</button>
+            <button id="resetFilters" class="btn btn-secondary">Reset</button>
         </div>
     </div>
 </div>
 
 <!-- Audit Log Table -->
-<div class="card">
+<div class="card" style="overflow-x: auto;">
     <div class="card-header">
         <h2><i class="fas fa-history"></i> Activity Log</h2>
     </div>
-    
-    {% if logs %}
-    <div class="table-wrapper">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Table</th>
-                    <th>Record ID</th>
-                    <th>Details</th>
-                    <th>IP Address</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in logs %}
-                <tr>
-                    <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else '-' }}</td>
-                    <td>{{ log.username }}</td>
-                    <td>
-                        <span class="badge 
-                            {% if log.action == 'CREATE' %}badge-success
-                            {% elif log.action == 'UPDATE' %}badge-info
-                            {% elif log.action == 'DELETE' %}badge-danger
-                            {% elif log.action == 'RESTORE' %}badge-warning
-                            {% else %}badge-secondary{% endif %}">
-                            {{ log.action }}
-                        </span>
-                    </td>
-                    <td>{{ log.table_name }}</td>
-                    <td>{{ log.record_id }}</td>
-                    <td>
-                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="showDetails({{ loop.index0 }})">View</button>
-                        <div id="details-{{ loop.index0 }}" style="display: none; margin-top: 10px; background: #f8f9fa; padding: 10px; border-radius: 8px; font-size: 12px;">
-                            {% if log.old_values %}
-                            <strong>Before:</strong> <pre style="display: inline; white-space: pre-wrap;">{{ log.old_values }}</pre><br>
-                            {% endif %}
-                            {% if log.new_values %}
-                            <strong>After:</strong> <pre style="display: inline; white-space: pre-wrap;">{{ log.new_values }}</pre>
-                            {% endif %}
-                            {% if not log.old_values and not log.new_values %}
-                            No additional details
-                            {% endif %}
-                        </div>
-                        <script>
-                            function showDetails(idx) {
-                                const el = document.getElementById('details-' + idx);
-                                el.style.display = el.style.display === 'none' ? 'block' : 'none';
-                            }
-                        </script>
-                     </td>
-                    <td>{{ log.ip_address or '-' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div id="auditLogContainer">
+        <p style="text-align: center; padding: 40px;">Loading audit log...</p>
     </div>
-    {% else %}
-    <div style="text-align: center; padding: 40px; color: #888;">
-        <i class="fas fa-chart-line" style="font-size: 48px;"></i>
-        <p style="margin-top: 15px;">No audit logs found. Start making changes to see activity.</p>
-    </div>
-    {% endif %}
 </div>
 
-<div class="card" style="background: #f0fdf4;">
-    <div class="card-header">
-        <h2><i class="fas fa-info-circle"></i> About Audit Log</h2>
+<!-- Modal for View Details -->
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Change Details</h3>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div id="modalBody" style="max-height: 60vh; overflow-y: auto;"></div>
     </div>
-    <p style="font-size: 14px; color: #166534;">
-        <strong>CREATE:</strong> A new record was added.<br>
-        <strong>UPDATE:</strong> An existing record was modified. Click "View" to see before/after values.<br>
-        <strong>DELETE:</strong> A record was soft-deleted.<br>
-        <strong>RESTORE:</strong> A deleted record was restored.<br>
-        <strong>IP Address:</strong> The user's IP address at the time of action.
-    </p>
 </div>
+
+<style>
+    .audit-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .audit-table th, .audit-table td {
+        padding: 12px 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .audit-table th {
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: var(--bg-primary);
+    }
+    .badge-create { background: #10b98120; color: #10b981; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: inline-block; }
+    .badge-update { background: #3b82f620; color: #3b82f6; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: inline-block; }
+    .badge-delete { background: #ef444420; color: #ef4444; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: inline-block; }
+    .badge-restore { background: #f59e0b20; color: #f59e0b; padding: 4px 10px; border-radius: 20px; font-size: 11px; display: inline-block; }
+    .view-details-btn {
+        background: transparent;
+        border: 1px solid var(--border-light);
+        padding: 4px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--text-primary);
+    }
+    .view-details-btn:hover {
+        background: var(--accent-light);
+        border-color: var(--accent);
+    }
+    .json-preview {
+        background: var(--bg-primary);
+        padding: 12px;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 12px;
+        overflow-x: auto;
+        margin-top: 8px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+    .modal-content {
+        background: var(--bg-secondary);
+        border-radius: 20px;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 24px;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .close-modal {
+        cursor: pointer;
+        font-size: 24px;
+        color: var(--text-secondary);
+    }
+    .detail-section {
+        margin-bottom: 16px;
+    }
+    .detail-label {
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+</style>
+
+<script>
+    let currentFilters = { action: 'all', table: 'all' };
+    
+    function loadAuditLog() {
+        const container = document.getElementById('auditLogContainer');
+        container.innerHTML = '<p style="text-align: center; padding: 40px;">Loading...</p>';
+        
+        let url = '/admin/audit/api';
+        const params = new URLSearchParams();
+        if (currentFilters.action !== 'all') params.append('action', currentFilters.action);
+        if (currentFilters.table !== 'all') params.append('table', currentFilters.table);
+        if (params.toString()) url += '?' + params.toString();
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.length) {
+                    container.innerHTML = '<p style="text-align: center; padding: 40px;">No audit records found.</p>';
+                    return;
+                }
+                
+                let html = `<table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Table</th>
+                            <th>Record ID</th>
+                            <th>Details</th>
+                        <table>
+                    </thead>
+                    <tbody>`;
+                
+                data.forEach(log => {
+                    let actionClass = '';
+                    if (log.action === 'CREATE') actionClass = 'badge-create';
+                    else if (log.action === 'UPDATE') actionClass = 'badge-update';
+                    else if (log.action === 'DELETE') actionClass = 'badge-delete';
+                    else if (log.action === 'RESTORE') actionClass = 'badge-restore';
+                    
+                    html += `<tr>
+                        <td>${log.created_at || '-'}</td>
+                        <td>${log.username || '-'}</td>
+                        <td><span class="${actionClass}">${log.action || '-'}</span></td>
+                        <td>${log.table_name || '-'}</td>
+                        <td>${log.record_id || '-'}</td>
+                        <td><button class="view-details-btn" onclick="showDetails(${log.id})">View</button></td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #ef4444;">Error loading audit log.</p>';
+            });
+    }
+    
+    function showDetails(logId) {
+        fetch('/admin/audit/api')
+            .then(res => res.json())
+            .then(data => {
+                const log = data.find(l => l.id === logId);
+                if (!log) return;
+                
+                let html = `<div class="detail-section">
+                    <div class="detail-label">Time:</div>
+                    <div>${log.created_at || '-'}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">User:</div>
+                    <div>${log.username || '-'}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">Action:</div>
+                    <div>${log.action || '-'}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">Table:</div>
+                    <div>${log.table_name || '-'}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-label">Record ID:</div>
+                    <div>${log.record_id || '-'}</div>
+                </div>`;
+                
+                if (log.old_values_display) {
+                    html += `<div class="detail-section">
+                        <div class="detail-label">Before Change:</div>
+                        <div class="json-preview">${JSON.stringify(log.old_values_display, null, 2)}</div>
+                    </div>`;
+                }
+                
+                if (log.new_values_display) {
+                    html += `<div class="detail-section">
+                        <div class="detail-label">After Change:</div>
+                        <div class="json-preview">${JSON.stringify(log.new_values_display, null, 2)}</div>
+                    </div>`;
+                }
+                
+                if (!log.old_values_display && !log.new_values_display) {
+                    html += `<div class="detail-section">No additional details available.</div>`;
+                }
+                
+                document.getElementById('modalBody').innerHTML = html;
+                document.getElementById('detailModal').style.display = 'flex';
+            });
+    }
+    
+    function closeModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+    
+    // Filter handlers
+    document.getElementById('applyFilters').addEventListener('click', () => {
+        currentFilters.action = document.getElementById('actionFilter').value;
+        currentFilters.table = document.getElementById('tableFilter').value;
+        loadAuditLog();
+    });
+    
+    document.getElementById('resetFilters').addEventListener('click', () => {
+        document.getElementById('actionFilter').value = 'all';
+        document.getElementById('tableFilter').value = 'all';
+        currentFilters = { action: 'all', table: 'all' };
+        loadAuditLog();
+    });
+    
+    // Close modal on outside click
+    window.onclick = function(event) {
+        const modal = document.getElementById('detailModal');
+        if (event.target === modal) closeModal();
+    };
+    
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', loadAuditLog);
+</script>
 {% endblock %}

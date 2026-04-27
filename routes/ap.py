@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date
 from models.database import get_db
 from models.audit import log_audit
@@ -101,13 +101,14 @@ def edit_bill(bill_id):
         amount = float(request.form['amount'])
         due_date = request.form['due_date']
         description = request.form.get('description', '')
+        bill_number = request.form.get('bill_number', '')
         status = request.form['status']
         
         cursor.execute("""
             UPDATE bills 
-            SET supplier_id = %s, amount = %s, due_date = %s, description = %s, status = %s
+            SET supplier_id = %s, amount = %s, due_date = %s, description = %s, bill_number = %s, status = %s
             WHERE id = %s AND user_id = %s AND deleted_at IS NULL
-        """, (supplier_id, amount, due_date, description, status, bill_id, session['user_id']))
+        """, (supplier_id, amount, due_date, description, bill_number, status, bill_id, session['user_id']))
         db.commit()
         
         cursor.execute("SELECT * FROM bills WHERE id = %s", (bill_id,))
@@ -193,6 +194,7 @@ def add_bill():
     cursor.close()
     db.close()
     
+    flash(f'Bill #{bill_number} created successfully!', 'success')
     return redirect(url_for('ap.ap'))
 
 @ap_bp.route('/pay_bill/<int:bill_id>')
