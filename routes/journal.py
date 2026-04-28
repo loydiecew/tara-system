@@ -126,3 +126,42 @@ def journal():
                          date_from=date_from,
                          date_to=date_to,
                          search=search)
+
+@journal_bp.route('/ledger')
+def ledger():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    # Only Pro and Enterprise users can access double-entry view
+    if session.get('plan') not in ['pro', 'enterprise']:
+        flash('Double-entry journal is available on Pro and Enterprise plans only.', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    business_id = session.get('business_id', session['user_id'])
+    
+    cursor.execute("""
+        SELECT je.entry_date, je.description, coa.name as account_name, 
+               jl.debit, jl.credit
+        FROM journal_entries je
+        JOIN journal_lines jl ON je.id = jl.journal_entry_id
+        JOIN chart_of_accounts coa ON jl.account_id = coa.id
+        JOIN users u ON je.user_id = u.id
+        WHERE u.business_id = %s
+        ORDER BY je.entry_date DESC, je.id DESC
+    """, (business_id,))
+    entries = cursor.fetchall()
+    
+    total_debits = sum(e['debit'] for e in entries)
+    total_credits = sum(e['credit'] for e in entries)
+    
+    cursor.close()
+    db.close()
+    
+    return render_template('journal_entries.html',
+                         username=session['username'],
+                         entries=entries,
+                         total_debits=total_debits,
+                         total_credits=total_credits)

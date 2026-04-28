@@ -180,18 +180,47 @@ def add_invoice():
     customer_id = request.form['customer_id']
     amount = float(request.form['amount'])
     due_date = request.form['due_date']
-    description = request.form.get('description', '') 
+    description = request.form.get('description', '')
     invoice_number = request.form.get('invoice_number', f"INV-{customer_id}-{due_date}")
     
     db = get_db()
     cursor = db.cursor()
+    
+    # Insert invoice
     cursor.execute("""
         INSERT INTO invoices (user_id, customer_id, invoice_number, amount, description, due_date)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (session['user_id'], customer_id, invoice_number, amount, description, due_date))
     db.commit()
+    
+    # Create journal entry for Pro/Enterprise users (using same connection)
+    if session.get('plan') in ['pro', 'enterprise']:
+        # Use a new cursor on the same connection
+        cursor2 = db.cursor(dictionary=True)
+        
+        # Get account IDs
+        cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1100'")  # Accounts Receivable
+        ar_account = cursor2.fetchone()
+        cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '4000'")  # Sales Revenue
+        revenue_account = cursor2.fetchone()
+        
+        if ar_account and revenue_account:
+            from routes.cash import create_journal_entry
+            lines = [
+                {'account_id': ar_account['id'], 'debit': amount, 'credit': 0},
+                {'account_id': revenue_account['id'], 'debit': 0, 'credit': amount}
+            ]
+            create_journal_entry(
+                user_id=session['user_id'],
+                entry_date=due_date,
+                description=f"Invoice #{invoice_number} - {description or 'Sale to customer'}",
+                lines=lines
+            )
+        
+        cursor2.close()
+    
     cursor.close()
-    db.close()
+    db.close() 
     
     flash(f'Invoice #{invoice_number} created successfully!', 'success')
     return redirect(url_for('ar.ar'))
@@ -218,6 +247,7 @@ def pay_invoice(invoice_id):
             WHERE id = %s AND user_id = %s
         """, (invoice_id, session['user_id']))
         
+        # Create cash transaction
         cursor.execute("""
             INSERT INTO transactions (user_id, description, amount, type, category, transaction_date)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -229,6 +259,26 @@ def pay_invoice(invoice_id):
             'Sales',
             date.today()
         ))
+        
+        # Create journal entry to clear AR (Pro users only)
+        if session.get('plan') in ['pro', 'enterprise']:
+            cursor.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")  # Cash
+            cash_account = cursor.fetchone()
+            cursor.execute("SELECT id FROM chart_of_accounts WHERE code = '1100'")  # AR
+            ar_account = cursor.fetchone()
+            
+            if cash_account and ar_account:
+                from routes.cash import create_journal_entry
+                lines = [
+                    {'account_id': cash_account['id'], 'debit': invoice['amount'], 'credit': 0},
+                    {'account_id': ar_account['id'], 'debit': 0, 'credit': invoice['amount']}
+                ]
+                create_journal_entry(
+                    user_id=session['user_id'],
+                    entry_date=date.today(),
+                    description=f"Payment received for Invoice #{invoice['invoice_number'] or invoice['id']}",
+                    lines=lines
+                )
         
         db.commit()
     

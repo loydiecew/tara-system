@@ -427,6 +427,55 @@
             .stats-grid { grid-template-columns: 1fr; }
             .top-bar { flex-direction: column; align-items: flex-start; }
         }
+
+        /* Professional Flash Messages */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            border-left: 3px solid;
+            background: var(--bg-secondary);
+        }
+
+        .flash-success {
+            border-left-color: #10b981;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .flash-error {
+            border-left-color: #f59e0b;
+            color: #78350f;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        .flash-info {
+            border-left-color: #3b82f6;
+            color: #1e3a5f;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        /* Dark mode support */
+        body.dark .flash-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #6ee7b7;
+        }
+
+        body.dark .flash-error {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fcd34d;
+        }
+
+        body.dark .flash-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #93c5fd;
+        }
+
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -464,6 +513,11 @@
                 <a href="/journal" class="nav-item {{ is_active('journal') }}">
                     <i class="fas fa-book-open"></i><span>General Journal</span>
                 </a>
+                {% if session.plan == 'pro' or session.plan == 'enterprise' %}
+                <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
+                    <i class="fas fa-balance-scale"></i><span>General Ledger</span>
+                </a>
+                {% endif %}
             </div>
 
             <!-- RECEIVABLES & PAYABLES - Only for Owner/Admin (Pro/Enterprise) -->
@@ -527,12 +581,12 @@
                 </div>
             </div>
             
-            {% with messages = get_flashed_messages() %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     <div class="flash-messages">
-                        {% for message in messages %}
-                            <div class="flash-message" style="background: #fef2f2; color: #ef4444; padding: 12px; border-radius: 12px; margin-bottom: 20px;">
-                                {{ message }}
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}">
+                                                {{ message }}
                             </div>
                         {% endfor %}
                     </div>

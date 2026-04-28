@@ -5,6 +5,16 @@ from models.audit import log_audit
 
 cash_bp = Blueprint('cash', __name__)
 
+# ========== DOUBLE-ENTRY HELPER FUNCTIONS ==========
+def get_account_mapping(trans_type, category, cursor):
+    """Get debit/credit accounts for a transaction type and category"""
+    cursor.execute("""
+        SELECT debit_account_id, credit_account_id FROM transaction_account_mapping
+        WHERE transaction_type = %s AND (category = %s OR category IS NULL)
+        ORDER BY category IS NULL LIMIT 1
+    """, (trans_type, category))
+    return cursor.fetchone()
+
 @cash_bp.route('/cash')
 def cash():
     if 'user_id' not in session:
@@ -91,6 +101,8 @@ def add_transaction():
     
     db = get_db()
     cursor = db.cursor()
+    
+    # Insert into transactions table
     cursor.execute("""
         INSERT INTO transactions (user_id, description, amount, type, category, transaction_date)
         VALUES (%s, %s, %s, %s, %s, %s)
@@ -107,7 +119,52 @@ def add_transaction():
     }
     log_audit(session['user_id'], session['username'], 'CREATE', 'transactions', 
             cursor.lastrowid, new_values=new_transaction)
-
+    
+    # ========== DOUBLE-ENTRY JOURNAL (Pro and Enterprise only) ==========
+    if session.get('plan') in ['pro', 'enterprise']:
+        # Get account mapping for this transaction type and category
+        cursor.execute("""
+            SELECT debit_account_id, credit_account_id FROM transaction_account_mapping
+            WHERE transaction_type = %s AND (category = %s OR category IS NULL)
+            ORDER BY category IS NULL LIMIT 1
+        """, (trans_type, category))
+        mapping = cursor.fetchone()
+        
+        if mapping:
+            # Create journal entry header
+            cursor.execute("""
+                INSERT INTO journal_entries (user_id, entry_date, description, reference)
+                VALUES (%s, %s, %s, %s)
+            """, (session['user_id'], transaction_date, description, f"TRX-{cursor.lastrowid}"))
+            journal_entry_id = cursor.lastrowid
+            
+            if trans_type == 'income':
+                # Income: Debit Cash (Asset), Credit Revenue Account
+                # Debit increases asset (Cash comes in)
+                # Credit increases revenue
+                cursor.execute("""
+                    INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit)
+                    VALUES (%s, %s, %s, %s)
+                """, (journal_entry_id, mapping[0], amount, 0))
+                cursor.execute("""
+                    INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit)
+                    VALUES (%s, %s, %s, %s)
+                """, (journal_entry_id, mapping[1], 0, amount))
+            else:
+                # Expense: Debit Expense Account, Credit Cash (Asset)
+                # Debit increases expense
+                # Credit decreases asset (Cash goes out)
+                cursor.execute("""
+                    INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit)
+                    VALUES (%s, %s, %s, %s)
+                """, (journal_entry_id, mapping[0], amount, 0))
+                cursor.execute("""
+                    INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit)
+                    VALUES (%s, %s, %s, %s)
+                """, (journal_entry_id, mapping[1], 0, amount))
+            
+            db.commit()
+    
     cursor.close()
     db.close()
     
@@ -199,3 +256,27 @@ def edit_transaction(transaction_id):
                          username=session['username'],
                          transaction=transaction,
                          today=today)
+
+def create_journal_entry(user_id, entry_date, description, lines):
+    """Create a journal entry with debit/credit lines"""
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Create journal entry header
+    cursor.execute("""
+        INSERT INTO journal_entries (user_id, entry_date, description)
+        VALUES (%s, %s, %s)
+    """, (user_id, entry_date, description))
+    entry_id = cursor.lastrowid
+    
+    # Create journal lines
+    for line in lines:
+        cursor.execute("""
+            INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit)
+            VALUES (%s, %s, %s, %s)
+        """, (entry_id, line['account_id'], line.get('debit', 0), line.get('credit', 0)))
+    
+    db.commit()
+    cursor.close()
+    db.close()
+    return entry_id

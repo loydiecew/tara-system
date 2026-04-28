@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request
+from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from models.database import get_db
 
 plan_bp = Blueprint('plan', __name__)
@@ -19,23 +19,21 @@ def plan():
     cursor.execute("SELECT p.* FROM users u JOIN plans p ON u.plan_id = p.id WHERE u.id = %s", (session['user_id'],))
     current_plan = cursor.fetchone()
     
-    # Get ALL modules (for add-ons section)
+    # Get ALL add-on modules
     cursor.execute("SELECT * FROM modules ORDER BY price ASC")
     all_modules = cursor.fetchall()
     
-    # Get purchased modules
+    # Get purchased module IDs for this user
     cursor.execute("""
-        SELECT m.* FROM modules m
-        JOIN user_modules um ON m.id = um.module_id
-        WHERE um.user_id = %s AND um.is_active = 1
+        SELECT module_id FROM user_modules 
+        WHERE user_id = %s AND is_active = 1
     """, (session['user_id'],))
-    purchased_modules = cursor.fetchall()
+    purchased = cursor.fetchall()
+    purchased_ids = [p['module_id'] for p in purchased]
     
-    # Get purchased module IDs
-    purchased_ids = [m['id'] for m in purchased_modules]
-    
-    # Available modules = all modules - purchased modules
+    # Separate available vs purchased
     available_modules = [m for m in all_modules if m['id'] not in purchased_ids]
+    purchased_modules = [m for m in all_modules if m['id'] in purchased_ids]
     
     cursor.close()
     db.close()
@@ -47,7 +45,7 @@ def plan():
                          available_modules=available_modules,
                          purchased_modules=purchased_modules)
 
-@plan_bp.route('/purchase_module/<int:module_id>', methods=['POST'])
+@plan_bp.route('/purchase_module/<int:module_id>')
 def purchase_module(module_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
@@ -61,16 +59,42 @@ def purchase_module(module_id):
     existing = cursor.fetchone()
     
     if not existing:
-        # Add module to user's purchases
         cursor.execute("""
             INSERT INTO user_modules (user_id, module_id, is_active)
             VALUES (%s, %s, 1)
         """, (session['user_id'], module_id))
         db.commit()
+        flash('Module added to your plan!', 'success')
+    else:
+        flash('Module already purchased.', 'info')
     
     cursor.close()
     db.close()
     
+    return redirect(url_for('plan.plan'))
+
+@plan_bp.route('/upgrade_plan/<int:plan_id>')
+def upgrade_plan(plan_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # Update user's plan
+    cursor.execute("UPDATE users SET plan_id = %s WHERE id = %s", (plan_id, session['user_id']))
+    db.commit()
+    
+    # Update session
+    cursor.execute("SELECT slug, name FROM plans WHERE id = %s", (plan_id,))
+    plan = cursor.fetchone()
+    session['plan'] = plan['slug']
+    session['plan_name'] = plan['name']
+    
+    cursor.close()
+    db.close()
+    
+    flash(f'Plan upgraded to {plan["name"]}!', 'success')
     return redirect(url_for('plan.plan'))
 
 @plan_bp.route('/switch_plan/<plan_slug>', methods=['POST'])

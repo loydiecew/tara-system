@@ -1,18 +1,18 @@
 {% extends "layout.html" %}
 
-{% block title %}Plans & Billing{% endblock %}
-{% block page_title %}Plans & Billing{% endblock %}
-{% block page_subtitle %}Change your plan or manage add-ons{% endblock %}
+{% block title %}Plans & Modules{% endblock %}
+{% block page_title %}Plans & Modules{% endblock %}
+{% block page_subtitle %}Choose your plan or purchase add-ons{% endblock %}
 
 {% block content %}
 
 <!-- Current Plan Banner -->
 <div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-align: center;">
-    <h2 style="color: white;">Current Plan: {{ session.plan_name }}</h2>
+    <h2 style="color: white;">Current Plan: {{ current_plan.name if current_plan else 'Basic' }}</h2>
     <p style="margin-top: 8px; opacity: 0.9;">
-        {% if session.plan == 'basic' %}
-        Upgrade to Pro or Enterprise for more features
-        {% elif session.plan == 'pro' %}
+        {% if current_plan and current_plan.slug == 'basic' %}
+        Upgrade to Pro for AR, AP, Inventory, and more
+        {% elif current_plan and current_plan.slug == 'pro' %}
         Upgrade to Enterprise for advanced features
         {% else %}
         You have access to all features
@@ -20,11 +20,10 @@
     </p>
 </div>
 
-<!-- Plan Options - One Click Upgrade -->
+<!-- Plan Options -->
 <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-    
     <!-- Basic Plan -->
-    <div class="stat-card" style="text-align: center; {% if session.plan == 'basic' %}border: 2px solid #10b981;{% endif %}">
+    <div class="stat-card" style="text-align: center; {% if current_plan and current_plan.slug == 'basic' %}border: 2px solid #10b981;{% endif %}">
         <h3>Basic</h3>
         <div class="stat-value">₱500</div>
         <div style="font-size: 12px; margin-bottom: 16px;">/month</div>
@@ -37,17 +36,15 @@
             <li>❌ Accounts Payable</li>
             <li>❌ Inventory</li>
         </ul>
-        {% if session.plan == 'basic' %}
+        {% if current_plan and current_plan.slug == 'basic' %}
         <button class="btn btn-secondary" disabled>✓ Current Plan</button>
         {% else %}
-        <form method="POST" action="{{ url_for('plan.switch_plan', plan_slug='basic') }}">
-            <button type="submit" class="btn btn-primary">Switch to Basic</button>
-        </form>
+        <a href="/upgrade_plan/1" class="btn btn-primary">Switch to Basic</a>
         {% endif %}
     </div>
-    
+
     <!-- Pro Plan -->
-    <div class="stat-card" style="text-align: center; {% if session.plan == 'pro' %}border: 2px solid #10b981;{% endif %}">
+    <div class="stat-card" style="text-align: center; {% if current_plan and current_plan.slug == 'pro' %}border: 2px solid #10b981;{% endif %}">
         <h3>Pro</h3>
         <div class="stat-value">₱1,500</div>
         <div style="font-size: 12px; margin-bottom: 16px;">/month</div>
@@ -57,18 +54,18 @@
             <li>✅ Accounts Payable</li>
             <li>✅ Inventory Management</li>
             <li>✅ Multi-user (up to 10)</li>
+            <li>✅ Audit Log</li>
+            <li>✅ Double-Entry Journal</li>
         </ul>
-        {% if session.plan == 'pro' %}
+        {% if current_plan and current_plan.slug == 'pro' %}
         <button class="btn btn-secondary" disabled>✓ Current Plan</button>
         {% else %}
-        <form method="POST" action="{{ url_for('plan.switch_plan', plan_slug='pro') }}">
-            <button type="submit" class="btn btn-primary">Upgrade to Pro</button>
-        </form>
+        <a href="/upgrade_plan/2" class="btn btn-primary">Upgrade to Pro</a>
         {% endif %}
     </div>
-    
+
     <!-- Enterprise Plan -->
-    <div class="stat-card" style="text-align: center; {% if session.plan == 'enterprise' %}border: 2px solid #10b981;{% endif %}">
+    <div class="stat-card" style="text-align: center; {% if current_plan and current_plan.slug == 'enterprise' %}border: 2px solid #10b981;{% endif %}">
         <h3>Enterprise</h3>
         <div class="stat-value">₱5,000</div>
         <div style="font-size: 12px; margin-bottom: 16px;">/month</div>
@@ -79,12 +76,10 @@
             <li>✅ BIR Integration</li>
             <li>✅ Priority Support</li>
         </ul>
-        {% if session.plan == 'enterprise' %}
+        {% if current_plan and current_plan.slug == 'enterprise' %}
         <button class="btn btn-secondary" disabled>✓ Current Plan</button>
         {% else %}
-        <form method="POST" action="{{ url_for('plan.switch_plan', plan_slug='enterprise') }}">
-            <button type="submit" class="btn btn-primary">Upgrade to Enterprise</button>
-        </form>
+        <a href="/upgrade_plan/3" class="btn btn-primary">Upgrade to Enterprise</a>
         {% endif %}
     </div>
 </div>
@@ -94,22 +89,24 @@
     <div class="card-header">
         <h2><i class="fas fa-puzzle-piece"></i> Add-on Modules</h2>
     </div>
-    <p style="margin-bottom: 20px;">Add extra features to your current plan</p>
-    
+    <p style="margin-bottom: 20px;">Purchase individual modules to add to your current plan</p>
+
+    {% if available_modules %}
     <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
         {% for module in available_modules %}
         <div class="stat-card">
             <h3>{{ module.name|replace('_', ' ')|title }}</h3>
-            <p style="font-size: 13px;">{{ module.description }}</p>
+            <p style="font-size: 13px; color: var(--text-secondary);">{{ module.description }}</p>
             <div class="stat-value" style="font-size: 24px;">₱{{ module.price }}</div>
-            <div style="font-size: 12px;">one-time</div>
-            <form method="POST" action="{{ url_for('plan.purchase_module', module_id=module.id) }}">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Add to Plan</button>
-            </form>
+            <div style="font-size: 12px; margin-bottom: 16px;">one-time</div>
+            <a href="/purchase_module/{{ module.id }}" class="btn btn-primary" style="width: 100%;" onclick="return confirm('Purchase {{ module.name }}? (Demo - no charge)')">Add to Plan</a>
         </div>
         {% endfor %}
     </div>
-    
+    {% else %}
+    <p style="text-align: center; padding: 20px; color: var(--text-secondary);">No add-on modules available at this time.</p>
+    {% endif %}
+
     {% if purchased_modules %}
     <hr style="margin: 24px 0;">
     <h3>Your Purchased Modules</h3>
@@ -126,6 +123,6 @@
 </div>
 
 <div class="card" style="background: #f0fdf4; text-align: center;">
-    <p><i class="fas fa-info-circle"></i> Changes take effect immediately. No payment required for demo.</p>
+    <p><i class="fas fa-info-circle"></i> This is a demo. No actual payment required. Click to instantly add modules.</p>
 </div>
 {% endblock %}

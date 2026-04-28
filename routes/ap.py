@@ -186,11 +186,39 @@ def add_bill():
     
     db = get_db()
     cursor = db.cursor()
+    
+    # Insert bill
     cursor.execute("""
         INSERT INTO bills (user_id, supplier_id, bill_number, amount, description, due_date)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (session['user_id'], supplier_id, bill_number, amount, description, due_date))
     db.commit()
+    
+    # Create journal entry for Pro/Enterprise users
+    if session.get('plan') in ['pro', 'enterprise']:
+        cursor2 = db.cursor(dictionary=True)
+        
+        # Get account IDs
+        cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '2000'")  # Accounts Payable
+        ap_account = cursor2.fetchone()
+        cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '5300'")  # Supplies Expense (default)
+        expense_account = cursor2.fetchone()
+        
+        if ap_account and expense_account:
+            from routes.cash import create_journal_entry
+            lines = [
+                {'account_id': expense_account['id'], 'debit': amount, 'credit': 0},
+                {'account_id': ap_account['id'], 'debit': 0, 'credit': amount}
+            ]
+            create_journal_entry(
+                user_id=session['user_id'],
+                entry_date=due_date,
+                description=f"Bill #{bill_number} - {description or 'Supplier purchase'}",
+                lines=lines
+            )
+        
+        cursor2.close()
+    
     cursor.close()
     db.close()
     
@@ -219,6 +247,7 @@ def pay_bill(bill_id):
             WHERE id = %s AND user_id = %s
         """, (bill_id, session['user_id']))
         
+        # Create cash transaction (expense)
         cursor.execute("""
             INSERT INTO transactions (user_id, description, amount, type, category, transaction_date)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -230,6 +259,30 @@ def pay_bill(bill_id):
             'Supplies',
             date.today()
         ))
+        
+        # Create journal entry to clear AP (Pro users only)
+        if session.get('plan') in ['pro', 'enterprise']:
+            cursor2 = db.cursor(dictionary=True)
+            
+            cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")  # Cash
+            cash_account = cursor2.fetchone()
+            cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '2000'")  # Accounts Payable
+            ap_account = cursor2.fetchone()
+            
+            if cash_account and ap_account:
+                from routes.cash import create_journal_entry
+                lines = [
+                    {'account_id': ap_account['id'], 'debit': bill['amount'], 'credit': 0},
+                    {'account_id': cash_account['id'], 'debit': 0, 'credit': bill['amount']}
+                ]
+                create_journal_entry(
+                    user_id=session['user_id'],
+                    entry_date=date.today(),
+                    description=f"Payment for Bill #{bill['bill_number'] or bill['id']}",
+                    lines=lines
+                )
+            
+            cursor2.close()
         
         db.commit()
     
