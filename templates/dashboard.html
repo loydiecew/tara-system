@@ -8,7 +8,7 @@
 <!-- ROW 1: CORE FINANCIAL -->
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-title">Total Sales (This Month)</div>
+        <div class="stat-title">Total Revenue (This Month)</div>
         <div class="stat-value">₱ {{ "{:,.2f}".format(monthly_income|default(0)) }}</div>
         <div class="stat-change {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
             <i class="fas {% if sales_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>

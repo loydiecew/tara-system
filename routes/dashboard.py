@@ -40,58 +40,70 @@ def dashboard():
         next_month_last = last_month_first.replace(month=last_month_first.month + 1, day=1)
         last_month_last = next_month_last - timedelta(days=1)
     
-    # ========== CORE FINANCIAL ==========
-    # Monthly income
+    # ========== CURRENT MONTH REVENUE (Sales + Cash Income) ==========
     cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'income' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, first_day, last_day))
-    monthly_income = float(cursor.fetchone()['total'] or 0)
+        SELECT SUM(amount) as total FROM (
+            SELECT t.amount FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' 
+            AND t.transaction_date BETWEEN %s AND %s
+            UNION ALL
+            SELECT s.amount FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+        ) AS all_revenue
+    """, (business_id, first_day, last_day, business_id, first_day, last_day))
+    current_revenue = float(cursor.fetchone()['total'] or 0)
     
-    # Monthly expense
-    cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, first_day, last_day))
-    monthly_expense = float(cursor.fetchone()['total'] or 0)
-    
-    current_profit = monthly_income - monthly_expense
-    
-    # Last month income
-    cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'income' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, last_month_first, last_month_last))
-    last_monthly_income = float(cursor.fetchone()['total'] or 0)
-    
-    # Last month expense
+    # ========== CURRENT MONTH EXPENSES ==========
     cursor.execute("""
         SELECT SUM(t.amount) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s AND t.type = 'expense' 
         AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, first_day, last_day))
+    current_expenses = float(cursor.fetchone()['total'] or 0)
+    
+    current_profit = current_revenue - current_expenses
+    
+    # ========== LAST MONTH REVENUE (Sales + Cash Income) ==========
+    cursor.execute("""
+        SELECT SUM(amount) as total FROM (
+            SELECT t.amount FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' 
+            AND t.transaction_date BETWEEN %s AND %s
+            UNION ALL
+            SELECT s.amount FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+        ) AS all_revenue
+    """, (business_id, last_month_first, last_month_last, business_id, last_month_first, last_month_last))
+    last_revenue = float(cursor.fetchone()['total'] or 0)
+    
+    # ========== LAST MONTH EXPENSES ==========
+    cursor.execute("""
+        SELECT SUM(t.amount) as total FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' 
+        AND t.transaction_date BETWEEN %s AND %s
     """, (business_id, last_month_first, last_month_last))
-    last_monthly_expense = float(cursor.fetchone()['total'] or 0)
+    last_expenses = float(cursor.fetchone()['total'] or 0)
     
-    last_profit = last_monthly_income - last_monthly_expense
+    last_profit = last_revenue - last_expenses
     
+    # ========== HELPER FUNCTION FOR PERCENTAGE CHANGE ==========
     def calc_change(current, last):
         if last == 0:
             return 0.0 if current == 0 else 100.0
         return ((current - last) / last) * 100.0
     
-    sales_change = calc_change(monthly_income, last_monthly_income)
-    expense_change = calc_change(monthly_expense, last_monthly_expense)
+    revenue_change = calc_change(current_revenue, last_revenue)
+    expense_change = calc_change(current_expenses, last_expenses)
     profit_change = calc_change(current_profit, last_profit)
-    profit_margin = (current_profit / monthly_income * 100) if monthly_income > 0 else 0
+    profit_margin = (current_profit / current_revenue * 100) if current_revenue > 0 else 0
     
-    # Cash balance
+    # ========== CASH BALANCE (all time) ==========
     cursor.execute("""
         SELECT 
             SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as total_income,
@@ -103,7 +115,7 @@ def dashboard():
     totals = cursor.fetchone()
     cash_balance = (float(totals['total_income'] or 0)) - (float(totals['total_expense'] or 0))
     
-    # AR Outstanding
+    # ========== AR OUTSTANDING ==========
     cursor.execute("""
         SELECT SUM(i.amount) as total FROM invoices i
         JOIN users u ON i.user_id = u.id
@@ -111,7 +123,7 @@ def dashboard():
     """, (business_id,))
     ar_outstanding = float(cursor.fetchone()['total'] or 0)
     
-    # AP Outstanding
+    # ========== AP OUTSTANDING ==========
     cursor.execute("""
         SELECT SUM(b.amount) as total FROM bills b
         JOIN users u ON b.user_id = u.id
@@ -119,7 +131,7 @@ def dashboard():
     """, (business_id,))
     ap_outstanding = float(cursor.fetchone()['total'] or 0)
     
-    # Inventory Summary
+    # ========== INVENTORY SUMMARY ==========
     cursor.execute("""
         SELECT 
             SUM(p.quantity * p.price) as total_value,
@@ -134,7 +146,7 @@ def dashboard():
     total_products = inv_summary['total_products'] or 0
     low_stock_count = inv_summary['low_stock_count'] or 0
     
-    # Recent transactions
+    # ========== RECENT TRANSACTIONS ==========
     cursor.execute("""
         SELECT t.* FROM transactions t
         JOIN users u ON t.user_id = u.id
@@ -159,10 +171,10 @@ def dashboard():
     
     return render_template('dashboard.html',
                          username=session['username'],
-                         monthly_income=monthly_income,
-                         monthly_expense=monthly_expense,
+                         monthly_income=current_revenue,
+                         monthly_expense=current_expenses,
                          profit=current_profit,
-                         sales_change=sales_change,
+                         sales_change=revenue_change,
                          expense_change=expense_change,
                          profit_change=profit_change,
                          profit_margin=profit_margin,

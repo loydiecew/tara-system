@@ -460,7 +460,6 @@
             background: rgba(59, 130, 246, 0.05);
         }
 
-        /* Dark mode support */
         body.dark .flash-success {
             background: rgba(16, 185, 129, 0.1);
             color: #6ee7b7;
@@ -492,6 +491,7 @@
                 </button>
             </div>
             
+            <!-- MAIN - Everyone sees -->
             <div class="nav-section">
                 <div class="nav-label">MAIN</div>
                 <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
@@ -502,6 +502,7 @@
                 </a>
             </div>
 
+            <!-- FINANCIAL - Cashiers see Cash & Sales only (no Journal/Ledger) -->
             <div class="nav-section">
                 <div class="nav-label">FINANCIAL</div>
                 <a href="/cash" class="nav-item {{ is_active('cash') }}">
@@ -510,6 +511,9 @@
                 <a href="/sales" class="nav-item {{ is_active('sales') }}">
                     <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                 </a>
+                
+                <!-- General Journal & Ledger: NOT for cashiers -->
+                {% if session.role != 'cashier' %}
                 <a href="/journal" class="nav-item {{ is_active('journal') }}">
                     <i class="fas fa-book-open"></i><span>General Journal</span>
                 </a>
@@ -518,10 +522,11 @@
                     <i class="fas fa-balance-scale"></i><span>General Ledger</span>
                 </a>
                 {% endif %}
+                {% endif %}
             </div>
 
-            <!-- RECEIVABLES & PAYABLES - Only for Owner/Admin (Pro/Enterprise) -->
-            {% if session.role == 'owner' or session.role == 'admin' %}
+            <!-- RECEIVABLES & PAYABLES - Only for Admin/Owner (not cashiers, not managers) -->
+            {% if session.role == 'admin' or session.role == 'owner' %}
             {% if has_feature('accounts_receivable') or has_feature('accounts_payable') %}
             <div class="nav-section">
                 <div class="nav-label">RECEIVABLES & PAYABLES</div>
@@ -539,8 +544,8 @@
             {% endif %}
             {% endif %}
 
-            <!-- INVENTORY - Only for Owner/Admin (Pro/Enterprise) -->
-            {% if session.role == 'owner' or session.role == 'admin' %}
+            <!-- INVENTORY - Only for Admin/Owner -->
+            {% if session.role == 'admin' or session.role == 'owner' %}
             {% if has_feature('inventory_management') %}
             <div class="nav-section">
                 <div class="nav-label">OPERATIONS</div>
@@ -551,8 +556,7 @@
             {% endif %}
             {% endif %}
 
-            <!-- NOTE: ADMIN section removed - now in Profile page -->
-
+            <!-- PROFILE - Everyone sees -->
             <div class="sidebar-footer">
                 <a href="/profile">
                     <div class="user-info">

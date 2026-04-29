@@ -44,23 +44,42 @@ def admin_add_user():
     cursor = db.cursor()
     
     try:
-        # New user gets same business_id, business_password, business_name, plan_id as the admin
+        # Get the admin's business data (NOT generating a new ID)
+        cursor.execute("""
+            SELECT business_id, business_password, business_name, plan_id 
+            FROM users WHERE id = %s
+        """, (session['user_id'],))
+        admin = cursor.fetchone()
+        
+        if not admin or not admin[0]:
+            return "Error: Admin account not properly configured", 400
+        
+        # These are the values that MUST be copied, not generated
+        business_id = admin[0]          # ← USE ADMIN'S EXISTING BUSINESS_ID
+        business_password = admin[1]    # ← COPY FROM ADMIN
+        business_name = admin[2]        # ← COPY FROM ADMIN
+        plan_id = admin[3]              # ← COPY FROM ADMIN
+        
+        print(f"Adding user with business_id: {business_id}")
+        
+        # Insert new user with admin's business data (NO new business_id generation)
         cursor.execute("""
             INSERT INTO users (username, password, role, full_name, created_by, 
                                business_id, business_password, business_name, plan_id)
-            SELECT %s, %s, %s, %s, %s, 
-                   business_id, business_password, business_name, plan_id
-            FROM users WHERE id = %s
-        """, (username, hashed, role, full_name, session['user_id'], session['user_id']))
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (username, hashed, role, full_name, session['user_id'],
+              business_id, business_password, business_name, plan_id))
         db.commit()
+        
+        print(f"✅ User {username} added successfully!")
+        
     except Exception as e:
         db.rollback()
+        print(f"❌ ERROR: {e}")
+        return f"Error: {e}", 400
+    finally:
         cursor.close()
         db.close()
-        return f"Error: {e}", 400
-    
-    cursor.close()
-    db.close()
     
     return redirect(url_for('admin.admin_users'))
 

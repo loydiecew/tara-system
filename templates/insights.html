@@ -165,7 +165,7 @@
     <p style="color: var(--text-secondary); margin-bottom: 20px;">Week: {{ week_display }}</p>
     <div class="stats-grid">
         <div class="stat-card" onclick="showStatDetail('sales')" style="cursor: pointer;">
-            <div class="stat-title">Sales</div>
+            <div class="stat-title">Revenue</div>
             <div class="stat-value">₱ {{ "{:,.2f}".format(current_sales|default(0)) }}</div>
             <div class="stat-change {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
                 {% if sales_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(sales_change|abs) }}% vs last week

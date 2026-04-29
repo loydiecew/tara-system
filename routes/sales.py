@@ -1,9 +1,33 @@
-from flask import Blueprint, render_template, request, session, redirect, url_for
+from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date
 from models.database import get_db
 from models.audit import log_audit
 
 sales_bp = Blueprint('sales', __name__)
+
+# Helper function to create journal entry (import from cash or define here)
+def create_journal_entry(user_id, entry_date, description, lines):
+    """Create a journal entry with debit/credit lines"""
+    from models.database import get_db
+    db = get_db()
+    cursor = db.cursor()
+    
+    cursor.execute("""
+        INSERT INTO journal_entries (user_id, entry_date, description)
+        VALUES (%s, %s, %s)
+    """, (user_id, entry_date, description))
+    entry_id = cursor.lastrowid
+    
+    for line in lines:
+        cursor.execute("""
+            INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit)
+            VALUES (%s, %s, %s, %s)
+        """, (entry_id, line['account_id'], line.get('debit', 0), line.get('credit', 0)))
+    
+    db.commit()
+    cursor.close()
+    db.close()
+    return entry_id
 
 @sales_bp.route('/sales')
 def sales():
@@ -24,7 +48,7 @@ def sales():
     """, (business_id,))
     sales_list = cursor.fetchall()
     
-    # Get total sales (all time, excluding soft-deleted) for this business
+    # Get total sales (all time) for this business
     cursor.execute("""
         SELECT SUM(s.amount) as total FROM sales s
         JOIN users u ON s.user_id = u.id
@@ -73,6 +97,7 @@ def add_sale():
     product_id = request.form.get('product_id')
     
     if product_id and product_id != '':
+        # Sale from inventory dropdown
         product_id = int(product_id)
         quantity = int(request.form.get('quantity', 1))
         
@@ -93,21 +118,51 @@ def add_sale():
             description = f"{quantity}x {product['name']}"
             sale_date = request.form.get('sale_date', date.today())
             
+            # Insert sale
             cursor.execute("""
                 INSERT INTO sales (user_id, customer_name, amount, sale_date, description)
                 VALUES (%s, %s, %s, %s, %s)
             """, (session['user_id'], customer_name, amount, sale_date, description))
             
+            # Deduct from inventory
             cursor.execute("""
                 UPDATE products SET quantity = quantity - %s 
                 WHERE id = %s AND user_id = %s AND quantity >= %s
             """, (quantity, product_id, session['user_id'], quantity))
             
             db.commit()
+            
+            # Create journal entry for Pro users
+            if session.get('plan') in ['pro', 'enterprise']:
+                cursor2 = db.cursor(dictionary=True)
+                
+                # Get account IDs
+                cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")  # Cash
+                cash_account = cursor2.fetchone()
+                cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '4000'")  # Sales Revenue
+                revenue_account = cursor2.fetchone()
+                
+                if cash_account and revenue_account:
+                    lines = [
+                        {'account_id': cash_account['id'], 'debit': amount, 'credit': 0},
+                        {'account_id': revenue_account['id'], 'debit': 0, 'credit': amount}
+                    ]
+                    create_journal_entry(
+                        user_id=session['user_id'],
+                        entry_date=sale_date,
+                        description=f"Sale to {customer_name} - {description}",
+                        lines=lines
+                    )
+                
+                cursor2.close()
+            
+            flash(f'Sale recorded successfully!', 'success')
+            
         cursor.close()
         db.close()
         
     else:
+        # Manual sale
         customer_name = request.form.get('customer_name_manual', request.form.get('customer_name', 'Walk-in Customer'))
         amount = float(request.form.get('amount_manual', request.form.get('amount', 0)))
         sale_date = request.form.get('sale_date', date.today())
@@ -120,6 +175,32 @@ def add_sale():
             VALUES (%s, %s, %s, %s, %s)
         """, (session['user_id'], customer_name, amount, sale_date, description))
         db.commit()
+        
+        # Create journal entry for Pro users
+        if session.get('plan') in ['pro', 'enterprise']:
+            cursor2 = db.cursor(dictionary=True)
+            
+            # Get account IDs
+            cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")  # Cash
+            cash_account = cursor2.fetchone()
+            cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '4000'")  # Sales Revenue
+            revenue_account = cursor2.fetchone()
+            
+            if cash_account and revenue_account:
+                lines = [
+                    {'account_id': cash_account['id'], 'debit': amount, 'credit': 0},
+                    {'account_id': revenue_account['id'], 'debit': 0, 'credit': amount}
+                ]
+                create_journal_entry(
+                    user_id=session['user_id'],
+                    entry_date=sale_date,
+                    description=f"Sale to {customer_name} - {description or 'Manual sale'}",
+                    lines=lines
+                )
+            
+            cursor2.close()
+        
+        flash(f'Sale recorded successfully!', 'success')
         cursor.close()
         db.close()
     
