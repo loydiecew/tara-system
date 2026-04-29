@@ -43,6 +43,7 @@ def add_product():
     
     name = request.form['name']
     price = float(request.form['price'])
+    cogs = float(request.form.get('cogs', 0))
     quantity = int(request.form.get('quantity', 0))
     category = request.form.get('category', '')
     description = request.form.get('description', '')
@@ -51,9 +52,9 @@ def add_product():
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO products (user_id, name, description, quantity, price, category, reorder_level)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], name, description, quantity, price, category, reorder_level))
+        INSERT INTO products (user_id, name, description, quantity, price, cogs, category, reorder_level)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], name, description, quantity, price, cogs, category, reorder_level))
     db.commit()
     cursor.close()
     db.close()
@@ -128,6 +129,7 @@ def edit_product(product_id):
         
         name = request.form['name']
         price = float(request.form['price'])
+        cogs = float(request.form.get('cogs', 0))
         quantity = int(request.form.get('quantity', 0))
         category = request.form.get('category', '')
         description = request.form.get('description', '')
@@ -135,15 +137,12 @@ def edit_product(product_id):
         
         cursor.execute("""
             UPDATE products 
-            SET name = %s, price = %s, quantity = %s, category = %s, 
+            SET name = %s, price = %s, cogs = %s, quantity = %s, category = %s, 
                 description = %s, reorder_level = %s
             WHERE id = %s AND user_id = %s AND deleted_at IS NULL
-        """, (name, price, quantity, category, description, reorder_level, 
+        """, (name, price, cogs, quantity, category, description, reorder_level, 
               product_id, session['user_id']))
         db.commit()
-        
-        cursor.execute("SELECT * FROM products WHERE id = %s", (product_id,))
-        new_product = cursor.fetchone()
         
         cursor.close()
         db.close()

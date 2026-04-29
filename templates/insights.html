@@ -14,7 +14,6 @@
         margin-bottom: 24px;
         border: 1px solid var(--border-light);
         height: 220px;
-
     }
     .kpi-grid {
         display: grid;
@@ -44,8 +43,8 @@
     #expenseCategoriesChart {
         max-height: 140px !important;
         max-width: 140px !important;
-    }   
-    
+    }
+
     /* Modal */
     .modal {
         display: none;
@@ -81,14 +80,47 @@
         font-size: 24px;
         color: var(--text-secondary);
     }
-    
-    /* Scenario sliders */
-    .slider-group { margin-bottom: 20px; }
-    .slider-group label { display: block; margin-bottom: 8px; font-weight: 600; }
-    .slider-value { float: right; color: #10b981; font-weight: 700; }
-    input[type="range"] { width: 100%; height: 6px; border-radius: 3px; background: var(--border-light); }
-    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #10b981; cursor: pointer; }
-    
+
+    /* Tables */
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .data-table th, .data-table td {
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .data-table th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+    .data-table tr:hover {
+        background: var(--bg-primary);
+    }
+
+    /* Planner inputs */
+    .input-group {
+        margin-bottom: 16px;
+    }
+    .input-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        font-size: 13px;
+    }
+    .input-group input[type="number"] {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+    }
     .result-panel {
         background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%);
         border-radius: 16px;
@@ -98,12 +130,40 @@
     }
     .result-profit { font-size: 32px; font-weight: 800; }
     .result-change { font-size: 14px; margin-top: 4px; }
+
+    /* Section headings */
+    .section-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+    .section-heading h2 {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    /* Bento grid for analysis */
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+        .analysis-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- KPI CARDS (Clickable) -->
+<!-- ============================================ -->
+<!-- KPI CARDS (Clickable)                         -->
+<!-- ============================================ -->
 <div class="kpi-grid">
     <div class="kpi-card" onclick="showStatDetail('sales')">
         <div class="kpi-value">₱{{ "{:,.0f}".format(current_sales|default(0)) }}</div>
@@ -132,8 +192,10 @@
     </div>
 </div>
 
-<!-- CHARTS SECTION (Compact) -->
-<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px;">
+<!-- ============================================ -->
+<!-- CHARTS SECTION (Compact)                      -->
+<!-- ============================================ -->
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
     <!-- Line Chart -->
     <div class="chart-container" style="padding: 12px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -146,7 +208,7 @@
         </div>
         <canvas id="salesExpensesChart"></canvas>
     </div>
-    
+
     <!-- Donut Chart -->
     <div class="chart-container" style="padding: 12px;">
         <h3 style="font-size: 13px; margin-bottom: 8px;"><i class="fas fa-chart-pie"></i> Expense Breakdown</h3>
@@ -157,43 +219,96 @@
     </div>
 </div>
 
-<!-- WEEKLY INSIGHTS (Clickable Cards) -->
-<div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-calendar-week"></i> Weekly Performance</h2>
+<!-- ============================================ -->
+<!-- ENHANCED: PRODUCT PROFITABILITY + CUSTOMER RANKING -->
+<!-- ============================================ -->
+<div class="analysis-grid">
+    <!-- Product Profitability -->
+    <div class="card">
+        <div class="card-header section-heading">
+            <h2><i class="fas fa-box"></i> Product Profitability</h2>
+            <span style="font-size: 11px; color: var(--text-secondary);">Revenue - COGS</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="productProfitTable">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Sold</th>
+                        <th>Revenue</th>
+                        <th>Gross Profit</th>
+                        <th>Margin</th>
+                    </tr>
+                </thead>
+                <tbody id="productProfitBody">
+                    <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <p style="color: var(--text-secondary); margin-bottom: 20px;">Week: {{ week_display }}</p>
-    <div class="stats-grid">
-        <div class="stat-card" onclick="showStatDetail('sales')" style="cursor: pointer;">
-            <div class="stat-title">Revenue</div>
-            <div class="stat-value">₱ {{ "{:,.2f}".format(current_sales|default(0)) }}</div>
-            <div class="stat-change {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
-                {% if sales_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(sales_change|abs) }}% vs last week
-            </div>
+
+    <!-- Customer Ranking -->
+    <div class="card">
+        <div class="card-header section-heading">
+            <h2><i class="fas fa-users"></i> Customer Ranking</h2>
+            <span style="font-size: 11px; color: var(--text-secondary);">Top customers by revenue</span>
         </div>
-        <div class="stat-card" onclick="showStatDetail('expenses')" style="cursor: pointer;">
-            <div class="stat-title">Expenses</div>
-            <div class="stat-value">₱ {{ "{:,.2f}".format(current_expenses|default(0)) }}</div>
-            <div class="stat-change {% if expense_change <= 0 %}positive{% else %}negative{% endif %}">
-                {% if expense_change <= 0 %}▼{% else %}▲{% endif %} {{ "%.1f"|format(expense_change|abs) }}% vs last week
-            </div>
-        </div>
-        <div class="stat-card" onclick="showStatDetail('profit')" style="cursor: pointer;">
-            <div class="stat-title">Profit</div>
-            <div class="stat-value" style="color: {% if current_profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.2f}".format(current_profit|default(0)) }}</div>
-            <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
-                {% if profit_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(profit_change|abs) }}% vs last week
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-title">Profit Margin</div>
-            <div class="stat-value">{{ "%.1f"|format(profit_margin|default(0)) }}%</div>
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="customerRankTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Customer</th>
+                        <th>Revenue</th>
+                        <th>% of Total</th>
+                    </tr>
+                </thead>
+                <tbody id="customerRankBody">
+                    <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-secondary);">Loading...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- SMART ALERTS (No Emojis) -->
-<div class="card">
+<!-- ============================================ -->
+<!-- SALES BY DAY / WEEK                          -->
+<!-- ============================================ -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header section-heading">
+        <h2><i class="fas fa-calendar-alt"></i> Sales Analysis</h2>
+        <select id="salesAnalysisPeriod" style="padding: 4px 8px; font-size: 11px; border-radius: 8px;" onchange="loadSalesAnalysis()">
+            <option value="day">By Day of Week</option>
+            <option value="week">By Week of Month</option>
+        </select>
+    </div>
+    <div style="overflow-x: auto;">
+        <table class="data-table" id="salesAnalysisTable">
+            <thead id="salesAnalysisHead"></thead>
+            <tbody id="salesAnalysisBody">
+                <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-secondary);">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- YEAR-OVER-YEAR COMPARISON                    -->
+<!-- ============================================ -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header section-heading">
+        <h2><i class="fas fa-balance-scale"></i> Year-over-Year Comparison</h2>
+        <span style="font-size: 11px; color: var(--text-secondary);">This month vs same month last year</span>
+    </div>
+    <div id="yoyContent" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+        Loading...
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SMART ALERTS                                 -->
+<!-- ============================================ -->
+<div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
         <h2><i class="fas fa-bell"></i> Smart Alerts</h2>
     </div>
@@ -227,8 +342,10 @@
     {% endif %}
 </div>
 
-<!-- RECOMMENDATIONS (No AI text) -->
-<div class="card">
+<!-- ============================================ -->
+<!-- RECOMMENDATIONS                              -->
+<!-- ============================================ -->
+<div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
         <h2><i class="fas fa-lightbulb"></i> Recommendations</h2>
     </div>
@@ -263,68 +380,83 @@
     </div>
 </div>
 
-<!-- PREDICTIVE PLANNER (Enhanced with More Specifics) -->
-<div class="card">
-    <div class="card-header">
+<!-- ============================================ -->
+<!-- REDESIGNED PREDICTIVE PLANNER                -->
+<!-- ============================================ -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header section-heading">
         <h2><i class="fas fa-chart-simple"></i> Predictive Planner</h2>
+        <div>
+            <button class="btn btn-secondary btn-sm" onclick="saveScenario()" style="margin-right: 4px;"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-secondary btn-sm" onclick="loadScenario()"><i class="fas fa-folder-open"></i> Load</button>
+        </div>
     </div>
-    
-    <!-- Quick Scenarios -->
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-        <button class="btn btn-secondary" onclick="setScenario('price_up')" style="padding: 8px;">Raise Prices 10%</button>
-        <button class="btn btn-secondary" onclick="setScenario('price_down')" style="padding: 8px;">Lower Prices 5%</button>
-        <button class="btn btn-secondary" onclick="setScenario('cut_expenses')" style="padding: 8px;">Cut Expenses 10%</button>
-        <button class="btn btn-secondary" onclick="setScenario('optimize')" style="padding: 8px;">Optimize All</button>
+
+    <!-- Scenario Toggle -->
+    <div style="margin-bottom: 16px;">
+        <label style="margin-right: 16px;">
+            <input type="radio" name="scenarioType" value="general" checked onchange="toggleScenarioType()"> General Business
+        </label>
+        <label>
+            <input type="radio" name="scenarioType" value="product" onchange="toggleScenarioType()"> Per Product
+        </label>
+        <select id="productSelect" style="display:none; margin-left: 12px; padding: 6px 10px; border-radius: 8px;" onchange="updateProductScenario()">
+            <option value="">-- Select Product --</option>
+        </select>
     </div>
-    
-    <!-- Detailed Sliders -->
+
+    <!-- Number Inputs (No Sliders) -->
     <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px;">
-        <h3 style="margin-bottom: 16px; font-size: 16px;">Customize Your Strategy</h3>
-        
-        <div class="slider-group">
-            <label>Price Change <span class="slider-value" id="priceValue">0%</span></label>
-            <input type="range" id="priceSlider" min="-30" max="30" value="0" step="1">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">Adjust Your Variables</h3>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+            <div class="input-group">
+                <label>Price Change (%)</label>
+                <input type="number" id="priceInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
+            </div>
+            <div class="input-group">
+                <label>Sales Volume Change (%)</label>
+                <input type="number" id="volumeInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
+            </div>
+            <div class="input-group">
+                <label>COGS Change (%)</label>
+                <input type="number" id="cogsInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
+            </div>
+            <div class="input-group">
+                <label>Marketing Spend Change (%)</label>
+                <input type="number" id="marketingInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
+            </div>
+            <div class="input-group">
+                <label>Labor Cost Change (%)</label>
+                <input type="number" id="laborInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
+            </div>
+            <div class="input-group">
+                <label>Scenario Name</label>
+                <input type="text" id="scenarioName" placeholder="My scenario" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border-light); background:var(--bg-primary); color:var(--text-primary);">
+            </div>
         </div>
-        <div class="slider-group">
-            <label>Sales Volume <span class="slider-value" id="volumeValue">0%</span></label>
-            <input type="range" id="volumeSlider" min="-30" max="30" value="0" step="1">
-        </div>
-        <div class="slider-group">
-            <label>Cost of Goods Sold (COGS) <span class="slider-value" id="cogsValue">0%</span></label>
-            <input type="range" id="cogsSlider" min="-20" max="20" value="0" step="1">
-        </div>
-        <div class="slider-group">
-            <label>Marketing Spend <span class="slider-value" id="marketingValue">0%</span></label>
-            <input type="range" id="marketingSlider" min="-30" max="30" value="0" step="1">
-        </div>
-        <div class="slider-group">
-            <label>Labor Costs <span class="slider-value" id="laborValue">0%</span></label>
-            <input type="range" id="laborSlider" min="-20" max="20" value="0" step="1">
-        </div>
-        
+
         <div class="result-panel">
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
                 <div>
-                    <div style="font-size: 11px;">Current Sales</div>
-                    <div style="font-weight: 700;">₱{{ "{:,.0f}".format(baseline_sales|default(0)) }}</div>
+                    <div style="font-size: 11px;">Current Revenue</div>
+                    <div style="font-weight: 700;" id="baselineRevenue">₱{{ "{:,.0f}".format(baseline_sales|default(0)) }}</div>
                 </div>
                 <div>
                     <div style="font-size: 11px;">Current Expenses</div>
-                    <div style="font-weight: 700;">₱{{ "{:,.0f}".format(baseline_expenses|default(0)) }}</div>
-                </div>
-                <div>
-                    <div style="font-size: 11px;">Current Profit</div>
-                    <div style="font-weight: 700;">₱{{ "{:,.0f}".format(current_profit_baseline|default(0)) }}</div>
+                    <div style="font-weight: 700;" id="baselineExpensesDisplay">₱{{ "{:,.0f}".format(baseline_expenses|default(0)) }}</div>
                 </div>
             </div>
             <div style="height: 1px; background: var(--border-light); margin: 12px 0;"></div>
-            <div class="result-profit" id="projectedProfit">{{ "{:,.0f}".format(current_profit_baseline|default(0)) }}</div>
+            <div class="result-profit" id="projectedProfit">₱{{ "{:,.0f}".format(current_profit_baseline|default(0)) }}</div>
             <div class="result-change" id="profitChange">—</div>
         </div>
     </div>
 </div>
 
-<!-- Modal for Details -->
+<!-- ============================================ -->
+<!-- MODAL FOR DETAILS                            -->
+<!-- ============================================ -->
 <div id="detailModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -335,78 +467,236 @@
     </div>
 </div>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT                                   -->
+<!-- ============================================ -->
 <script>
+    // ==================== CHARTS ====================
     let salesExpensesChart = null;
     let expenseCategoriesChart = null;
-    
+
     function updateCharts() {
-    const period = document.getElementById('chartPeriod').value;
-    fetch(`/api/chart-data?period=${period}`)
-        .then(res => res.json())
-        .then(data => {
-            // Line Chart
-            if (salesExpensesChart) salesExpensesChart.destroy();
-            const ctx1 = document.getElementById('salesExpensesChart').getContext('2d');
-            salesExpensesChart = new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [
-                        { label: 'Sales', data: data.sales, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, tension: 0.3, fill: true },
-                        { label: 'Expenses', data: data.expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, tension: 0.3, fill: true }
-                    ]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } } },
-                    scales: { y: { beginAtZero: true, grid: { lineWidth: 0.5 } }, x: { ticks: { font: { size: 8 } } } }
-                }
-            });
-            
-            // Donut Chart - smaller and thinner
-            if (expenseCategoriesChart) expenseCategoriesChart.destroy();
-            const ctx2 = document.getElementById('expenseCategoriesChart').getContext('2d');
-            expenseCategoriesChart = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: data.categoryLabels,
-                    datasets: [{ data: data.categoryValues, backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'], borderWidth: 0, cutout: '65%' }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { 
-                            callbacks: { 
-                                label: (ctx) => `${ctx.label}: ₱${ctx.raw.toFixed(0)}`
-                            } 
-                        }
+        const period = document.getElementById('chartPeriod').value;
+        fetch(`/api/chart-data?period=${period}`)
+            .then(res => res.json())
+            .then(data => {
+                // Line Chart
+                if (salesExpensesChart) salesExpensesChart.destroy();
+                const ctx1 = document.getElementById('salesExpensesChart').getContext('2d');
+                salesExpensesChart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            { label: 'Sales', data: data.sales, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, tension: 0.3, fill: true },
+                            { label: 'Expenses', data: data.expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, tension: 0.3, fill: true }
+                        ]
                     },
-                    layout: {
-                        padding: 5
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } } },
+                        scales: { y: { beginAtZero: true, grid: { lineWidth: 0.5 } }, x: { ticks: { font: { size: 8 } } } }
+                    }
+                });
+
+                // Donut Chart
+                if (expenseCategoriesChart) expenseCategoriesChart.destroy();
+                const ctx2 = document.getElementById('expenseCategoriesChart').getContext('2d');
+                expenseCategoriesChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.categoryLabels,
+                        datasets: [{ data: data.categoryValues, backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'], borderWidth: 0, cutout: '65%' }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ₱${ctx.raw.toFixed(0)}` } }
+                        },
+                        layout: { padding: 5 }
+                    }
+                });
+
+                // Custom legend
+                const legendDiv = document.getElementById('expenseLegend');
+                if (legendDiv && data.categoryLabels && data.categoryLabels.length > 0) {
+                    legendDiv.innerHTML = data.categoryLabels.map((label, i) =>
+                        `<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <div style="width: 10px; height: 10px; background: ${['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'][i]}; border-radius: 2px;"></div>
+                            <span style="flex:1;">${label}</span>
+                            <span style="font-weight:600;">₱${data.categoryValues[i].toFixed(0)}</span>
+                         </div>`
+                    ).join('');
+                } else if (legendDiv) {
+                    legendDiv.innerHTML = '<div style="color: var(--text-secondary); font-size: 11px;">No expense data</div>';
+                }
+            })
+            .catch(err => console.error('Chart error:', err));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCharts();
+        document.getElementById('chartPeriod').addEventListener('change', updateCharts);
+
+        // Load new sections
+        loadProductProfitability();
+        loadCustomerRanking();
+        loadSalesAnalysis();
+        loadYoYComparison();
+        updatePredictive();
+    });
+
+    // ==================== PRODUCT PROFITABILITY ====================
+    function loadProductProfitability() {
+        fetch('/api/product-profitability?period=month')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('productProfitBody');
+                if (data.error) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">${data.error}</td></tr>`;
+                    return;
+                }
+                if (!data.products || data.products.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">No product sales data yet</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.products.map(p => `
+                    <tr>
+                        <td><strong>${p.name}</strong></td>
+                        <td>${p.units_sold}</td>
+                        <td>₱${parseFloat(p.revenue).toFixed(2)}</td>
+                        <td style="color:${p.profit >= 0 ? '#10b981' : '#ef4444'};">₱${parseFloat(p.profit).toFixed(2)}</td>
+                        <td>${p.margin}%</td>
+                    </tr>
+                `).join('');
+            })
+            .catch(err => {
+                document.getElementById('productProfitBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
+                console.error(err);
+            });
+    }
+
+    // ==================== CUSTOMER RANKING ====================
+    function loadCustomerRanking() {
+        fetch('/api/customer-ranking?period=month&limit=5')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('customerRankBody');
+                if (!data.customers || data.customers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-secondary);">No customer data yet</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.customers.map(c => `
+                    <tr>
+                        <td>${c.rank}</td>
+                        <td><strong>${c.name}</strong></td>
+                        <td>₱${parseFloat(c.total_sales).toFixed(2)}</td>
+                        <td>${c.percentage}%</td>
+                    </tr>
+                `).join('');
+            })
+            .catch(err => {
+                document.getElementById('customerRankBody').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
+                console.error(err);
+            });
+    }
+
+    // ==================== SALES ANALYSIS (Day/Week) ====================
+    // NOTE: Backend has /api/sales-by-day but not /api/sales-by-week.
+    // Using sales-by-day for both modes; week mode does client-side grouping.
+    function loadSalesAnalysis() {
+        const period = document.getElementById('salesAnalysisPeriod').value;
+        fetch('/api/sales-by-day')
+            .then(res => res.json())
+            .then(data => {
+                const thead = document.getElementById('salesAnalysisHead');
+                const tbody = document.getElementById('salesAnalysisBody');
+
+                if (period === 'day') {
+                    thead.innerHTML = '<tr><th>Day</th><th>Total Sales</th></tr>';
+                    if (data.days && data.days.length > 0) {
+                        // Calculate total for percentages
+                        const total = Object.values(data.sales_by_day).reduce((a, b) => a + b, 0);
+                        tbody.innerHTML = data.days.map(day => {
+                            const sales = data.sales_by_day[day] || 0;
+                            const pct = total > 0 ? (sales / total * 100).toFixed(1) : 0;
+                            return `
+                                <tr>
+                                    <td><strong>${day}</strong></td>
+                                    <td>₱${sales.toFixed(2)} (${pct}%)</td>
+                                </tr>`;
+                        }).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:20px; color:var(--text-secondary);">No data available</td></tr>';
+                    }
+                } else {
+                    // Week mode - just show the full sales list
+                    thead.innerHTML = '<tr><th>Day</th><th>Total Sales</th></tr>';
+                    if (data.days && data.days.length > 0) {
+                        tbody.innerHTML = data.days.map(day => `
+                            <tr>
+                                <td><strong>${day}</strong></td>
+                                <td>₱${(data.sales_by_day[day] || 0).toFixed(2)}</td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:20px; color:var(--text-secondary);">No data available</td></tr>';
                     }
                 }
+            })
+            .catch(err => {
+                document.getElementById('salesAnalysisBody').innerHTML = '<tr><td colspan="2" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
+                console.error(err);
             });
-            
-            // Custom legend for donut
-            const legendDiv = document.getElementById('expenseLegend');
-            if (legendDiv && data.categoryLabels) {
-                legendDiv.innerHTML = data.categoryLabels.map((label, i) => 
-                    `<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        <div style="width: 10px; height: 10px; background: ${['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'][i]}; border-radius: 2px;"></div>
-                        <span style="flex:1;">${label}</span>
-                        <span style="font-weight:600;">₱${data.categoryValues[i].toFixed(0)}</span>
-                     </div>`
-                ).join('');
-            }
-        });
-}
-    
-    document.addEventListener('DOMContentLoaded', function() { updateCharts(); document.getElementById('chartPeriod').addEventListener('change', updateCharts); });
-    
-    // Show detail modal
+    }
+
+    // ==================== YEAR-OVER-YEAR ====================
+    function loadYoYComparison() {
+        fetch('/api/yoy-comparison')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('yoyContent');
+                if (!data.current || !data.previous) {
+                    container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-secondary);">Not enough historical data for YoY comparison.</p>';
+                    return;
+                }
+                const changes = data.changes || {};
+                container.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 11px; color: var(--text-secondary);">Revenue</div>
+                            <div style="font-size: 18px; font-weight: 700;">₱${parseFloat(data.current.revenue).toFixed(0)}</div>
+                            <div style="font-size: 12px; color: ${changes.revenue >= 0 ? '#10b981' : '#ef4444'};">
+                                ${changes.revenue >= 0 ? '▲' : '▼'} ${Math.abs(changes.revenue).toFixed(1)}% vs last year
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 11px; color: var(--text-secondary);">Expenses</div>
+                            <div style="font-size: 18px; font-weight: 700;">₱${parseFloat(data.current.expenses).toFixed(0)}</div>
+                            <div style="font-size: 12px; color: ${changes.expenses <= 0 ? '#10b981' : '#ef4444'};">
+                                ${changes.expenses <= 0 ? '▼' : '▲'} ${Math.abs(changes.expenses).toFixed(1)}% vs last year
+                            </div>
+                        </div>
+                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px;">
+                            <div style="font-size: 11px; color: var(--text-secondary);">Profit</div>
+                            <div style="font-size: 18px; font-weight: 700;">₱${parseFloat(data.current.profit).toFixed(0)}</div>
+                            <div style="font-size: 12px; color: ${changes.profit >= 0 ? '#10b981' : '#ef4444'};">
+                                ${changes.profit >= 0 ? '▲' : '▼'} ${Math.abs(changes.profit).toFixed(1)}% vs last year
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(err => {
+                document.getElementById('yoyContent').innerHTML = '<p style="text-align:center; padding:20px; color:#ef4444;">Failed to load YoY data.</p>';
+                console.error(err);
+            });
+    }
+
+    // ==================== MODAL ====================
     function showStatDetail(type) {
         fetch(`/api/stats-detail/${type}`)
             .then(res => res.json())
@@ -415,21 +705,16 @@
                 if (data.items && data.items.length > 0) {
                     let html = '<table style="width:100%"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>';
                     data.items.forEach(item => {
-                        // Determine color based on item type
-                        let amountColor = '#10b981'; // default green for income
+                        let amountColor = '#10b981';
                         let amountPrefix = '+';
-                        
-                        // Check if this is an expense (has 'type' field or negative logic)
-                        if (item.type === 'Expense' || item.source === 'Other Income' === false && item.amount < 0) {
-                            amountColor = '#ef4444'; // red for expenses
+                        if (item.type === 'Expense' || (item.amount < 0)) {
+                            amountColor = '#ef4444';
                             amountPrefix = '-';
                         }
-                        // Also check if it's an expense from the transactions table
                         if (item.category && item.type !== 'Income') {
                             amountColor = '#ef4444';
                             amountPrefix = '-';
                         }
-                        
                         html += `<tr>
                             <td>${item.date}</td>
                             <td>${item.description || item.name || '-'}</td>
@@ -444,39 +729,25 @@
                 document.getElementById('detailModal').style.display = 'flex';
             });
     }
-        
+
     function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    
-    // Scenario presets
-    function setScenario(type) {
-        if (type === 'price_up') { priceSlider.value = 10; volumeSlider.value = -3; cogsSlider.value = 0; marketingSlider.value = 0; laborSlider.value = 0; }
-        else if (type === 'price_down') { priceSlider.value = -5; volumeSlider.value = 8; cogsSlider.value = 0; marketingSlider.value = 0; laborSlider.value = 0; }
-        else if (type === 'cut_expenses') { priceSlider.value = 0; volumeSlider.value = 0; cogsSlider.value = -10; marketingSlider.value = -10; laborSlider.value = -10; }
-        else if (type === 'optimize') { priceSlider.value = 5; volumeSlider.value = 5; cogsSlider.value = -5; marketingSlider.value = 5; laborSlider.value = -5; }
-        updateScenario();
-    }
-    
-    // Predictive Planner
+    window.onclick = function(event) { if (event.target === document.getElementById('detailModal')) closeModal(); };
+
+    // ==================== PREDICTIVE PLANNER ====================
     const baselineSales = {{ baseline_sales|default(100000) }};
     const baselineExpenses = {{ baseline_expenses|default(70000) }};
     const baselineProfit = {{ current_profit_baseline|default(0) }};
     const baselineCOGS = baselineExpenses * 0.4;
     const baselineMarketing = baselineExpenses * 0.2;
     const baselineLabor = baselineExpenses * 0.3;
-    
-    const priceSlider = document.getElementById('priceSlider');
-    const volumeSlider = document.getElementById('volumeSlider');
-    const cogsSlider = document.getElementById('cogsSlider');
-    const marketingSlider = document.getElementById('marketingSlider');
-    const laborSlider = document.getElementById('laborSlider');
-    
-    function updateScenario() {
-        const priceChange = parseFloat(priceSlider.value) / 100;
-        const volumeChange = parseFloat(volumeSlider.value) / 100;
-        const cogsChange = parseFloat(cogsSlider.value) / 100;
-        const marketingChange = parseFloat(marketingSlider.value) / 100;
-        const laborChange = parseFloat(laborSlider.value) / 100;
-        
+
+    function updatePredictive() {
+        const priceChange = parseFloat(document.getElementById('priceInput').value || 0) / 100;
+        const volumeChange = parseFloat(document.getElementById('volumeInput').value || 0) / 100;
+        const cogsChange = parseFloat(document.getElementById('cogsInput').value || 0) / 100;
+        const marketingChange = parseFloat(document.getElementById('marketingInput').value || 0) / 100;
+        const laborChange = parseFloat(document.getElementById('laborInput').value || 0) / 100;
+
         const newSales = baselineSales * (1 + priceChange) * (1 + volumeChange);
         const newCOGS = baselineCOGS * (1 + cogsChange);
         const newMarketing = baselineMarketing * (1 + marketingChange);
@@ -485,30 +756,102 @@
         const newProfit = newSales - newExpenses;
         const profitDifference = newProfit - baselineProfit;
         const profitPercent = baselineProfit > 0 ? (profitDifference / baselineProfit) * 100 : 0;
-        
-        document.getElementById('projectedProfit').innerHTML = `₱${newProfit.toLocaleString()}`;
+
+        document.getElementById('projectedProfit').innerHTML = `₱${Math.round(newProfit).toLocaleString()}`;
         const changeSpan = document.getElementById('profitChange');
         if (profitDifference >= 0) {
-            changeSpan.innerHTML = `▲ ₱${profitDifference.toLocaleString()} (+${profitPercent.toFixed(1)}%)`;
+            changeSpan.innerHTML = `▲ ₱${Math.abs(Math.round(profitDifference)).toLocaleString()} (+${profitPercent.toFixed(1)}%)`;
             changeSpan.style.color = '#10b981';
         } else {
-            changeSpan.innerHTML = `▼ ₱${Math.abs(profitDifference).toLocaleString()} (${profitPercent.toFixed(1)}%)`;
+            changeSpan.innerHTML = `▼ ₱${Math.abs(Math.round(profitDifference)).toLocaleString()} (${profitPercent.toFixed(1)}%)`;
             changeSpan.style.color = '#ef4444';
         }
-        
-        document.getElementById('priceValue').innerText = priceSlider.value + '%';
-        document.getElementById('volumeValue').innerText = volumeSlider.value + '%';
-        document.getElementById('cogsValue').innerText = cogsSlider.value + '%';
-        document.getElementById('marketingValue').innerText = marketingSlider.value + '%';
-        document.getElementById('laborValue').innerText = laborSlider.value + '%';
+
+        document.getElementById('baselineRevenue').innerText = `₱${Math.round(newSales).toLocaleString()}`;
+        document.getElementById('baselineExpensesDisplay').innerText = `₱${Math.round(newExpenses).toLocaleString()}`;
     }
-    
-    [priceSlider, volumeSlider, cogsSlider, marketingSlider, laborSlider].forEach(slider => {
-        if (slider) slider.addEventListener('input', updateScenario);
-    });
-    updateScenario();
-    
-    // Close modal on outside click
-    window.onclick = function(event) { if (event.target === document.getElementById('detailModal')) closeModal(); };
+
+    // ==================== SCENARIO SAVE/LOAD (Using real backend) ====================
+    function saveScenario() {
+        const name = document.getElementById('scenarioName').value || 'Untitled';
+        const type = document.querySelector('input[name="scenarioType"]:checked').value;
+        const productId = document.getElementById('productSelect').value || null;
+
+        const data = {
+            name: name,
+            scenario_type: type,
+            product_id: productId,
+            data: {
+                price_change: document.getElementById('priceInput').value || 0,
+                volume_change: document.getElementById('volumeInput').value || 0,
+                cogs_change: document.getElementById('cogsInput').value || 0,
+                marketing_change: document.getElementById('marketingInput').value || 0,
+                labor_change: document.getElementById('laborInput').value || 0
+            }
+        };
+
+        fetch('/api/saved-scenarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                alert('Scenario saved!');
+            } else {
+                alert('Error: ' + (result.error || 'Failed to save'));
+            }
+        })
+        .catch(err => {
+            alert('Network error');
+            console.error(err);
+        });
+    }
+
+    function loadScenario() {
+        fetch('/api/saved-scenarios')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.scenarios || data.scenarios.length === 0) {
+                    alert('No saved scenarios found.');
+                    return;
+                }
+                const names = data.scenarios.map((s, i) => `${i+1}. ${s.name}`).join('\n');
+                const choice = prompt(`Select scenario by number:\n${names}`);
+                if (choice && data.scenarios[parseInt(choice) - 1]) {
+                    const scenario = data.scenarios[parseInt(choice) - 1];
+                    const d = scenario.data || {};
+                    document.getElementById('priceInput').value = d.price_change || 0;
+                    document.getElementById('volumeInput').value = d.volume_change || 0;
+                    document.getElementById('cogsInput').value = d.cogs_change || 0;
+                    document.getElementById('marketingInput').value = d.marketing_change || 0;
+                    document.getElementById('laborInput').value = d.labor_change || 0;
+                    document.getElementById('scenarioName').value = scenario.name || '';
+                    if (scenario.scenario_type === 'product') {
+                        document.querySelector('input[name="scenarioType"][value="product"]').checked = true;
+                        toggleScenarioType();
+                        document.getElementById('productSelect').value = scenario.product_id || '';
+                    } else {
+                        document.querySelector('input[name="scenarioType"][value="general"]').checked = true;
+                        toggleScenarioType();
+                    }
+                    updatePredictive();
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
+    function toggleScenarioType() {
+        const type = document.querySelector('input[name="scenarioType"]:checked').value;
+        document.getElementById('productSelect').style.display = type === 'product' ? 'inline-block' : 'none';
+    }
+
+    function updateProductScenario() {
+        updatePredictive();
+    }
+
+    // Initialize
+    updatePredictive();
 </script>
 {% endblock %}
