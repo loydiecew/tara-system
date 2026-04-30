@@ -601,7 +601,6 @@ def calculate_scenario():
     
     return jsonify(result)
 
-
 @insights_bp.route('/api/yoy-comparison')
 def yoy_comparison():
     """Year-over-year comparison"""
@@ -622,38 +621,50 @@ def yoy_comparison():
     last_year_start = this_year_start.replace(year=this_year_start.year - 1)
     last_year_end = this_year_end.replace(year=this_year_end.year - 1)
     
-    # Get current year revenue
+    # Get current year revenue (sales + income) filtered by business_id
     cursor.execute("""
         SELECT COALESCE(SUM(amount), 0) as revenue FROM (
-            SELECT amount FROM sales WHERE sale_date BETWEEN %s AND %s
+            SELECT s.amount FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
             UNION ALL
-            SELECT amount FROM transactions WHERE type = 'income' AND transaction_date BETWEEN %s AND %s
+            SELECT t.amount FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s
         ) as all_revenue
-    """, (this_year_start, this_year_end, this_year_start, this_year_end))
+    """, (business_id, this_year_start, this_year_end, business_id, this_year_start, this_year_end))
     current_revenue = float(cursor.fetchone()['revenue'] or 0)
     
-    # Get last year revenue
+    # Get last year revenue filtered by business_id
     cursor.execute("""
         SELECT COALESCE(SUM(amount), 0) as revenue FROM (
-            SELECT amount FROM sales WHERE sale_date BETWEEN %s AND %s
+            SELECT s.amount FROM sales s
+            JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
             UNION ALL
-            SELECT amount FROM transactions WHERE type = 'income' AND transaction_date BETWEEN %s AND %s
+            SELECT t.amount FROM transactions t
+            JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s
         ) as all_revenue
-    """, (last_year_start, last_year_end, last_year_start, last_year_end))
+    """, (business_id, last_year_start, last_year_end, business_id, last_year_start, last_year_end))
     last_revenue = float(cursor.fetchone()['revenue'] or 0)
     
-    # Get current year expenses
+    # Get current year expenses filtered by business_id
     cursor.execute("""
-        SELECT COALESCE(SUM(amount), 0) as expenses FROM transactions
-        WHERE type = 'expense' AND transaction_date BETWEEN %s AND %s
-    """, (this_year_start, this_year_end))
+        SELECT COALESCE(SUM(t.amount), 0) as expenses
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, this_year_start, this_year_end))
     current_expenses = float(cursor.fetchone()['expenses'] or 0)
     
-    # Get last year expenses
+    # Get last year expenses filtered by business_id
     cursor.execute("""
-        SELECT COALESCE(SUM(amount), 0) as expenses FROM transactions
-        WHERE type = 'expense' AND transaction_date BETWEEN %s AND %s
-    """, (last_year_start, last_year_end))
+        SELECT COALESCE(SUM(t.amount), 0) as expenses
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date BETWEEN %s AND %s
+    """, (business_id, last_year_start, last_year_end))
     last_expenses = float(cursor.fetchone()['expenses'] or 0)
     
     current_profit = current_revenue - current_expenses
@@ -693,6 +704,7 @@ def product_list():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
+    # Use business_id to get products from all users in this business
     business_id = session.get('business_id', session['user_id'])
     
     cursor.execute("""
@@ -705,6 +717,16 @@ def product_list():
     
     products = cursor.fetchall()
     
+    # If no products found by business_id, fall back to user_id
+    if not products:
+        cursor.execute("""
+            SELECT p.id, p.name, p.price, p.cogs
+            FROM products p
+            WHERE p.user_id = %s AND p.deleted_at IS NULL
+            ORDER BY p.name ASC
+        """, (session['user_id'],))
+        products = cursor.fetchall()
+    
     cursor.close()
     db.close()
     
@@ -714,6 +736,137 @@ def product_list():
         p['cogs'] = float(p['cogs']) if p['cogs'] else 0
     
     return jsonify({'products': products})
+
+@insights_bp.route('/api/sales-by-week')
+def sales_by_week():
+    """Get sales grouped by week of current month"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    business_id = session.get('business_id', session['user_id'])
+    today = date.today()
+    first_of_month = today.replace(day=1)
+    
+    # Get all sales this month
+    cursor.execute("""
+        SELECT 
+            s.sale_date,
+            s.amount
+        FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.sale_date >= %s AND s.sale_date <= %s
+        ORDER BY s.sale_date ASC
+    """, (business_id, first_of_month, today))
+    sales = cursor.fetchall()
+    
+    cursor.close()
+    db.close()
+    
+    # Group by week (Week 1: days 1-7, Week 2: days 8-14, etc.)
+    weeks = {'Week 1': 0, 'Week 2': 0, 'Week 3': 0, 'Week 4': 0, 'Week 5': 0}
+    week_counts = {'Week 1': 0, 'Week 2': 0, 'Week 3': 0, 'Week 4': 0, 'Week 5': 0}
+    
+    for s in sales:
+        day = s['sale_date'].day
+        amount = float(s['amount'] or 0)
+        
+        if day <= 7:
+            weeks['Week 1'] += amount
+            week_counts['Week 1'] += 1
+        elif day <= 14:
+            weeks['Week 2'] += amount
+            week_counts['Week 2'] += 1
+        elif day <= 21:
+            weeks['Week 3'] += amount
+            week_counts['Week 3'] += 1
+        elif day <= 28:
+            weeks['Week 4'] += amount
+            week_counts['Week 4'] += 1
+        else:
+            weeks['Week 5'] += amount
+            week_counts['Week 5'] += 1
+    
+    # Calculate total for percentages
+    total_month = sum(weeks.values())
+    
+    # Build response (only include weeks that exist)
+    week_order = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5']
+    result = []
+    for week_name in week_order:
+        if total_month > 0 or weeks[week_name] > 0:  # Show week if it has data or it's the first week with no data yet
+            result.append({
+                'week_label': week_name,
+                'total_sales': round(weeks[week_name], 2),
+                'transaction_count': week_counts[week_name],
+                'percent_of_month': round((weeks[week_name] / total_month * 100), 1) if total_month > 0 else 0
+            })
+    
+    return jsonify({
+        'weeks': result,
+        'total_month': round(total_month, 2),
+        'month': first_of_month.strftime('%B %Y')
+    })
+
+
+@insights_bp.route('/api/product-baseline/<int:product_id>')
+def product_baseline(product_id):
+    """Get baseline numbers for a specific product (for predictive planner)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get product details
+    cursor.execute("""
+        SELECT p.id, p.name, p.price, p.cogs
+        FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = %s AND u.business_id = %s AND p.deleted_at IS NULL
+    """, (product_id, business_id))
+    product = cursor.fetchone()
+    
+    if not product:
+        cursor.close()
+        db.close()
+        return jsonify({'error': 'Product not found'}), 404
+    
+    # Get sales for this product
+    cursor.execute("""
+        SELECT 
+            COALESCE(SUM(s.amount), 0) as total_sales,
+            COUNT(s.id) as units_sold
+        FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.description LIKE CONCAT('%%', %s, '%%')
+    """, (business_id, product['name']))
+    sales_data = cursor.fetchone()
+    
+    cursor.close()
+    db.close()
+    
+    revenue = float(sales_data['total_sales'] or 0)
+    units_sold = int(sales_data['units_sold'] or 0)
+    price = float(product['price'] or 0)
+    cogs = float(product['cogs'] or 0)
+    profit = revenue - (cogs * units_sold)
+    
+    return jsonify({
+        'product': {
+            'id': product['id'],
+            'name': product['name'],
+            'price': price,
+            'cogs': cogs,
+            'revenue': revenue,
+            'units_sold': units_sold,
+            'profit': profit
+        }
+    })
 
 # ========== EXISTING API ENDPOINTS (Keep as is) ==========
 
