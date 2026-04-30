@@ -291,3 +291,53 @@ def edit_sale(sale_id):
                          username=session['username'],
                          sale=sale,
                          today=today)
+
+@sales_bp.route('/receipt/<int:sale_id>')
+def receipt(sale_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get the sale
+    cursor.execute("""
+        SELECT s.*, u.username, u.business_name
+        FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.id = %s AND u.business_id = %s AND s.deleted_at IS NULL
+    """, (sale_id, business_id))
+    sale = cursor.fetchone()
+    
+    if not sale:
+        cursor.close()
+        db.close()
+        flash('Sale not found', 'error')
+        return redirect(url_for('sales.sales'))
+    
+    # Get business owner details
+    cursor.execute("""
+        SELECT username, business_name, business_id FROM users
+        WHERE business_id = %s AND role IN ('admin', 'owner')
+        LIMIT 1
+    """, (business_id,))
+    owner = cursor.fetchone()
+    
+    cursor.close()
+    db.close()
+    
+    business_name = owner['business_name'] if owner and owner.get('business_name') else session.get('business_name', 'My Business')
+    business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
+    
+    receipt_number = f"TARA-{sale_id:06d}"
+    today = date.today()
+    
+    return render_template('receipt.html',
+                         sale=sale,
+                         business_name=business_name,
+                         business_id=business_id_num,
+                         receipt_number=receipt_number,
+                         today=today,
+                         username=session['username'])

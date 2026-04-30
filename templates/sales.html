@@ -105,7 +105,10 @@
                     <td>{{ s.customer_name }}</td>
                     <td>{{ s.description or '-' }}</td>
                     <td style="color: #10b981;">₱ {{ "{:,.2f}".format(s.amount) }}</td>
-                    <td>
+                    <td style="white-space: nowrap;">
+                        <a href="/receipt/{{ s.id }}" class="btn-icon" title="View Receipt" target="_blank">
+                            <i class="fas fa-receipt"></i>
+                        </a>
                         <a href="/edit_sale/{{ s.id }}" class="btn-icon" title="Edit">
                             <i class="fas fa-pen"></i>
                         </a>
