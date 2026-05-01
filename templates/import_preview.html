@@ -80,11 +80,19 @@
         </table>
     </div>
     
+    {% if show_import_btn %}
     <form method="POST" enctype="multipart/form-data" action="/import-data" style="margin-top: 16px;">
         <input type="hidden" name="module" value="{{ active_tab }}">
         <input type="hidden" name="confirm" value="true">
-        <button type="submit" class="btn btn-primary">Import Valid Rows</button>
-        <span style="font-size: 12px; color: var(--text-secondary); margin-left: 8px;">Only valid rows will be imported</span>
+        <p style="font-size: 12px; color: var(--text-secondary);">Clicking Import will process this file. Make sure all rows are valid.</p>
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Import these records?')">
+            <i class="fas fa-check"></i> Import Valid Rows
+        </button>
     </form>
+    {% else %}
+    <p style="text-align: center; padding: 20px; color: #10b981;">
+        <i class="fas fa-check-circle"></i> Import complete. <a href="/import-data?tab={{ active_tab }}">Import more</a>
+    </p>
+    {% endif %}
 </div>
 {% endif %}

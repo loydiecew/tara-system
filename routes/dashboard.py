@@ -37,20 +37,74 @@ def dashboard():
         compare_end = end_date - timedelta(days=7)
         period_label = 'This Week'
         compare_label = 'Last Week'
-    else:  # month
-        start_date = today.replace(day=1)
-        if today.month == 12:
-            end_date = today.replace(day=31)
+    else:  # month (or last_month)
+        if period == 'last_month':
+            # Last month
+            start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+            if start_date.month == 12:
+                end_date = start_date.replace(day=31)
+            else:
+                end_date = (start_date.replace(month=start_date.month + 1, day=1) - timedelta(days=1))
+            period_label = start_date.strftime('%B')
+            compare_start = (start_date - timedelta(days=1)).replace(day=1)
+            if compare_start.month == 12:
+                compare_end = compare_start.replace(day=31)
+            else:
+                compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+            compare_label = compare_start.strftime('%B')
+        elif today.day <= 3:
+            # Early in month - check if current month has data, fall back to last month
+            start_date = today.replace(day=1)
+            if today.month == 12:
+                end_date = today.replace(day=31)
+            else:
+                end_date = (today.replace(month=today.month + 1, day=1) - timedelta(days=1))
+            
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM (
+                    SELECT t.id FROM transactions t
+                    JOIN users u ON t.user_id = u.id
+                    WHERE u.business_id = %s AND t.transaction_date >= %s AND t.transaction_date <= %s
+                    UNION ALL
+                    SELECT s.id FROM sales s
+                    JOIN users u ON s.user_id = u.id
+                    WHERE u.business_id = %s AND s.sale_date >= %s AND s.sale_date <= %s
+                ) AS all_data
+            """, (business_id, start_date, end_date, business_id, start_date, end_date))
+            current_month_count = cursor.fetchone()['count']
+            
+            if current_month_count == 0:
+                # Fall back to last month
+                start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
+                if start_date.month == 12:
+                    end_date = start_date.replace(day=31)
+                else:
+                    end_date = (start_date.replace(month=start_date.month + 1, day=1) - timedelta(days=1))
+                period = 'last_month'
+                period_label = start_date.strftime('%B')
+            else:
+                period_label = 'This Month'
+            
+            compare_start = (start_date - timedelta(days=1)).replace(day=1)
+            if compare_start.month == 12:
+                compare_end = compare_start.replace(day=31)
+            else:
+                compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+            compare_label = compare_start.strftime('%B')
         else:
-            next_month = today.replace(month=today.month + 1, day=1)
-            end_date = next_month - timedelta(days=1)
-        compare_start = (start_date - timedelta(days=1)).replace(day=1)
-        if compare_start.month == 12:
-            compare_end = compare_start.replace(day=31)
-        else:
-            compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
-        period_label = 'This Month'
-        compare_label = 'Last Month'
+            # Normal month view
+            start_date = today.replace(day=1)
+            if today.month == 12:
+                end_date = today.replace(day=31)
+            else:
+                end_date = (today.replace(month=today.month + 1, day=1) - timedelta(days=1))
+            period_label = 'This Month'
+            compare_start = (start_date - timedelta(days=1)).replace(day=1)
+            if compare_start.month == 12:
+                compare_end = compare_start.replace(day=31)
+            else:
+                compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+            compare_label = compare_start.strftime('%B')
     
     # ========== CURRENT PERIOD REVENUE (Sales + Cash Income) ==========
     cursor.execute("""
@@ -166,7 +220,7 @@ def dashboard():
     total_ap_paid = float(cursor.fetchone()['total_paid'] or 0)
     
     ap_outstanding = total_billed - total_ap_paid
-    
+
     # ========== INVENTORY SUMMARY ==========
     cursor.execute("""
         SELECT 

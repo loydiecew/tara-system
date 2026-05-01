@@ -110,6 +110,7 @@
         <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
             <select id="dashboardPeriod" onchange="switchDashboardPeriod()" style="padding: 6px 12px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
                 <option value="month" {{ 'selected' if period == 'month' else '' }}>This Month</option>
+                <option value="last_month" {{ 'selected' if period == 'last_month' else '' }}>Last Month</option>
                 <option value="week" {{ 'selected' if period == 'week' else '' }}>This Week</option>
                 <option value="today" {{ 'selected' if period == 'today' else '' }}>Today</option>
             </select>

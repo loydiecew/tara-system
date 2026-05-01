@@ -11,6 +11,8 @@ def insights():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
+    is_cashier = session.get('role') == 'cashier'
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
@@ -238,7 +240,8 @@ def insights():
                          recommendations=recommendations,
                          baseline_sales=baseline_sales,
                          baseline_expenses=baseline_expenses,
-                         current_profit_baseline=baseline_profit)
+                         current_profit_baseline=baseline_profit,
+                         is_cashier=is_cashier)
 
 
 # ========== ENHANCED BUSINESS INSIGHTS API ENDPOINTS ==========

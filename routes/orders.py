@@ -10,6 +10,10 @@ orders_bp = Blueprint('orders', __name__)
 def purchase_orders():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+
+    if session.get('role') not in ['admin', 'owner', 'manager']:
+        flash('Access restricted.', 'error')
+        return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
@@ -167,6 +171,10 @@ def sales_orders():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
+    if session.get('role') not in ['admin', 'owner', 'manager']:
+        flash('Access restricted.', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])

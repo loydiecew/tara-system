@@ -671,55 +671,50 @@
                     </a>
                 </div>
 
-                {% if session.role == 'admin' or session.role == 'owner' %}
-                {% if has_feature('accounts_receivable') or has_feature('accounts_payable') %}
+                <!-- RECEIVABLES & PAYABLES: Admin/Owner only, Pro/Enterprise only -->
+                {% if session.role in ['admin', 'owner'] and session.plan in ['pro', 'enterprise'] %}
                 <div class="nav-section">
                     <div class="nav-label">RECEIVABLES & PAYABLES</div>
-                    {% if has_feature('accounts_receivable') %}
                     <a href="/ar" class="nav-item {{ is_active('ar') }}">
                         <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
                     </a>
-                    {% endif %}
-                    {% if has_feature('accounts_payable') %}
                     <a href="/ap" class="nav-item {{ is_active('ap') }}">
                         <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
                     </a>
-                    {% endif %}
                 </div>
                 {% endif %}
-                {% endif %}
 
-                {% if session.role == 'admin' or session.role == 'owner' %}
-                {% if has_feature('inventory_management') %}
+                <!-- OPERATIONS: Admin/Owner/Manager, Pro/Enterprise only -->
+                {% if session.role in ['admin', 'owner', 'manager'] and session.plan in ['pro', 'enterprise'] %}
                 <div class="nav-section">
                     <div class="nav-label">OPERATIONS</div>
                     <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
                         <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
                     </a>
-                <a href="/purchase-orders" class="nav-item {{ is_active('purchase_orders') }}">
-                    <i class="fas fa-truck-loading"></i><span>Purchase Orders</span>
-                </a>
-                <a href="/sales-orders" class="nav-item {{ is_active('sales_orders') }}">
-                    <i class="fas fa-clipboard-list"></i><span>Sales Orders</span>
-                </a>
+                    <a href="/purchase-orders" class="nav-item {{ is_active('purchase_orders') }}">
+                        <i class="fas fa-truck-loading"></i><span>Purchase Orders</span>
+                    </a>
+                    <a href="/sales-orders" class="nav-item {{ is_active('sales_orders') }}">
+                        <i class="fas fa-clipboard-list"></i><span>Sales Orders</span>
+                    </a>
                 </div>
                 {% endif %}
-                {% endif %}
 
+                <!-- HISTORY: All users see All Transactions, only Admin/Owner see Journal/Ledger -->
                 <div class="nav-section">
                     <div class="nav-label">HISTORY</div>
+                    {% if session.role in ['admin', 'owner'] %}
                     <a href="/all-transactions" class="nav-item {{ is_active('all_transactions') }}">
                         <i class="fas fa-list-ul"></i><span>All Transactions</span>
                     </a>
-                    {% if session.role == 'admin' or session.role == 'owner' %}
+                    {% endif %}
                     <a href="/journal" class="nav-item {{ is_active('journal') }}">
                         <i class="fas fa-book-open"></i><span>General Journal</span>
                     </a>
-                    {% if session.plan == 'pro' or session.plan == 'enterprise' %}
+                    {% if session.role in ['admin', 'owner'] and session.plan in ['pro', 'enterprise'] %}
                     <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
                         <i class="fas fa-balance-scale"></i><span>General Ledger</span>
                     </a>
-                    {% endif %}
                     {% endif %}
                 </div>
             </div>

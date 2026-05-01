@@ -226,6 +226,7 @@
 <!-- ============================================ -->
 <!-- ENHANCED: PRODUCT PROFITABILITY + CUSTOMER RANKING -->
 <!-- ============================================ -->
+{% if not is_cashier %}
 <div class="analysis-grid">
     <!-- Product Profitability -->
     <div class="card">
@@ -274,6 +275,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- ============================================ -->
 <!-- SALES BY DAY / WEEK                          -->
@@ -349,6 +351,7 @@
 <!-- ============================================ -->
 <!-- RECOMMENDATIONS                              -->
 <!-- ============================================ -->
+{% if not is_cashier %}
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header">
         <h2><i class="fas fa-lightbulb"></i> Recommendations</h2>
@@ -383,10 +386,12 @@
         {% endfor %}
     </div>
 </div>
+{% endif %}
 
 <!-- ============================================ -->
 <!-- REDESIGNED PREDICTIVE PLANNER                -->
 <!-- ============================================ -->
+{% if not is_cashier %}
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header section-heading">
         <h2><i class="fas fa-chart-simple"></i> Predictive Planner</h2>
@@ -457,6 +462,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- LOAD SCENARIO MODAL -->
 <div id="loadScenarioModal" class="modal">

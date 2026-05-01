@@ -10,6 +10,10 @@ def inventory():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
+    if session.get('role') not in ['admin', 'owner', 'manager']:
+        flash('Access restricted.', 'error')
+        return redirect(url_for('dashboard.dashboard'))
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     

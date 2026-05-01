@@ -20,36 +20,52 @@ def import_data():
     preview = []
     imported = 0
     skipped = 0
-    errors = []
     active_tab = request.args.get('tab', 'cash')
     
     if request.method == 'POST':
         active_tab = request.form.get('module', 'cash')
-        
-        if 'csv_file' not in request.files:
-            flash('No file selected', 'error')
-            return redirect(url_for('import_data.import_data', tab=active_tab))
-        
-        file = request.files['csv_file']
-        if file.filename == '':
-            flash('No file selected', 'error')
-            return redirect(url_for('import_data.import_data', tab=active_tab))
-        
-        if not file.filename.endswith('.csv'):
-            flash('Please upload a CSV file', 'error')
-            return redirect(url_for('import_data.import_data', tab=active_tab))
-        
-        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
-        reader = csv.DictReader(stream)
-        
         confirm = request.form.get('confirm') == 'true'
+        
+        file_content = None
+        
+        if confirm:
+            # Get file content from session (stored during preview)
+            stored = session.pop('csv_data', {})
+            file_content = stored.get('content', '')
+            if not file_content:
+                flash('No file data found. Please re-upload.', 'error')
+                return redirect(url_for('import_data.import_data', tab=active_tab))
+        else:
+            # Read file from upload
+            if 'csv_file' not in request.files:
+                flash('No file selected', 'error')
+                return redirect(url_for('import_data.import_data', tab=active_tab))
+            
+            file = request.files['csv_file']
+            if file.filename == '':
+                flash('No file selected', 'error')
+                return redirect(url_for('import_data.import_data', tab=active_tab))
+            
+            if not file.filename.endswith('.csv'):
+                flash('Please upload a CSV file', 'error')
+                return redirect(url_for('import_data.import_data', tab=active_tab))
+            
+            file_content = file.stream.read().decode("UTF8")
+            # Store in session for confirm step
+            session['csv_data'] = {
+                'content': file_content,
+                'module': active_tab
+            }
+        
+        # Parse CSV
+        stream = io.StringIO(file_content, newline=None)
+        reader = csv.DictReader(stream)
         
         for row_num, row in enumerate(reader, start=2):
             row['_row'] = row_num
             row['_status'] = 'valid'
             row['_error'] = ''
             
-            # Validate based on module
             if active_tab == 'cash':
                 validate_cash_row(row)
             elif active_tab == 'sales':
@@ -74,24 +90,28 @@ def import_data():
             
             preview.append(row)
         
-        if confirm and imported > 0:
-            flash(f'{imported} records imported successfully! {skipped} skipped.', 'success')
+        if confirm:
+            if imported > 0:
+                flash(f'{imported} records imported successfully! {skipped} skipped.', 'success')
+            else:
+                flash(f'No records imported. {skipped} skipped.', 'error')
             return redirect(url_for('import_data.import_data', tab=active_tab))
         
-        # If POST but not confirmed, return only the preview HTML fragment (AJAX request)
+        # Show preview
         return render_template('import_preview.html',
                              preview=preview,
                              active_tab=active_tab,
                              imported=imported,
-                             skipped=skipped)
+                             skipped=skipped,
+                             show_import_btn=preview and any(r['_status'] == 'valid' for r in preview))
     
-    # GET request — render the full page
+    # GET request
     return render_template('import_data.html',
                          username=session['username'],
                          active_tab=active_tab)
-                         
+
+
 def validate_cash_row(row):
-    """Validate cash transaction row"""
     if not row.get('Date', '').strip():
         row['_status'] = 'error'
         row['_error'] = 'Date is required'
@@ -125,7 +145,6 @@ def validate_cash_row(row):
 
 
 def validate_sales_row(row):
-    """Validate sales row"""
     if not row.get('Date', '').strip():
         row['_status'] = 'error'
         row['_error'] = 'Date is required'
@@ -153,7 +172,6 @@ def validate_sales_row(row):
 
 
 def validate_inventory_row(row):
-    """Validate inventory/product row"""
     if not row.get('Name', '').strip():
         row['_status'] = 'error'
         row['_error'] = 'Product name is required'
@@ -177,7 +195,6 @@ def validate_inventory_row(row):
 
 
 def validate_customer_row(row):
-    """Validate customer row"""
     if not row.get('Name', '').strip():
         row['_status'] = 'error'
         row['_error'] = 'Customer name is required'
@@ -185,7 +202,6 @@ def validate_customer_row(row):
 
 
 def validate_supplier_row(row):
-    """Validate supplier row"""
     if not row.get('Name', '').strip():
         row['_status'] = 'error'
         row['_error'] = 'Supplier name is required'
@@ -193,7 +209,6 @@ def validate_supplier_row(row):
 
 
 def import_row(module, row):
-    """Insert a validated row into the database"""
     db = get_db()
     cursor = db.cursor()
     
