@@ -182,7 +182,7 @@
                             <th>Table</th>
                             <th>Record ID</th>
                             <th>Details</th>
-                        <table>
+                        </tr>
                     </thead>
                     <tbody>`;
                 
@@ -217,48 +217,48 @@
             .then(res => res.json())
             .then(data => {
                 const log = data.find(l => l.id === logId);
-                if (!log) return;
-                
-                let html = `<div class="detail-section">
-                    <div class="detail-label">Time:</div>
-                    <div>${log.created_at || '-'}</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">User:</div>
-                    <div>${log.username || '-'}</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">Action:</div>
-                    <div>${log.action || '-'}</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">Table:</div>
-                    <div>${log.table_name || '-'}</div>
-                </div>
-                <div class="detail-section">
-                    <div class="detail-label">Record ID:</div>
-                    <div>${log.record_id || '-'}</div>
-                </div>`;
-                
-                if (log.old_values_display) {
-                    html += `<div class="detail-section">
-                        <div class="detail-label">Before Change:</div>
-                        <div class="json-preview">${JSON.stringify(log.old_values_display, null, 2)}</div>
-                    </div>`;
+                if (!log) {
+                    document.getElementById('modalBody').innerHTML = '<p>Details not found.</p>';
+                    document.getElementById('detailModal').style.display = 'flex';
+                    return;
                 }
                 
-                if (log.new_values_display) {
-                    html += `<div class="detail-section">
-                        <div class="detail-label">After Change:</div>
-                        <div class="json-preview">${JSON.stringify(log.new_values_display, null, 2)}</div>
-                    </div>`;
+                let html = '';
+                
+                // Basic info
+                html += `<div class="detail-section"><div class="detail-label">Time</div><div>${log.created_at || '-'}</div></div>`;
+                html += `<div class="detail-section"><div class="detail-label">User</div><div>${log.username || '-'}</div></div>`;
+                html += `<div class="detail-section"><div class="detail-label">Action</div><div>${log.action || '-'}</div></div>`;
+                html += `<div class="detail-section"><div class="detail-label">Table</div><div>${log.table_name || '-'}</div></div>`;
+                html += `<div class="detail-section"><div class="detail-label">Record ID</div><div>${log.record_id || '-'}</div></div>`;
+                
+                // Old values
+                if (log.old_values_display && Object.keys(log.old_values_display).length > 0) {
+                    html += `<div class="detail-section"><div class="detail-label">Before Change</div>`;
+                    html += `<div class="json-preview">${JSON.stringify(log.old_values_display, null, 2)}</div></div>`;
+                }
+                
+                // New values
+                if (log.new_values_display && Object.keys(log.new_values_display).length > 0) {
+                    html += `<div class="detail-section"><div class="detail-label">After Change</div>`;
+                    html += `<div class="json-preview">${JSON.stringify(log.new_values_display, null, 2)}</div></div>`;
+                }
+                
+                // Performed by
+                if (log.performed_by) {
+                    html += `<div class="detail-section"><div class="detail-label">Performed By</div><div>${log.performed_by}</div></div>`;
                 }
                 
                 if (!log.old_values_display && !log.new_values_display) {
-                    html += `<div class="detail-section">No additional details available.</div>`;
+                    html += `<p style="color: var(--text-secondary);">No additional details available for this record.</p>`;
                 }
                 
                 document.getElementById('modalBody').innerHTML = html;
+                document.getElementById('detailModal').style.display = 'flex';
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('modalBody').innerHTML = '<p style="color: #ef4444;">Error loading details.</p>';
                 document.getElementById('detailModal').style.display = 'flex';
             });
     }

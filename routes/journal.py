@@ -125,24 +125,29 @@ def journal():
                          source_filter=source_filter,
                          date_from=date_from,
                          date_to=date_to,
-                         search=search)
+                         search=search,
+                         today=date.today().isoformat())
 
 @journal_bp.route('/ledger')
 def ledger():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    # Only Pro and Enterprise users can access double-entry view
     if session.get('plan') not in ['pro', 'enterprise']:
         flash('Double-entry journal is available on Pro and Enterprise plans only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
+    
+    # Get filters
+    search = request.args.get('search', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
     business_id = session.get('business_id', session['user_id'])
     
-    cursor.execute("""
+    query = """
         SELECT je.entry_date, je.description, coa.name as account_name, 
                jl.debit, jl.credit
         FROM journal_entries je
@@ -150,8 +155,25 @@ def ledger():
         JOIN chart_of_accounts coa ON jl.account_id = coa.id
         JOIN users u ON je.user_id = u.id
         WHERE u.business_id = %s
-        ORDER BY je.entry_date DESC, je.id DESC
-    """, (business_id,))
+    """
+    params = [business_id]
+    
+    if search:
+        query += " AND (je.description LIKE %s OR coa.name LIKE %s)"
+        params.append(f'%{search}%')
+        params.append(f'%{search}%')
+    
+    if date_from:
+        query += " AND je.entry_date >= %s"
+        params.append(date_from)
+    
+    if date_to:
+        query += " AND je.entry_date <= %s"
+        params.append(date_to)
+    
+    query += " ORDER BY je.entry_date DESC, je.id DESC"
+    
+    cursor.execute(query, params)
     entries = cursor.fetchall()
     
     total_debits = sum(e['debit'] for e in entries)
@@ -164,4 +186,8 @@ def ledger():
                          username=session['username'],
                          entries=entries,
                          total_debits=total_debits,
-                         total_credits=total_credits)
+                         total_credits=total_credits,
+                         today=date.today().isoformat(),
+                         search=search,
+                         date_from=date_from,
+                         date_to=date_to)

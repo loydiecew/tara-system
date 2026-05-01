@@ -263,39 +263,59 @@ def admin_audit():
 def admin_audit_api():
     if 'user_id' not in session or session.get('role') != 'admin':
         return jsonify({'error': 'Unauthorized'}), 401
-    
+
     business_id = session.get('business_id')
-    
+    action_filter = request.args.get('action', 'all')
+    table_filter = request.args.get('table', 'all')
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT a.*, u.username FROM audit_log a
+
+    query = """
+        SELECT a.*, u.username 
+        FROM audit_log a
         JOIN users u ON a.user_id = u.id
         WHERE u.business_id = %s
-        ORDER BY a.created_at DESC
-        LIMIT 500
-    """, (business_id,))
+    """
+    params = [business_id]
+
+    if action_filter != 'all':
+        query += " AND a.action = %s"
+        params.append(action_filter)
+
+    if table_filter != 'all':
+        query += " AND a.table_name = %s"
+        params.append(table_filter)
+
+    query += " ORDER BY a.created_at DESC LIMIT 500"
+
+    cursor.execute(query, params)
     logs = cursor.fetchall()
+
     cursor.close()
     db.close()
-    
+
+    import json
+
     for log in logs:
         if log.get('created_at'):
             log['created_at'] = log['created_at'].strftime('%Y-%m-%d %H:%M:%S')
-        import json
+
+        # safer JSON parsing
         if log.get('old_values'):
             try:
-                log['old_values_display'] = json.loads(log['old_values'])
+                log['old_values_display'] = json.loads(log['old_values']) if isinstance(log['old_values'], str) else log['old_values']
             except:
                 log['old_values_display'] = log['old_values']
+
         if log.get('new_values'):
             try:
-                log['new_values_display'] = json.loads(log['new_values'])
+                log['new_values_display'] = json.loads(log['new_values']) if isinstance(log['new_values'], str) else log['new_values']
             except:
                 log['new_values_display'] = log['new_values']
-    
-    return jsonify(logs)
 
+    return jsonify(logs)
+    
 @admin_bp.route('/profile')
 def profile():
     if 'user_id' not in session:
@@ -319,6 +339,31 @@ def profile():
             user['created_at'] = datetime.now()
     
     return render_template('profile.html', username=session['username'], user=user)
+
+@admin_bp.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    full_name = request.form.get('full_name', '')
+    email = request.form.get('email', '')
+    industry = request.form.get('industry', '')
+    vat_registered = request.form.get('vat_registered', '1')
+    
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        UPDATE users SET full_name = %s, email = %s, industry = %s, vat_registered = %s
+        WHERE id = %s
+    """, (full_name, email, industry, vat_registered, session['user_id']))
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    # Update session
+    session['vat_registered'] = vat_registered == '1'
+    
+    return redirect(url_for('admin.profile'))
 
 @admin_bp.route('/admin/users/api')
 def admin_users_api():
@@ -419,5 +464,11 @@ def admin_restore_data():
     db.close()
     
     return jsonify({'items': deleted_items, 'current_filter': module_filter})
+
+@admin_bp.route('/help')
+def help_page():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('help.html', username=session['username'])
 
     

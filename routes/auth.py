@@ -66,6 +66,8 @@ def register():
         # Map business size to plan_id
         plan_map = {'solo': 1, 'small': 2, 'medium': 3}
         plan_id = plan_map.get(business_size, 1)
+        # VAT: solo = non-VAT by default, small/medium = VAT-registered by default
+        vat_registered = 0 if business_size == 'solo' else 1
         
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         hashed_business_password = hashlib.sha256(business_password.encode()).hexdigest()
@@ -94,10 +96,10 @@ def register():
         try:
             cursor.execute("""
                 INSERT INTO users (username, password, role, full_name, industry, business_size, plan_id, 
-                                   business_id, business_password, business_name)
-                VALUES (%s, %s, 'admin', %s, %s, %s, %s, %s, %s, %s)
+                                business_id, business_password, business_name, vat_registered)
+                VALUES (%s, %s, 'admin', %s, %s, %s, %s, %s, %s, %s, %s)
             """, (username, hashed_password, full_name, industry, business_size, plan_id,
-                  business_id, hashed_business_password, business_name))
+                business_id, hashed_business_password, business_name, vat_registered))
             db.commit()
             
             cursor.execute("SELECT * FROM users WHERE username = %s AND business_id = %s", 

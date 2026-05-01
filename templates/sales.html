@@ -86,9 +86,34 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-history"></i> Sales History</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('salesTable', 'TARA_Sales_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
     </div>
+    
+    <!-- UNIVERSAL FILTER BAR -->
+    {% if session.role in ['admin', 'owner', 'manager'] %}
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Date From</label>
+            <input type="date" id="salesBody_date_from" onchange="filterTable('salesBody','salesNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Date To</label>
+            <input type="date" id="salesBody_date_to" onchange="filterTable('salesBody','salesNoData')">
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="salesBody_search" placeholder="Customer or description..." oninput="filterTable('salesBody','salesNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('salesBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    {% endif %}
+    
     <div class="table-wrapper">
-        <table class="data-table">
+        <table class="data-table" id="salesTable">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -98,9 +123,9 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="salesBody">
                 {% for s in sales %}
-                <tr>
+                <tr data-filter='{"date":"{{ s.sale_date }}","search":"{{ s.customer_name|lower }} {{ s.description|lower }}"}'>
                     <td>{{ s.sale_date }}</td>
                     <td>{{ s.customer_name }}</td>
                     <td>{{ s.description or '-' }}</td>
@@ -118,7 +143,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align: center;">No sales yet</td></tr>
+                <tr id="salesNoData"><td colspan="5" style="text-align: center;">No sales yet</td></tr>
                 {% endfor %}
             </tbody>
         </table>

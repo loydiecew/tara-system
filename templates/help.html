@@ -1,0 +1,293 @@
+{% extends "layout.html" %}
+
+{% block title %}Help Center{% endblock %}
+{% block page_title %}Help Center{% endblock %}
+{% block page_subtitle %}Learn how to use TARA effectively{% endblock %}
+
+{% block extra_css %}
+<style>
+    .faq-section {
+        margin-bottom: 28px;
+    }
+    .faq-section-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .faq-section-title i {
+        color: var(--accent);
+        width: 28px;
+        height: 28px;
+        background: var(--accent-light);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+    }
+    .faq-item {
+        border: 1px solid var(--border-light);
+        border-radius: 14px;
+        margin-bottom: 8px;
+        overflow: hidden;
+        background: var(--bg-secondary);
+        transition: all 0.2s;
+    }
+    .faq-item:hover {
+        border-color: var(--accent);
+    }
+    .faq-question {
+        padding: 16px 20px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 14px;
+        user-select: none;
+    }
+    .faq-question i {
+        transition: transform 0.3s ease;
+        color: var(--text-secondary);
+        font-size: 12px;
+    }
+    .faq-item.open .faq-question i {
+        transform: rotate(180deg);
+        color: var(--accent);
+    }
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+        padding: 0 20px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+    .faq-item.open .faq-answer {
+        max-height: 300px;
+        padding: 0 20px 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="text-align: center; margin-bottom: 32px;">
+        <div class="faq-section-title" style="justify-content: center; font-size: 24px;">
+            <i class="fas fa-circle-question"></i> How can we help?
+        </div>
+        <p style="color: var(--text-secondary); margin-top: 8px;">Find answers to common questions about TARA</p>
+    </div>
+
+    <!-- GETTING STARTED -->
+    <div class="faq-section">
+        <div class="faq-section-title">
+            <i class="fas fa-rocket"></i> Getting Started
+        </div>
+        
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I create an account?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Click <strong>Register</strong> on the login page. Fill in your full name, username, password, business name, business password, industry, and business size. After registering, you will receive a unique <strong>Business ID</strong>. Share this with your team members so they can join your business account.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                What is a Business ID?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Your Business ID is a unique code (e.g., <strong>TARA-ABCD-1234</strong>) generated when you register. All team members use this ID along with the business password to log in and access the same business data. You can find it in your <strong>Profile Settings</strong>.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I add team members?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Profile → Team Management</strong>. Click "Add User" and fill in their details. You can assign roles: <strong>Admin</strong> (full access), <strong>Manager</strong> (can view reports, manage transactions), or <strong>Cashier</strong> (can only record income). Available on Pro and Enterprise plans.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                What plans are available?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                TARA offers three plans:<br><br>
+                <strong>Basic (₱500/month)</strong> — Cash Management, Sales, General Journal, Business Insights.<br>
+                <strong>Pro (₱1,500/month)</strong> — All Basic features + AR, AP, Inventory, Audit Log, up to 10 users.<br>
+                <strong>Enterprise (₱5,000/month)</strong> — All Pro features + Multi-branch, API Access, BIR Integration, priority support.
+            </div>
+        </div>
+    </div>
+
+    <!-- MANAGING FINANCES -->
+    <div class="faq-section">
+        <div class="faq-section-title">
+            <i class="fas fa-coins"></i> Managing Finances
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I record a sale?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Sales Management</strong>. You can record a sale manually by entering the customer name, amount, and description, or select a product from your inventory. The sale will automatically update your cash balance and inventory.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I track expenses?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Cash Management</strong>. Click "Add Transaction", select "Expense", enter the description, amount, and category. All expenses are tracked and visible in your Business Insights.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I create an invoice?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Accounts Receivable</strong>. First add a customer, then create an invoice by selecting the customer, entering the amount, and setting a due date. You can record partial or full payments against the invoice.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do purchase orders work?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Purchase Orders</strong>. Create an order by selecting a supplier, adding items with quantities and prices. When you receive the items, click "Receive" — this automatically updates your inventory and creates an Accounts Payable bill.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do sales orders work?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Sales Orders</strong>. Create an order for a customer with items and quantities. When you deliver, click "Deliver" — this deducts inventory and automatically creates an Accounts Receivable invoice.
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div class="faq-section">
+        <div class="faq-section-title">
+            <i class="fas fa-star"></i> Features
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How does the Predictive Planner work?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Business Insights → Predictive Planner</strong>. Adjust variables like price, volume, and costs. The system calculates projected profit in real-time. You can save scenarios and load them later to compare different strategies.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I import data from CSV?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Profile → Import Data</strong>. Select the module (Cash, Sales, Inventory, Customers, or Suppliers), download the template, fill in your data, and upload. The system validates each row and imports valid records.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I generate a receipt?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Receipts are available for sales, income transactions, and AR payments. Click the <strong>receipt icon</strong> next to any record. A professional receipt opens with your business name, customer details, and VAT breakdown. Click "Print" to save as PDF.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                What reports can I export?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Every table in TARA has an <strong>Export CSV</strong> button. You can export your Cash transactions, Sales, Invoices, Bills, Products, Journal, and Ledger data as CSV files that open in Excel or Google Sheets.
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCOUNT & SETTINGS -->
+    <div class="faq-section">
+        <div class="faq-section-title">
+            <i class="fas fa-gear"></i> Account & Settings
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I change my plan?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Profile → Billing & Plan</strong>. You can view your current plan and upgrade options. Contact support to switch plans.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I switch to dark mode?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Profile → Appearance</strong> and toggle the Dark Mode switch. Your preference is saved automatically.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do I restore deleted items?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Profile → Restore Data</strong>. You can view all deleted transactions, sales, invoices, bills, and products. Click "Restore" to recover any item.
+            </div>
+        </div>
+
+        <div class="faq-item" onclick="toggleFaq(this)">
+            <div class="faq-question">
+                How do VAT and taxes work?
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="faq-answer">
+                Go to <strong>Profile → Tax Registration</strong> to set your business as VAT-Registered (12% VAT) or Non-VAT. Your receipts will automatically show the correct tax breakdown based on this setting.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFaq(item) {
+        item.classList.toggle('open');
+    }
+</script>
+{% endblock %}

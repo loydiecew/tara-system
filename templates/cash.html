@@ -82,9 +82,42 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Transaction History</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('cashTable', 'TARA_Cash_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
     </div>
+    
+    <!-- UNIVERSAL FILTER BAR -->
+    {% if session.role in ['admin', 'owner', 'manager'] %}
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Date From</label>
+            <input type="date" id="cashBody_date_from" onchange="filterTable('cashBody','cashNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Date To</label>
+            <input type="date" id="cashBody_date_to" onchange="filterTable('cashBody','cashNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Type</label>
+            <select id="cashBody_type" onchange="filterTable('cashBody','cashNoData')">
+                <option value="all">All Types</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="cashBody_search" placeholder="Description or category..." oninput="filterTable('cashBody','cashNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('cashBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    {% endif %}
+    
     <div class="table-wrapper">
-        <table class="data-table">
+        <table class="data-table" id="cashTable">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -95,15 +128,20 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="cashBody">
                 {% for t in transactions %}
-                <tr>
+                <tr data-filter='{"date":"{{ t.transaction_date }}","type":"{{ t.type }}","search":"{{ t.description|lower }} {{ t.category|lower }}"}'>
                     <td>{{ t.transaction_date }}</td>
                     <td>{{ t.description }}</td>
                     <td>{{ t.category or '-' }}</td>
                     <td><span class="badge {{ 'badge-success' if t.type == 'income' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
                     <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">₱ {{ "{:,.2f}".format(t.amount) }}</td>
-                    <td>
+                    <td style="white-space: nowrap;">
+                        {% if t.type == 'income' %}
+                        <a href="/receipt/cash/{{ t.id }}" class="btn-icon" title="Receipt" target="_blank">
+                            <i class="fas fa-receipt"></i>
+                        </a>
+                        {% endif %}
                         <a href="/edit_transaction/{{ t.id }}" class="btn-icon" title="Edit">
                             <i class="fas fa-pen"></i>
                         </a>
@@ -113,7 +151,8 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" style="text-align: center;">No transactions yet</td{% endfor %}
+                <tr id="cashNoData"><td colspan="6" style="text-align: center;">No transactions yet</td></tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

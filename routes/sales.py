@@ -341,3 +341,79 @@ def receipt(sale_id):
                          receipt_number=receipt_number,
                          today=today,
                          username=session['username'])
+
+@sales_bp.route('/receipt/payment/<int:payment_id>')
+def receipt_payment(payment_id):
+    """Receipt for AR payment or Cash income"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get payment with related invoice or transaction
+    cursor.execute("""
+        SELECT p.*, 
+            COALESCE(i.invoice_number, CONCAT('Cash-', t.id)) as doc_number,
+            COALESCE(c.name, t.description) as from_name,
+            CASE 
+                WHEN p.invoice_id IS NOT NULL THEN 'AR Payment'
+                ELSE 'Cash Income'
+            END as receipt_type
+        FROM payments p
+        LEFT JOIN invoices i ON p.invoice_id = i.id
+        LEFT JOIN customers c ON i.customer_id = c.id
+        LEFT JOIN transactions t ON t.description LIKE CONCAT('%%', p.reference_number, '%%') AND t.user_id = p.user_id
+        WHERE p.id = %s AND p.user_id = %s
+        ORDER BY t.id DESC
+        LIMIT 1
+    """, (payment_id, session['user_id']))
+    payment = cursor.fetchone()
+    
+    if not payment:
+        cursor.close()
+        db.close()
+        flash('Payment not found', 'error')
+        return redirect(url_for('sales.sales'))
+    
+    # Get business owner details
+    cursor.execute("""
+        SELECT username, business_name, business_id FROM users
+        WHERE business_id = %s AND role IN ('admin', 'owner')
+        LIMIT 1
+    """, (business_id,))
+    owner = cursor.fetchone()
+    
+    cursor.close()
+    db.close()
+    
+    business_name = owner['business_name'] if owner and owner.get('business_name') else 'My Business'
+    business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
+    
+    receipt_number = f"RCPT-{payment_id:06d}"
+    today = date.today()
+    
+    # Build payment method display
+    method_display = payment['payment_method'].replace('_', ' ').title() if payment.get('payment_method') else 'Cash'
+    
+    # Determine back URL
+    back_url = 'ar' if payment.get('invoice_id') else 'cash'
+    
+    return render_template('receipt.html',
+                         receipt_number=receipt_number,
+                         receipt_title='Payment Receipt',
+                         receipt_date=str(payment['payment_date']),
+                         business_name=business_name,
+                         business_id=business_id_num,
+                         customer_label='Received From',
+                         customer_name=payment['from_name'] or 'Customer',
+                         description=payment['notes'] or 'Payment received',
+                         amount=float(payment['amount']),
+                         payment_method=method_display,
+                         reference_number=payment['reference_number'] or '',
+                         invoice_number=payment['doc_number'] if payment.get('invoice_id') else '',
+                         today=today,
+                         back_url=back_url,
+                         username=session['username'])

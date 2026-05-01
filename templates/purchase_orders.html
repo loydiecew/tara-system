@@ -1,0 +1,173 @@
+{% extends "layout.html" %}
+
+{% block title %}Purchase Orders{% endblock %}
+{% block page_title %}Purchase Orders{% endblock %}
+{% block page_subtitle %}Order supplies and track deliveries{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Orders</div>
+        <div class="stat-value">{{ orders|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Pending Delivery</div>
+        <div class="stat-value" style="color: #f59e0b;">
+            {{ orders|selectattr('status', 'equalto', 'ordered')|list|length }}
+        </div>
+    </div>
+</div>
+
+<!-- Create Purchase Order -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> New Purchase Order</h2>
+    </div>
+    <form method="POST" action="/add_po" id="poForm">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Supplier</label>
+                <select name="supplier_id">
+                    <option value="">Select supplier</option>
+                    {% for s in suppliers %}
+                    <option value="{{ s.id }}">{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Order Date</label>
+                <input type="date" name="order_date" value="{{ today }}" required>
+            </div>
+            <div class="form-group">
+                <label>Expected Delivery</label>
+                <input type="date" name="expected_date">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <input type="text" name="notes" placeholder="Optional">
+            </div>
+        </div>
+        
+        <!-- Items Table -->
+        <div style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-size: 14px;">Items</h3>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addPOItem()">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Quantity</th>
+                            <th>Unit Price (₱)</th>
+                            <th>Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="poItemsBody">
+                        <tr class="po-item-row">
+                            <td><input type="text" name="product_name[]" placeholder="e.g., Coffee beans" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updatePOTotal()" style="width:80px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updatePOTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td class="po-subtotal" style="font-weight:600;">₱0.00</td>
+                            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updatePOTotal();"><i class="fas fa-times"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="text-align: right; margin-top: 12px; font-size: 16px; font-weight: 700;">
+                Total: <span id="poGrandTotal" style="color: #10b981;">₱0.00</span>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">
+            <i class="fas fa-save"></i> Create Purchase Order
+        </button>
+    </form>
+</div>
+
+<!-- Purchase Orders List -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Purchase Orders</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>PO #</th>
+                    <th>Supplier</th>
+                    <th>Order Date</th>
+                    <th>Expected</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for po in orders %}
+                <tr>
+                    <td><strong>{{ po.po_number }}</strong></td>
+                    <td>{{ po.supplier_name or '-' }}</td>
+                    <td>{{ po.order_date }}</td>
+                    <td>{{ po.expected_date or '-' }}</td>
+                    <td>₱ {{ "{:,.2f}".format(po.total_amount) }}</td>
+                    <td>
+                        {% if po.status == 'draft' %}
+                        <span class="badge badge-info">Draft</span>
+                        {% elif po.status == 'ordered' %}
+                        <span class="badge badge-warning">Ordered</span>
+                        {% elif po.status == 'received' %}
+                        <span class="badge badge-success">Received</span>
+                        {% else %}
+                        <span class="badge badge-danger">{{ po.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if po.status == 'ordered' %}
+                        <a href="/receive_po/{{ po.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Receive this order? Inventory will be updated and a bill will be created.')" style="padding:5px 12px; font-size:12px;">
+                            <i class="fas fa-check"></i> Receive
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 30px;">No purchase orders yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function addPOItem() {
+        const tbody = document.getElementById('poItemsBody');
+        const row = document.createElement('tr');
+        row.className = 'po-item-row';
+        row.innerHTML = `
+            <td><input type="text" name="product_name[]" placeholder="e.g., Coffee beans" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updatePOTotal()" style="width:80px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updatePOTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td class="po-subtotal" style="font-weight:600;">₱0.00</td>
+            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updatePOTotal();"><i class="fas fa-times"></i></button></td>
+        `;
+        tbody.appendChild(row);
+    }
+    
+    function updatePOTotal() {
+        const rows = document.querySelectorAll('.po-item-row');
+        let grandTotal = 0;
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+            const price = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+            const subtotal = qty * price;
+            row.querySelector('.po-subtotal').textContent = '₱' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+            grandTotal += subtotal;
+        });
+        document.getElementById('poGrandTotal').textContent = '₱' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+</script>
+{% endblock %}

@@ -43,19 +43,22 @@
             <a href="#" class="profile-nav" data-tab="audit">
                 <i class="fas fa-history"></i> Audit Log
             </a>
+            <a href="#" class="profile-nav" data-tab="import">
+                <i class="fas fa-upload"></i> Import Data
+            </a>
             {% endif %}
             
             <div style="height: 1px; background: var(--border-light); margin: 12px 16px;"></div>
-            
+
             <a href="/logout" class="profile-nav" style="color: #ef4444;">
                 <i class="fas fa-sign-out-alt"></i> Sign Out
             </a>
         </div>
     </div>
     
-    <!-- Content Area - FIXED: Added min-width to prevent shrinking -->
-    <div style="flex: 1; min-width: 500px; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px;">
-        
+    <!-- Content Area -->
+    <div style="flex: 1; min-width: 500px; height: calc(100vh - 160px); overflow: hidden; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px; display: flex; flex-direction: column;">
+        <div style="flex: 1; overflow-y: auto; padding-right: 4px;">
         <!-- ========== TAB 1: PROFILE ========== -->
         <div id="tab-profile" class="profile-tab-content active">
             <h2 style="font-size: 22px; margin-bottom: 8px;">Profile Information</h2>
@@ -93,20 +96,41 @@
                         <input type="text" value="{{ session.role|capitalize }}" disabled style="background:var(--bg-primary);">
                     </div>
                     <div class="form-group">
-                        <label><i class="fas fa-store"></i> Industry</label>
-                        <select name="industry" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                            <option value="retail" {% if user.industry == 'retail' %}selected{% endif %}>Retail Store</option>
-                            <option value="restaurant" {% if user.industry == 'restaurant' %}selected{% endif %}>Restaurant / Cafe</option>
-                            <option value="freelancer" {% if user.industry == 'freelancer' %}selected{% endif %}>Freelancer</option>
-                            <option value="construction" {% if user.industry == 'construction' %}selected{% endif %}>Construction</option>
-                            <option value="other" {% if user.industry == 'other' %}selected{% endif %}>Other</option>
+                        <label><i class="fas fa-store"></i> Industry Category</label>
+                        <select id="industryCategoryProfile" onchange="updateProfileSubcategories()" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                            <option value="">Select category...</option>
+                            <option value="food_beverage">Food & Beverage</option>
+                            <option value="retail">Retail</option>
+                            <option value="health_wellness">Health & Wellness</option>
+                            <option value="professional_services">Professional Services</option>
+                            <option value="service_based">Service-Based</option>
+                            <option value="construction_realestate">Construction & Real Estate</option>
+                            <option value="hospitality_travel">Hospitality & Travel</option>
+                            <option value="logistics">Logistics</option>
+                            <option value="technology">Technology</option>
+                            <option value="creative_media">Creative & Media</option>
+                            <option value="other">Other</option>
                         </select>
+                        <div id="subcategoryGroupProfile" style="display: none; margin-top: 10px;">
+                            <label style="font-size: 11px; color: var(--text-secondary);">Specific Industry</label>
+                            <select name="industry" id="industrySubcategoryProfile" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; margin-top: 4px; width: 100%;">
+                                <option value="">Select specific industry...</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label><i class="fas fa-calendar-alt"></i> Member Since</label>
                         <input type="text" value="{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}" disabled style="background:var(--bg-primary);">
                     </div>
-                </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-receipt"></i> Tax Registration</label>
+                        <select name="vat_registered" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                            <option value="1" {% if user.vat_registered %}selected{% endif %}>VAT-Registered (12% VAT)</option>
+                            <option value="0" {% if not user.vat_registered %}selected{% endif %}>Non-VAT (No VAT)</option>
+                        </select>
+                        <small style="color: var(--text-secondary); margin-top: 4px;">Affects receipt tax calculations</small>
+                    </div>
+                </div> 
                 
                 <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-light);">
                     <button type="submit" class="btn btn-primary">
@@ -287,6 +311,26 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- ========== TAB 7: IMPORT DATA ========== -->
+        <div id="tab-import" class="profile-tab-content">
+            <h2 style="font-size: 22px; margin-bottom: 8px;">Import Data</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 28px;">Bulk import records from CSV files</p>
+            <div id="importContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
+                <p style="color: var(--text-secondary);">Loading import tool...</p>
+            </div>
+        </div>
+        <!-- Audit Detail Modal -->
+        <div id="detailModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Change Details</h3>
+                    <span class="close-modal" onclick="closeAuditModal()">&times;</span>
+                </div>
+                <div id="modalBody" style="max-height: 60vh; overflow-y: auto;"></div>
+            </div>
+        </div>
+        </div>
     </div>
 </div>
 
@@ -349,6 +393,10 @@ input:checked + .theme-toggle-slider:before {
     transform: translateX(30px);
 }
 
+#detailModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+#detailModal .modal-content { background: var(--bg-secondary); border-radius: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 24px; }
+#detailModal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
+
 </style>
 
 <script>
@@ -356,42 +404,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const tabs = document.querySelectorAll('.profile-nav');
     const contents = document.querySelectorAll('.profile-tab-content');
-
-    // Safe user id injection
     const currentUserId = {{ session.user_id|tojson }};
 
     tabs.forEach(tab => {
         if (tab.getAttribute('href') === '/logout') return;
-
         tab.addEventListener('click', function (e) {
             e.preventDefault();
-
             const targetTab = this.dataset.tab;
-
             tabs.forEach(t => t.classList.remove('active'));
             contents.forEach(c => c.classList.remove('active'));
-
             this.classList.add('active');
-
             const activeContent = document.getElementById(`tab-${targetTab}`);
             if (activeContent) activeContent.classList.add('active');
-
             localStorage.setItem('profileTab', targetTab);
-
             if (targetTab === 'team') loadTeamData();
             if (targetTab === 'restore') loadRestoreData();
             if (targetTab === 'audit') loadAuditData();
+            if (targetTab === 'import') loadImportData();
         });
     });
 
-    // Restore last opened tab
     const savedTab = localStorage.getItem('profileTab');
     if (savedTab) {
         const targetNav = document.querySelector(`.profile-nav[data-tab="${savedTab}"]`);
         if (targetNav) targetNav.click();
     }
 
-    // ========== TEAM ==========
+    // TEAM
     window.loadTeamData = function () {
         const container = document.getElementById('teamContainer');
         if (!container) return;
@@ -399,19 +438,12 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/admin/users/api')
             .then(res => res.json())
             .then(data => {
-                if (!data.length) {
-                    container.innerHTML = '<p>No team members found.</p>';
-                    return;
-                }
+                if (!data.length) { container.innerHTML = '<p>No team members found.</p>'; return; }
                 let html = `<table style="width:100%; border-collapse: collapse;">
                     <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Action</th></tr></thead><tbody>`;
                 data.forEach(u => {
-                    html += `<tr>
-                        <td>${u.full_name || u.username}</td>
-                        <td>${u.username}</td>
-                        <td><span class="badge">${u.role}</span></td>
-                        <td>${u.id != currentUserId ? `<a href="/admin/delete_user/${u.id}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>` : '-'}</td>
-                    </tr>`;
+                    html += `<tr><td>${u.full_name || u.username}</td><td>${u.username}</td><td><span class="badge">${u.role}</span></td>
+                        <td>${u.id != currentUserId ? `<a href="/admin/delete_user/${u.id}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>` : '-'}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 container.innerHTML = html;
@@ -419,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(() => container.innerHTML = '<p>Error loading team data.</p>');
     };
 
-    // ========== RESTORE ==========
+    // RESTORE
     window.loadRestoreData = function () {
         const container = document.getElementById('restoreContainer');
         if (!container) return;
@@ -427,20 +459,12 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/admin/restore/data?filter=all')
             .then(res => res.json())
             .then(data => {
-                if (!data.items || !data.items.length) {
-                    container.innerHTML = '<p>No deleted items found.</p>';
-                    return;
-                }
+                if (!data.items || !data.items.length) { container.innerHTML = '<p>No deleted items found.</p>'; return; }
                 let html = `<table style="width:100%; border-collapse: collapse;">
                     <thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
                 data.items.forEach(item => {
-                    html += `<tr>
-                        <td>${item.module_type || '-'}</td>
-                        <td>${item.description || '-'}</td>
-                        <td>₱${parseFloat(item.amount).toFixed(2)}</td>
-                        <td>${item.date || '-'}</td>
-                        <td><a href="/admin/restore/${item.type_code}/${item.id}" class="btn btn-primary" onclick="return confirm('Restore?')">Restore</a></td>
-                    </tr>`;
+                    html += `<tr><td>${item.module_type || '-'}</td><td>${item.description || '-'}</td><td>₱${parseFloat(item.amount).toFixed(2)}</td>
+                        <td>${item.date || '-'}</td><td><a href="/admin/restore/${item.type_code}/${item.id}" class="btn btn-primary" onclick="return confirm('Restore?')">Restore</a></td></tr>`;
                 });
                 html += '</tbody></table>';
                 container.innerHTML = html;
@@ -448,7 +472,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(() => container.innerHTML = '<p>Error loading restore data.</p>');
     };
 
-    // ========== AUDIT LOG (NEW) ==========
+    // AUDIT
     window.loadAuditData = function () {
         const container = document.getElementById('auditContainer');
         if (!container) return;
@@ -456,20 +480,20 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch('/admin/audit/api')
             .then(res => res.json())
             .then(data => {
-                if (!data.length) {
-                    container.innerHTML = '<p>No audit records found.</p>';
-                    return;
-                }
+                if (!data.length) { container.innerHTML = '<p>No audit records found.</p>'; return; }
                 let html = `<table style="width:100%; border-collapse: collapse;">
-                    <thead><td><th>Time</th><th>User</th><th>Action</th><th>Table</th><th>Record ID</th></tr></thead><tbody>`;
+                    <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Table</th><th>Record ID</th><th>Details</th></tr></thead><tbody>`;
                 data.forEach(log => {
-                    html += `<tr>
-                        <td>${log.created_at || '-'}</td>
-                        <td>${log.username || '-'}</td>
-                        <td><span class="badge ${log.action === 'DELETE' ? 'badge-danger' : 'badge-success'}">${log.action || '-'}</span></td>
-                        <td>${log.table_name || '-'}</td>
-                        <td>${log.record_id || '-'}</td>
-                    </tr>`;
+                    let badgeClass = 'badge-info';
+                    if (log.action === 'DELETE') badgeClass = 'badge-danger';
+                    else if (log.action === 'CREATE') badgeClass = 'badge-success';
+                    else if (log.action === 'RESTORE') badgeClass = 'badge-warning';
+                    const hasDetails = (log.old_values_display && Object.keys(log.old_values_display).length > 0) || 
+                                      (log.new_values_display && Object.keys(log.new_values_display).length > 0);
+                    html += `<tr><td>${log.created_at || '-'}</td><td>${log.username || '-'}</td>
+                        <td><span class="badge ${badgeClass}">${log.action || '-'}</span></td>
+                        <td>${log.table_name || '-'}</td><td>${log.record_id || '-'}</td>
+                        <td>${hasDetails ? `<button onclick="showAuditDetail(${log.id})" style="background:transparent; border:1px solid var(--border-light); padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; color:var(--text-primary);">View</button>` : '-'}</td></tr>`;
                 });
                 html += '</tbody></table>';
                 container.innerHTML = html;
@@ -477,41 +501,23 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(() => container.innerHTML = '<p>Error loading audit log.</p>');
     };
 
-    // ========== DARK MODE (Simplified Toggle) ==========
-    const themeCheckbox = document.getElementById('themeToggleCheckbox');
-    
-    const setLight = () => {
-        document.body.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-        if (themeCheckbox) themeCheckbox.checked = false;
+    // IMPORT
+    window.loadImportData = function () {
+        const container = document.getElementById('importContainer');
+        if (!container) return;
+        container.innerHTML = '<iframe src="/import-data" style="width:100%; height:600px; border:none; border-radius:12px;"></iframe>';
     };
-    const setDark = () => {
-        document.body.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-        if (themeCheckbox) themeCheckbox.checked = true;
-    };
-    
-    // Initialize checkbox based on current theme
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    if (savedTheme === 'dark') {
-        if (themeCheckbox) themeCheckbox.checked = true;
-        document.body.classList.add('dark');
-    } else {
-        if (themeCheckbox) themeCheckbox.checked = false;
-        document.body.classList.remove('dark');
-    }
-    
-    if (themeCheckbox) {
-        themeCheckbox.addEventListener('change', function(e) {
-            if (e.target.checked) {
-                setDark();
-            } else {
-                setLight();
-            }
-        });
-    }
 
-    // ========== ADD USER ==========
+    // DARK MODE
+    const themeCheckbox = document.getElementById('themeToggleCheckbox');
+    const setLight = () => { document.body.classList.remove('dark'); localStorage.setItem('theme', 'light'); if (themeCheckbox) themeCheckbox.checked = false; };
+    const setDark = () => { document.body.classList.add('dark'); localStorage.setItem('theme', 'dark'); if (themeCheckbox) themeCheckbox.checked = true; };
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') { if (themeCheckbox) themeCheckbox.checked = true; document.body.classList.add('dark'); }
+    else { if (themeCheckbox) themeCheckbox.checked = false; document.body.classList.remove('dark'); }
+    if (themeCheckbox) { themeCheckbox.addEventListener('change', function(e) { if (e.target.checked) setDark(); else setLight(); }); }
+
+    // ADD USER
     const addForm = document.getElementById('addUserForm');
     if (addForm) {
         addForm.addEventListener('submit', function (e) {
@@ -523,12 +529,72 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+// ========== GLOBAL FUNCTIONS (outside DOMContentLoaded) ==========
+
 function copyBusinessId() {
     const input = document.querySelector('input[value="{{ session.business_id }}"]');
-    if (input) {
-        navigator.clipboard.writeText(input.value);
-        alert('Business ID copied!');
-    }
+    if (input) { navigator.clipboard.writeText(input.value); alert('Business ID copied!'); }
+}
+
+function showAuditDetail(logId) {
+    fetch('/admin/audit/api')
+        .then(res => res.json())
+        .then(data => {
+            const log = data.find(l => l.id === logId);
+            if (!log) return;
+            let html = `<div style="margin-bottom:12px;"><strong>Time:</strong> ${log.created_at || '-'}</div>`;
+            html += `<div style="margin-bottom:12px;"><strong>User:</strong> ${log.username || '-'}</div>`;
+            html += `<div style="margin-bottom:12px;"><strong>Action:</strong> ${log.action || '-'}</div>`;
+            html += `<div style="margin-bottom:12px;"><strong>Table:</strong> ${log.table_name || '-'}</div>`;
+            html += `<div style="margin-bottom:12px;"><strong>Record ID:</strong> ${log.record_id || '-'}</div>`;
+            if (log.old_values_display && Object.keys(log.old_values_display).length > 0) {
+                html += `<div style="margin-bottom:12px;"><strong>Before:</strong><pre style="background:var(--bg-primary); padding:8px; border-radius:8px; font-size:11px; overflow-x:auto;">${JSON.stringify(log.old_values_display, null, 2)}</pre></div>`;
+            }
+            if (log.new_values_display && Object.keys(log.new_values_display).length > 0) {
+                html += `<div style="margin-bottom:12px;"><strong>After:</strong><pre style="background:var(--bg-primary); padding:8px; border-radius:8px; font-size:11px; overflow-x:auto;">${JSON.stringify(log.new_values_display, null, 2)}</pre></div>`;
+            }
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('detailModal').style.display = 'flex';
+        });
+}
+
+function closeAuditModal() {
+    document.getElementById('detailModal').style.display = 'none';
+}
+
+// Industry cascading
+const profileSubcategories = {
+    'food_beverage': [{value:'restaurant',label:'Restaurant'},{value:'cafe',label:'Cafe / Coffee Shop'},{value:'bakery',label:'Bakery'},{value:'catering',label:'Catering'},{value:'food_cart',label:'Food Cart / Street Food'}],
+    'retail': [{value:'retail',label:'Retail Store'},{value:'sari_sari',label:'Sari-Sari Store'},{value:'pharmacy',label:'Pharmacy'},{value:'hardware',label:'Hardware Store'},{value:'bookstore',label:'Bookstore / School Supplies'}],
+    'health_wellness': [{value:'gym',label:'Gym / Fitness Center'},{value:'salon',label:'Salon / Barbershop'},{value:'spa',label:'Spa / Massage'},{value:'dental',label:'Dental Clinic'},{value:'medical',label:'Medical Clinic'}],
+    'professional_services': [{value:'law_firm',label:'Law Firm'},{value:'accounting_firm',label:'Accounting Firm'},{value:'consultancy',label:'Consultancy'},{value:'architecture',label:'Architecture Firm'},{value:'freelancer',label:'Freelancer'}],
+    'service_based': [{value:'laundry',label:'Laundry Shop'},{value:'repair_shop',label:'Repair Shop'},{value:'tutoring',label:'Tutoring Center'},{value:'cleaning',label:'Cleaning Services'},{value:'printing',label:'Printing Shop'}],
+    'construction_realestate': [{value:'construction',label:'Construction'},{value:'real_estate',label:'Real Estate'},{value:'property_mgmt',label:'Property Management'}],
+    'hospitality_travel': [{value:'hotel',label:'Hotel / Inn'},{value:'hostel',label:'Hostel / Dormitory'},{value:'event_venue',label:'Event Venue'},{value:'travel_agency',label:'Travel Agency'}],
+    'logistics': [{value:'delivery',label:'Delivery Service'},{value:'trucking',label:'Trucking / Hauling'},{value:'warehouse',label:'Warehouse'}],
+    'technology': [{value:'computer_shop',label:'Computer Shop'},{value:'it_services',label:'IT Services'},{value:'electronics_repair',label:'Electronics Repair'}],
+    'creative_media': [{value:'photography',label:'Photography Studio'},{value:'graphic_design',label:'Graphic Design'},{value:'video_production',label:'Video Production'}],
+    'other': [{value:'other',label:'Other / Not Listed'}]
+};
+const subToCategory = {};
+for (const [cat, subs] of Object.entries(profileSubcategories)) { subs.forEach(s => { subToCategory[s.value] = cat; }); }
+const currentIndustry = '{{ user.industry }}';
+
+function updateProfileSubcategories() {
+    const category = document.getElementById('industryCategoryProfile').value;
+    const subGroup = document.getElementById('subcategoryGroupProfile');
+    const subSelect = document.getElementById('industrySubcategoryProfile');
+    subSelect.innerHTML = '<option value="">Select specific industry...</option>';
+    if (category && profileSubcategories[category]) {
+        profileSubcategories[category].forEach(sub => { subSelect.innerHTML += `<option value="${sub.value}">${sub.label}</option>`; });
+        subGroup.style.display = 'block';
+    } else { subGroup.style.display = 'none'; }
+}
+if (currentIndustry && subToCategory[currentIndustry]) {
+    const cat = subToCategory[currentIndustry];
+    document.getElementById('industryCategoryProfile').value = cat;
+    updateProfileSubcategories();
+    document.getElementById('industrySubcategoryProfile').value = currentIndustry;
 }
 </script>
 {% endblock %}

@@ -1,0 +1,90 @@
+{% if preview %}
+<div style="margin-top: 20px;">
+    <h3 style="margin-bottom: 12px; font-size: 14px;">Preview ({{ preview|length }} rows)</h3>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+                <tr>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Row</th>
+                    {% if active_tab == 'cash' %}
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Date</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Description</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Amount</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Type</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Category</th>
+                    {% elif active_tab == 'sales' %}
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Date</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Customer</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Amount</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Description</th>
+                    {% elif active_tab == 'inventory' %}
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Name</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Price</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Cost</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Qty</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Category</th>
+                    {% elif active_tab == 'customers' %}
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Name</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Email</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Phone</th>
+                    {% elif active_tab == 'suppliers' %}
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Name</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Email</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Phone</th>
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Address</th>
+                    {% endif %}
+                    <th style="background: var(--bg-primary); padding: 8px; text-align: left; font-size: 11px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in preview %}
+                <tr style="{% if row._status == 'error' %}background: rgba(239,68,68,0.05);{% endif %}">
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row._row }}</td>
+                    {% if active_tab == 'cash' %}
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Date', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Description', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Amount', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Type', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Category', '') }}</td>
+                    {% elif active_tab == 'sales' %}
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Date', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Customer', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Amount', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Description', '') }}</td>
+                    {% elif active_tab == 'inventory' %}
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Name', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Price', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Cost', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Quantity', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Category', '') }}</td>
+                    {% elif active_tab == 'customers' %}
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Name', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Email', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Phone', '') }}</td>
+                    {% elif active_tab == 'suppliers' %}
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Name', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Email', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Phone', '') }}</td>
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">{{ row.get('Address', '') }}</td>
+                    {% endif %}
+                    <td style="padding: 6px 8px; border-bottom: 1px solid var(--border-light);">
+                        {% if row._status == 'valid' %}
+                        <span style="color: #10b981;">Valid</span>
+                        {% else %}
+                        <span style="color: #ef4444; font-size: 11px;">{{ row._error }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <form method="POST" enctype="multipart/form-data" action="/import-data" style="margin-top: 16px;">
+        <input type="hidden" name="module" value="{{ active_tab }}">
+        <input type="hidden" name="confirm" value="true">
+        <button type="submit" class="btn btn-primary">Import Valid Rows</button>
+        <span style="font-size: 12px; color: var(--text-secondary); margin-left: 8px;">Only valid rows will be imported</span>
+    </form>
+</div>
+{% endif %}

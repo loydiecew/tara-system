@@ -1,5 +1,6 @@
 from flask import Flask, session, redirect, url_for, request
 from models.helpers import user_has_feature
+from routes.all_transactions import all_transactions_bp
 from routes import (
     auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp
@@ -22,6 +23,12 @@ app.register_blueprint(insights_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(plan_bp)
 app.register_blueprint(api_bp)
+app.register_blueprint(all_transactions_bp)
+from routes.import_data import import_bp
+app.register_blueprint(import_bp)
+from routes.orders import orders_bp
+app.register_blueprint(orders_bp)
+
 
 @app.context_processor
 def inject_plan():

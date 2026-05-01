@@ -1,0 +1,122 @@
+{% extends "layout.html" %}
+
+{% block title %}Import Data{% endblock %}
+{% block page_title %}Import Data{% endblock %}
+{% block page_subtitle %}Bulk import records from CSV files{% endblock %}
+
+{% block extra_css %}
+<style>
+    .import-tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .import-tab {
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+    .import-tab:hover { border-color: var(--accent); color: var(--accent); }
+    .import-tab.active { background: var(--accent); color: white; }
+    .import-template-link {
+        font-size: 12px;
+        color: var(--accent);
+        text-decoration: none;
+        margin-left: 12px;
+    }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+    .preview-table th { background: var(--bg-primary); padding: 10px 8px; text-align: left; font-size: 11px; }
+    .preview-table td { padding: 8px; border-bottom: 1px solid var(--border-light); }
+    .row-valid { color: #10b981; }
+    .row-error { color: #ef4444; background: rgba(239,68,68,0.05); }
+
+    /* Hide sidebar and top bar when loaded in iframe */
+    body.import-embedded .sidebar,
+    body.import-embedded .top-bar,
+    body.import-embedded .particles-container {
+        display: none !important;
+    }
+    body.import-embedded .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Tabs -->
+<div class="import-tabs" id="importTabs">
+    <button class="import-tab active" data-tab="cash">Cash</button>
+    <button class="import-tab" data-tab="sales">Sales</button>
+    <button class="import-tab" data-tab="inventory">Inventory</button>
+    <button class="import-tab" data-tab="customers">Customers</button>
+    <button class="import-tab" data-tab="suppliers">Suppliers</button>
+</div>
+
+<!-- Template Download -->
+<div style="margin-bottom: 16px; padding: 12px; background: var(--bg-primary); border-radius: 10px;">
+    <i class="fas fa-download" style="color: var(--accent);"></i>
+    <strong>Download template:</strong>
+    <a href="#" class="import-template-link" id="templateLink" onclick="downloadCurrentTemplate()">Cash_Template.csv</a>
+    <span style="font-size: 11px; color: var(--text-secondary); margin-left: 8px;">Fill in your data, then upload below</span>
+</div>
+
+<!-- Upload Form -->
+<form method="POST" enctype="multipart/form-data" id="importForm">
+    <input type="hidden" name="module" id="importModule" value="cash">
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <input type="file" name="csv_file" accept=".csv" required 
+               style="padding: 10px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary);">
+        <button type="submit" class="btn btn-secondary">Preview</button>
+    </div>
+</form>
+
+<!-- Preview Area -->
+<div id="previewArea"></div>
+
+<script>
+    let currentTab = 'cash';
+    document.querySelectorAll('#importTabs .import-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('#importTabs .import-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            currentTab = this.dataset.tab;
+            document.getElementById('importModule').value = currentTab;
+            document.getElementById('templateLink').textContent = currentTab.charAt(0).toUpperCase() + currentTab.slice(1) + '_Template.csv';
+            document.getElementById('previewArea').innerHTML = '';
+        });
+    });
+    function downloadCurrentTemplate() {
+        const t = {
+            'cash': 'Date,Description,Amount,Type,Category\n2026-01-01,Sample income,1000,income,Sales\n2026-01-01,Sample expense,500,expense,Supplies',
+            'sales': 'Date,Customer,Amount,Description\n2026-01-01,Customer Name,1500,Product sold',
+            'inventory': 'Name,Price,Cost,Quantity,Category,Reorder Level\nProduct Name,100,70,50,General,10',
+            'customers': 'Name,Email,Phone\nCustomer Name,email@example.com,09123456789',
+            'suppliers': 'Name,Email,Phone,Address\nSupplier Name,email@example.com,09123456789,123 Main St'
+        };
+        const csv = t[currentTab] || '';
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = currentTab.charAt(0).toUpperCase() + currentTab.slice(1) + '_Template.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+    document.getElementById('importForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        fd.append('confirm', 'false');
+        fetch('/import-data', { method: 'POST', body: fd })
+            .then(r => r.text())
+            .then(h => document.getElementById('previewArea').innerHTML = h);
+    });
+    if (window.self !== window.top) document.body.classList.add('import-embedded');
+</script>
+{% endblock %}

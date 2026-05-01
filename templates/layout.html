@@ -109,28 +109,41 @@
             border-radius: 28px;
             position: fixed;
             height: calc(100vh - 40px);
-            overflow-y: auto;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
             z-index: 100;
             display: flex;
             flex-direction: column;
             box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+            overflow: hidden; /* Hide outer scroll */
         }
         .sidebar:hover { box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3); }
 
-        .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-track { background: transparent; }
-        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        /* Scroll only the nav sections */
+        .sidebar-nav-scroll {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-bottom: 8px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
         .sidebar.collapsed { width: 80px; }
-        .sidebar.collapsed::-webkit-scrollbar { width: 0; }
+        .sidebar.collapsed .sidebar-nav-scroll::-webkit-scrollbar { width: 0; }
 
         .sidebar-header {
+            flex-shrink: 0;
             padding: 24px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+        }
+
+        .sidebar-footer {
+            flex-shrink: 0;
+            margin-top: auto; padding: 20px 16px;
+            border-top: 1px solid rgba(255,255,255,0.06);
         }
 
         .logo { display: flex; align-items: center; gap: 10px; overflow: hidden; }
@@ -579,6 +592,43 @@
             .stats-grid { grid-template-columns: 1fr; }
             .top-bar { flex-direction: column; align-items: flex-start; }
         }
+
+        /* ========== FILTER BAR ========== */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .filter-bar .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .filter-bar .filter-group label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+        }
+        .filter-bar input,
+        .filter-bar select {
+            padding: 8px 10px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+        }
+        .filter-bar input:focus,
+        .filter-bar select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -588,6 +638,7 @@
 
     <div class="app">
         <aside class="sidebar">
+            <!-- Fixed Header -->
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">T</div>
@@ -598,65 +649,82 @@
                 </button>
             </div>
             
-            <div class="nav-section">
-                <div class="nav-label">MAIN</div>
-                <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
-                    <i class="fas fa-chart-pie"></i><span>Dashboard</span>
-                </a>
-                <a href="/insights" class="nav-item {{ is_active('insights') }}">
-                    <i class="fas fa-chart-line"></i><span>Business Insights</span>
-                </a>
-            </div>
+            <!-- Scrollable Nav Sections -->
+            <div class="sidebar-nav-scroll">
+                <div class="nav-section">
+                    <div class="nav-label">MAIN</div>
+                    <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
+                        <i class="fas fa-chart-pie"></i><span>Dashboard</span>
+                    </a>
+                    <a href="/insights" class="nav-item {{ is_active('insights') }}">
+                        <i class="fas fa-chart-line"></i><span>Business Insights</span>
+                    </a>
+                </div>
 
-            <div class="nav-section">
-                <div class="nav-label">FINANCIAL</div>
-                <a href="/cash" class="nav-item {{ is_active('cash') }}">
-                    <i class="fas fa-coins"></i><span>Cash Management</span>
-                </a>
-                <a href="/sales" class="nav-item {{ is_active('sales') }}">
-                    <i class="fas fa-chart-simple"></i><span>Sales Management</span>
-                </a>
+                <div class="nav-section">
+                    <div class="nav-label">FINANCIAL</div>
+                    <a href="/cash" class="nav-item {{ is_active('cash') }}">
+                        <i class="fas fa-coins"></i><span>Cash Management</span>
+                    </a>
+                    <a href="/sales" class="nav-item {{ is_active('sales') }}">
+                        <i class="fas fa-chart-simple"></i><span>Sales Management</span>
+                    </a>
+                </div>
+
                 {% if session.role == 'admin' or session.role == 'owner' %}
-                <a href="/journal" class="nav-item {{ is_active('journal') }}">
-                    <i class="fas fa-book-open"></i><span>General Journal</span>
-                </a>
-                {% if session.plan == 'pro' or session.plan == 'enterprise' %}
-                <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
-                    <i class="fas fa-balance-scale"></i><span>General Ledger</span>
-                </a>
+                {% if has_feature('accounts_receivable') or has_feature('accounts_payable') %}
+                <div class="nav-section">
+                    <div class="nav-label">RECEIVABLES & PAYABLES</div>
+                    {% if has_feature('accounts_receivable') %}
+                    <a href="/ar" class="nav-item {{ is_active('ar') }}">
+                        <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
+                    </a>
+                    {% endif %}
+                    {% if has_feature('accounts_payable') %}
+                    <a href="/ap" class="nav-item {{ is_active('ap') }}">
+                        <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
+                    </a>
+                    {% endif %}
+                </div>
                 {% endif %}
                 {% endif %}
+
+                {% if session.role == 'admin' or session.role == 'owner' %}
+                {% if has_feature('inventory_management') %}
+                <div class="nav-section">
+                    <div class="nav-label">OPERATIONS</div>
+                    <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
+                        <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
+                    </a>
+                <a href="/purchase-orders" class="nav-item {{ is_active('purchase_orders') }}">
+                    <i class="fas fa-truck-loading"></i><span>Purchase Orders</span>
+                </a>
+                <a href="/sales-orders" class="nav-item {{ is_active('sales_orders') }}">
+                    <i class="fas fa-clipboard-list"></i><span>Sales Orders</span>
+                </a>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <div class="nav-section">
+                    <div class="nav-label">HISTORY</div>
+                    <a href="/all-transactions" class="nav-item {{ is_active('all_transactions') }}">
+                        <i class="fas fa-list-ul"></i><span>All Transactions</span>
+                    </a>
+                    {% if session.role == 'admin' or session.role == 'owner' %}
+                    <a href="/journal" class="nav-item {{ is_active('journal') }}">
+                        <i class="fas fa-book-open"></i><span>General Journal</span>
+                    </a>
+                    {% if session.plan == 'pro' or session.plan == 'enterprise' %}
+                    <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
+                        <i class="fas fa-balance-scale"></i><span>General Ledger</span>
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
             </div>
 
-            {% if session.role == 'admin' or session.role == 'owner' %}
-            {% if has_feature('accounts_receivable') or has_feature('accounts_payable') %}
-            <div class="nav-section">
-                <div class="nav-label">RECEIVABLES & PAYABLES</div>
-                {% if has_feature('accounts_receivable') %}
-                <a href="/ar" class="nav-item {{ is_active('ar') }}">
-                    <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
-                </a>
-                {% endif %}
-                {% if has_feature('accounts_payable') %}
-                <a href="/ap" class="nav-item {{ is_active('ap') }}">
-                    <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
-                </a>
-                {% endif %}
-            </div>
-            {% endif %}
-            {% endif %}
-
-            {% if session.role == 'admin' or session.role == 'owner' %}
-            {% if has_feature('inventory_management') %}
-            <div class="nav-section">
-                <div class="nav-label">OPERATIONS</div>
-                <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
-                    <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
-                </a>
-            </div>
-            {% endif %}
-            {% endif %}
-
+            <!-- Fixed Footer -->
             <div class="sidebar-footer">
                 <a href="/profile">
                     <div class="user-info">
@@ -676,10 +744,16 @@
                     <h1 id="greetingMessage"></h1>
                     <p id="currentDate"></p>
                 </div>
-                <div class="search-bar">
+                <div class="search-bar" style="gap: 6px;">
                     <i class="fas fa-search"></i>
                     <input type="text" id="globalSearch" placeholder="Search anything...">
                     <button><i class="fas fa-arrow-right"></i></button>
+                    <span style="width: 1px; height: 20px; background: var(--border-light); margin: 0 4px;"></span>
+                    <a href="/help" style="display: flex; align-items: center; gap: 6px; color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500; padding: 4px 8px; border-radius: 8px; transition: all 0.2s; white-space: nowrap;"
+                       onmouseover="this.style.color='var(--accent)'; this.style.background='var(--accent-light)';"
+                       onmouseout="this.style.color='var(--text-secondary)'; this.style.background='transparent';">
+                        <i class="fas fa-circle-question"></i> Help
+                    </a>
                 </div>
             </div>
             
@@ -770,7 +844,156 @@
             document.body.appendChild(toast);
             setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.4s'; setTimeout(() => toast.remove(), 400); }, 3000);
         };
+
+        // ========== EXPORT TABLE TO CSV ==========
+        window.exportTableToCSV = function(tableId, filename) {
+            const table = document.getElementById(tableId);
+            if (!table) {
+                showToast('Table not found', 'error');
+                return;
+            }
+
+            const rows = table.querySelectorAll('tr');
+            const csv = [];
+
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('th, td');
+                const rowData = [];
+                cols.forEach((col, index) => {
+                    // Skip the last column if it's "Actions" (usually has buttons)
+                    if (index === cols.length - 1 && (col.querySelector('.btn-icon') || col.querySelector('a'))) {
+                        return;
+                    }
+                    // Get text content, strip extra whitespace, wrap in quotes
+                    let text = col.innerText.replace(/\s+/g, ' ').trim();
+                    text = text.replace(/"/g, '""'); // Escape quotes
+                    rowData.push(`"${text}"`);
+                });
+                if (rowData.length > 0) {
+                    csv.push(rowData.join(','));
+                }
+            });
+
+            if (csv.length === 0) {
+                showToast('No data to export', 'warning');
+                return;
+            }
+
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename + '.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('Exported successfully!', 'success');
+        };
+
+                // ========== UNIVERSAL TABLE FILTER ==========
+        window.filterTable = function(tableBodyId, noDataId) {
+            const rows = document.querySelectorAll(`#${tableBodyId} tr[data-filter]`);
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                try {
+                    const data = JSON.parse(row.getAttribute('data-filter'));
+                    let show = true;
+                    
+                    // Check each filter field
+                    for (const [key, value] of Object.entries(data)) {
+                        const inputEl = document.getElementById(`${tableBodyId}_${key}`);
+                        if (inputEl && inputEl.value) {
+                            const filterVal = inputEl.value.toLowerCase();
+                            const rowVal = String(value).toLowerCase();
+                            if (key === 'date_from' && rowVal < filterVal) show = false;
+                            if (key === 'date_to' && rowVal > filterVal) show = false;
+                            if (key === 'type' && filterVal !== 'all' && rowVal !== filterVal) show = false;
+                            if (key === 'search' && !rowVal.includes(filterVal)) show = false;
+                        }
+                    }
+                    
+                    row.style.display = show ? '' : 'none';
+                    if (show) visibleCount++;
+                } catch(e) {}
+            });
+            
+            const noData = document.getElementById(noDataId);
+            if (noData) {
+                noData.style.display = visibleCount === 0 ? '' : 'none';
+            }
+        };
+
+        window.clearFilters = function(tableBodyId) {
+            const inputs = document.querySelectorAll(`[id^="${tableBodyId}_"]`);
+            inputs.forEach(input => {
+                if (input.tagName === 'SELECT') input.value = 'all';
+                else input.value = '';
+            });
+            window.filterTable(tableBodyId, tableBodyId.replace('Body', 'NoData'));
+        };
     </script>
     {% block extra_js %}{% endblock %}
+        <!-- ========== ONBOARDING MODAL ========== -->
+    <div id="onboardingModal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <div style="margin-bottom: 20px;">
+                <div class="logo-icon" style="margin: 0 auto 16px;">T</div>
+                <h2 style="font-size: 22px; margin-bottom: 4px;">Welcome to TARA!</h2>
+                <p style="color: var(--text-secondary); font-size: 13px;">Your accounting journey starts here</p>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; text-align: left;">
+                <div style="display: flex; gap: 14px; align-items: flex-start;">
+                    <div style="width: 40px; height: 40px; background: var(--accent-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span style="font-weight: 700; color: var(--accent); font-size: 16px;">1</span>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">Add Your Products</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Set up your inventory with products and pricing</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 14px; align-items: flex-start;">
+                    <div style="width: 40px; height: 40px; background: var(--accent-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span style="font-weight: 700; color: var(--accent); font-size: 16px;">2</span>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">Record Transactions</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Add sales, expenses, invoices, and bills</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 14px; align-items: flex-start;">
+                    <div style="width: 40px; height: 40px; background: var(--accent-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span style="font-weight: 700; color: var(--accent); font-size: 16px;">3</span>
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 14px;">View Your Insights</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Track profitability, trends, and predictions</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="closeOnboarding()" style="width: 100%;">
+                <i class="fas fa-rocket"></i> Get Started
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function closeOnboarding() {
+            document.getElementById('onboardingModal').style.display = 'none';
+            localStorage.setItem('onboardingComplete', 'true');
+        }
+        
+        // Show onboarding on first visit
+        (function() {
+            if (!localStorage.getItem('onboardingComplete')) {
+                document.getElementById('onboardingModal').style.display = 'flex';
+            }
+        })();
+    </script>
 </body>
 </html>

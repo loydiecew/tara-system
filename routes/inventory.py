@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for
+from datetime import date
 from models.database import get_db
 from models.audit import log_audit
 
@@ -34,7 +35,8 @@ def inventory():
                          username=session['username'],
                          products=products,
                          total_value=total_value,
-                         low_stock=low_stock)
+                         low_stock=low_stock,
+                         today=date.today().isoformat())
 
 @inventory_bp.route('/add_product', methods=['POST'])
 def add_product():

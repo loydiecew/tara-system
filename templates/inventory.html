@@ -63,10 +63,37 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-cubes"></i> Products</h2>
-        <span style="font-size: 11px; color: var(--text-secondary);">{{ products|length }} products</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 11px; color: var(--text-secondary);">{{ products|length }} products</span>
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('inventoryTable', 'TARA_Inventory_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
     </div>
+    
+    <!-- UNIVERSAL FILTER BAR -->
+    {% if session.role in ['admin', 'owner', 'manager'] %}
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="invBody_status" onchange="filterTable('invBody','invNoData')">
+                <option value="all">All</option>
+                <option value="ok">In Stock</option>
+                <option value="low">Low Stock</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="invBody_search" placeholder="Product name or category..." oninput="filterTable('invBody','invNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('invBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    {% endif %}
+    
     <div class="table-wrapper">
-        <table>
+        <table id="inventoryTable">
             <thead>
                 <tr>
                     <th>Product</th>
@@ -80,9 +107,9 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="invBody">
                 {% for p in products %}
-                <tr {% if p.quantity < p.reorder_level %}class="low-stock-row"{% endif %}>
+                <tr {% if p.quantity < p.reorder_level %}class="low-stock-row"{% endif %} data-filter='{"status":"{{ 'low' if p.quantity < p.reorder_level else 'ok' }}","search":"{{ p.name|lower }} {{ p.category|lower }}"}'}>
                     <td><strong>{{ p.name }}</strong></td>
                     <td>{{ p.category or '-' }}</td>
                     <td>₱ {{ "{:,.2f}".format(p.price) }}</td>
@@ -115,6 +142,14 @@
                         </a>
                     </td>
                 </tr>
+                {% else %}
+                <tr id="invNoData"><td colspan="9" style="text-align: center; padding: 30px;">
+                    <div class="empty-state">
+                        <i class="fas fa-boxes-stacked"></i>
+                        <h3>No products yet</h3>
+                        <p>Add your first product to get started</p>
+                    </div>
+                </td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 
-{% block title %}General Journal{% endblock %}
-{% block page_title %}General Journal{% endblock %}
-{% block page_subtitle %}Complete record of all financial transactions{% endblock %}
+{% block title %}All Transactions{% endblock %}
+{% block page_title %}All Transactions{% endblock %}
+{% block page_subtitle %}Complete history across all modules{% endblock %}
 
 {% block content %}
 <div class="stats-grid">
@@ -15,7 +15,7 @@
         <div class="stat-value" style="color: #ef4444;">₱ {{ "{:,.2f}".format(total_expense|default(0)) }}</div>
     </div>
     <div class="stat-card">
-        <div class="stat-title">Net (Profit/Loss)</div>
+        <div class="stat-title">Net</div>
         <div class="stat-value" style="color: {{ '#10b981' if net >= 0 else '#ef4444' }};">₱ {{ "{:,.2f}".format(net|default(0)) }}</div>
     </div>
 </div>
@@ -25,15 +25,15 @@
     <div class="card-header">
         <h2><i class="fas fa-filter"></i> Filters</h2>
     </div>
-    <form method="GET" action="/journal" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+    <form method="GET" action="/all-transactions" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
         <div class="form-group" style="margin-bottom: 0;">
             <label>Search</label>
-            <input type="text" name="search" value="{{ search }}" placeholder="Description..." style="width: 180px;">
+            <input type="text" name="search" value="{{ search }}" placeholder="Description or name..." style="width: 200px;">
         </div>
         <div class="form-group" style="margin-bottom: 0;">
             <label>Type</label>
             <select name="type">
-                <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All Transactions</option>
+                <option value="all" {% if type_filter == 'all' %}selected{% endif %}>All</option>
                 <option value="income" {% if type_filter == 'income' %}selected{% endif %}>Income Only</option>
                 <option value="expense" {% if type_filter == 'expense' %}selected{% endif %}>Expense Only</option>
             </select>
@@ -42,8 +42,10 @@
             <label>Source</label>
             <select name="source">
                 <option value="all" {% if source_filter == 'all' %}selected{% endif %}>All Sources</option>
-                <option value="cash" {% if source_filter == 'cash' %}selected{% endif %}>Cash Transactions</option>
+                <option value="cash" {% if source_filter == 'cash' %}selected{% endif %}>Cash</option>
                 <option value="sales" {% if source_filter == 'sales' %}selected{% endif %}>Sales</option>
+                <option value="ar" {% if source_filter == 'ar' %}selected{% endif %}>AR Payments</option>
+                <option value="ap" {% if source_filter == 'ap' %}selected{% endif %}>AP Payments</option>
             </select>
         </div>
         <div class="form-group" style="margin-bottom: 0;">
@@ -56,7 +58,7 @@
         </div>
         <div class="form-group" style="margin-bottom: 0; display: flex; gap: 8px; align-items: flex-end;">
             <button type="submit" class="btn btn-primary">Apply</button>
-            <a href="/journal" class="btn btn-secondary">Reset</a>
+            <a href="/all-transactions" class="btn btn-secondary">Reset</a>
         </div>
     </form>
 </div>
@@ -64,41 +66,47 @@
 <!-- Transactions Table -->
 <div class="card">
     <div class="card-header">
-        <h2><i class="fas fa-list-alt"></i> Transactions</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('journalTable', 'TARA_Journal_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+        <h2><i class="fas fa-list-ul"></i> All Transactions</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('allTransactionsTable', 'TARA_All_Transactions_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
             <i class="fas fa-download"></i> Export CSV
         </button>
     </div>
     <div class="table-wrapper">
-        <table class="data-table" id="journalTable">
+        <table class="data-table" id="allTransactionsTable">
             <thead>
                 <tr>
                     <th>Date</th>
                     <th>Description</th>
                     <th>Category</th>
                     <th>Source</th>
+                    <th>Type</th>
                     <th>Amount</th>
                 </tr>
             </thead>
             <tbody>
                 {% for t in transactions %}
                 <tr>
-                    <td>{{ t.date if t.date else '-' }}</td>
+                    <td>{{ t.date }}</td>
                     <td>{{ t.description }}</td>
                     <td>{{ t.category or '-' }}</td>
                     <td>
-                        <span class="badge {% if t.source == 'sales' %}badge-info{% else %}badge-warning{% endif %}">
-                            {{ t.source|capitalize }}
+                        <span class="badge {% if t.source_type == 'sales' %}badge-info{% elif t.source_type == 'ar' %}badge-success{% elif t.source_type == 'ap' %}badge-warning{% else %}badge-secondary{% endif %}">
+                            {{ t.source_module }}
                         </span>
                     </td>
-                    <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">
+                    <td><span class="badge {{ 'badge-success' if t.type == 'income' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
+                    <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }}; font-weight: 600;">
                         {{ '+' if t.type == 'income' else '-' }} ₱ {{ "{:,.2f}".format(t.amount) }}
                     </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="5" style="text-align: center;">No transactions found</td>
-                </tr>
+                <tr><td colspan="6" style="text-align: center; padding: 30px;">
+                    <div class="empty-state">
+                        <i class="fas fa-list-ul"></i>
+                        <h3>No transactions found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                </td></tr>
                 {% endfor %}
             </tbody>
         </table>

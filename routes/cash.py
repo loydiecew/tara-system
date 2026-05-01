@@ -257,6 +257,75 @@ def edit_transaction(transaction_id):
                          transaction=transaction,
                          today=today)
 
+@cash_bp.route('/receipt/cash/<int:transaction_id>')
+def receipt_cash(transaction_id):
+    """Generate a receipt for a cash income transaction"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Get the transaction
+    cursor.execute("""
+        SELECT t.* FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE t.id = %s AND u.business_id = %s AND t.type = 'income' AND t.deleted_at IS NULL
+    """, (transaction_id, business_id))
+    transaction = cursor.fetchone()
+    
+    if not transaction:
+        cursor.close()
+        db.close()
+        flash('Transaction not found or is not an income transaction', 'error')
+        return redirect(url_for('cash.cash'))
+    
+    # Get business owner details
+    cursor.execute("""
+        SELECT username, business_name, business_id FROM users
+        WHERE business_id = %s AND role IN ('admin', 'owner')
+        LIMIT 1
+    """, (business_id,))
+    owner = cursor.fetchone()
+    
+    cursor.close()
+    db.close()
+    
+    business_name = owner['business_name'] if owner and owner.get('business_name') else 'My Business'
+    business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
+    
+    receipt_number = f"RCPT-{transaction_id:06d}"
+    today = date.today()
+    
+    # Determine who paid — extract name from description if possible
+    customer_name = transaction['description']
+    # Try to extract name patterns like "Payment from [Name]" or "Received from [Name]"
+    if ' from ' in customer_name.lower():
+        parts = customer_name.split(' from ', 1)
+        customer_name = parts[1] if len(parts) > 1 else customer_name
+    elif 'received from' in customer_name.lower():
+        parts = customer_name.lower().split('received from', 1)
+        customer_name = parts[1].strip() if len(parts) > 1 else customer_name
+    
+    return render_template('receipt.html',
+                         receipt_number=receipt_number,
+                         receipt_title='Cash Receipt',
+                         receipt_date=str(transaction['transaction_date']),
+                         business_name=business_name,
+                         business_id=business_id_num,
+                         customer_label='Received From',
+                         customer_name=customer_name,
+                         description=transaction['description'],
+                         amount=float(transaction['amount']),
+                         payment_method='Cash',
+                         reference_number='',
+                         invoice_number='',
+                         today=today,
+                         back_url='cash',
+                         username=session['username'])
+
 def create_journal_entry(user_id, entry_date, description, lines):
     """Create a journal entry with debit/credit lines"""
     db = get_db()
