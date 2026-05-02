@@ -220,11 +220,6 @@
         .nav-item.active i { color: var(--accent); }
         .nav-item i { width: 20px; font-size: 16px; transition: transform 0.3s ease; }
         .nav-item:hover i { transform: translateX(2px); }
-
-        .sidebar-footer {
-            margin-top: auto; padding: 20px 16px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-        }
         .sidebar-footer a { text-decoration: none; }
         .user-info { display: flex; align-items: center; gap: 12px; }
         .user-avatar-sm {
@@ -629,6 +624,40 @@
             border-color: var(--accent);
         }
 
+                /* Dark mode: all form elements */
+        body.dark .form-group input,
+        body.dark .form-group select,
+        body.dark .form-group textarea {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: #334155;
+            color: #f1f5f9;
+        }
+
+        /* Dark mode: filter bar inputs */
+        body.dark .filter-bar input,
+        body.dark .filter-bar select {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: #334155;
+            color: #f1f5f9;
+        }
+
+        /* Dark mode: file inputs */
+        body.dark input[type="file"] {
+            color: #f1f5f9;
+        }
+
+        /* Dark mode: disabled inputs */
+        body.dark input:disabled,
+        body.dark select:disabled,
+        body.dark textarea:disabled {
+            background: rgba(15, 23, 42, 0.3);
+            color: #64748b;
+        }
+
+        /* Dark mode: modal text */
+        body.dark .modal-content {
+            color: var(--text-primary);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -659,6 +688,9 @@
                     <a href="/insights" class="nav-item {{ is_active('insights') }}">
                         <i class="fas fa-chart-line"></i><span>Business Insights</span>
                     </a>
+                    <a href="/reports" class="nav-item {{ is_active('reports') }}">
+                        <i class="fas fa-file-pdf"></i><span>Reports</span>
+                    </a>
                 </div>
 
                 <div class="nav-section">
@@ -669,6 +701,23 @@
                     <a href="/sales" class="nav-item {{ is_active('sales') }}">
                         <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                     </a>
+                    <a href="/recurring" class="nav-item {{ is_active('recurring') }}">
+                        <i class="fas fa-redo-alt"></i><span>Recurring Transaction</span>
+                    </a>
+                    <a href="/bank-reconciliation" class="nav-item {{ is_active('bank_reconciliation') }}">
+                        <i class="fas fa-university"></i><span>Bank Reconciliation</span>
+                    </a>
+                    {% if session.role in ['admin', 'owner'] %}
+                    <a href="/fiscal-year" class="nav-item {{ is_active('fiscal') }}">
+                        <i class="fas fa-calendar-check"></i><span>Fiscal Year</span>
+                    </a>
+                    <a href="/tax" class="nav-item {{ is_active('tax') }}">
+                        <i class="fas fa-file-invoice"></i><span>Tax Reports</span>
+                    </a>
+                    <a href="/currencies" class="nav-item {{ is_active('currencies') }}">
+                        <i class="fas fa-dollar-sign"></i><span>Currencies</span>
+                    </a>
+                    {% endif %}
                 </div>
 
                 <!-- RECEIVABLES & PAYABLES: Admin/Owner only, Pro/Enterprise only -->
@@ -697,6 +746,31 @@
                     <a href="/sales-orders" class="nav-item {{ is_active('sales_orders') }}">
                         <i class="fas fa-clipboard-list"></i><span>Sales Orders</span>
                     </a>
+                    <a href="/quotations" class="nav-item {{ is_active('quotations') }}">
+                        <i class="fas fa-file-contract"></i><span>Quotations</span>
+                    </a>
+                    <a href="/budgets" class="nav-item {{ is_active('budgets') }}">
+                        <i class="fas fa-chart-pie"></i><span>Budgeting</span>
+                    </a>
+                    <a href="/projects" class="nav-item {{ is_active('projects') }}">
+                        <i class="fas fa-folder-tree"></i><span>Projects</span>
+                    </a>
+                    <a href="/timecards" class="nav-item {{ is_active('timecards') }}">
+                        <i class="fas fa-clock"></i><span>Timecards</span>
+                    </a>
+                    <a href="/assets" class="nav-item {{ is_active('assets') }}">
+                        <i class="fas fa-building"></i><span>Fixed Assets</span>
+                    </a>
+                    {% if session.plan == 'enterprise' %}
+                    <a href="/branches" class="nav-item {{ is_active('branches') }}">
+                        <i class="fas fa-store-alt"></i><span>Branches</span>
+                    </a>
+                    {% endif %}
+                    {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+                    <a href="/permissions" class="nav-item {{ is_active('permissions') }}">
+                        <i class="fas fa-shield-alt"></i><span>Permissions</span>
+                    </a>
+                    {% endif %}
                 </div>
                 {% endif %}
 
@@ -716,6 +790,17 @@
                         <i class="fas fa-balance-scale"></i><span>General Ledger</span>
                     </a>
                     {% endif %}
+                    {% if session.plan in ['pro', 'enterprise'] %}
+                    <a href="/trial-balance" class="nav-item {{ is_active('trial_balance') }}">
+                        <i class="fas fa-balance-scale-right"></i><span>Trial Balance</span>
+                    </a>
+                    {% endif %}
+                    <a href="/income-statement" class="nav-item {{ is_active('income_statement') }}">
+                        <i class="fas fa-file-invoice-dollar"></i><span>Income Statement</span>
+                    </a>
+                    <a href="/balance-sheet" class="nav-item {{ is_active('balance_sheet') }}">
+                        <i class="fas fa-file-invoice"></i><span>Balance Sheet</span>
+                    </a>
                 </div>
             </div>
 
@@ -739,6 +824,17 @@
                     <h1 id="greetingMessage"></h1>
                     <p id="currentDate"></p>
                 </div>
+                {% if session.plan == 'enterprise' %}
+                <form method="POST" action="/set_branch" style="display: flex; align-items: center; gap: 8px;">
+                    <select name="branch_id" onchange="this.form.submit()" style="padding: 6px 12px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                        <option value="all" {% if not session.get('active_branch') %}selected{% endif %}>All Branches</option>
+                        {% set branches = get_branches() %}
+                        {% for b in branches %}
+                        <option value="{{ b.id }}" {% if session.get('active_branch') == b.id|string %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+                {% endif %}
                 <div class="search-bar" style="gap: 6px;">
                     <i class="fas fa-search"></i>
                     <input type="text" id="globalSearch" placeholder="Search anything...">
@@ -920,6 +1016,7 @@
             if (noData) {
                 noData.style.display = visibleCount === 0 ? '' : 'none';
             }
+
         };
 
         window.clearFilters = function(tableBodyId) {
@@ -930,6 +1027,21 @@
             });
             window.filterTable(tableBodyId, tableBodyId.replace('Body', 'NoData'));
         };
+
+        // ========== SIDEBAR SCROLL POSITION ==========
+        const sidebarNav = document.querySelector('.sidebar-nav-scroll');
+        if (sidebarNav) {
+            const savedScroll = sessionStorage.getItem('sidebarScroll');
+            if (savedScroll) {
+                sidebarNav.scrollTop = parseInt(savedScroll);
+            }
+            sidebarNav.addEventListener('click', function() {
+                sessionStorage.setItem('sidebarScroll', sidebarNav.scrollTop);
+            });
+            sidebarNav.addEventListener('scroll', function() {
+                sessionStorage.setItem('sidebarScroll', sidebarNav.scrollTop);
+            });
+        }
     </script>
     {% block extra_js %}{% endblock %}
         <!-- ========== ONBOARDING MODAL ========== -->

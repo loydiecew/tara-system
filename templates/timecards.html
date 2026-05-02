@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+
+{% block title %}Timecards{% endblock %}
+{% block page_title %}Timecards / Billing{% endblock %}
+{% block page_subtitle %}Track billable hours per project{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Hours</div>
+        <div class="stat-value">{{ "{:,.1f}".format(total_hours) }}h</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Billed</div>
+        <div class="stat-value" style="color: #10b981;">₱ {{ "{:,.0f}".format(total_amount) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Unbilled</div>
+        <div class="stat-value" style="color: #f59e0b;">₱ {{ "{:,.0f}".format(unbilled) }}</div>
+    </div>
+</div>
+
+<!-- Log Time -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> Log Time</h2>
+    </div>
+    <form method="POST" action="/add_timecard">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Project</label>
+                <select name="project_id">
+                    <option value="">No project</option>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Hours</label>
+                <input type="number" name="hours" step="0.25" value="1" min="0.25" required>
+            </div>
+            <div class="form-group">
+                <label>Rate (₱/hr)</label>
+                <input type="number" name="rate" step="0.01" value="500" required>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="date_worked" value="{{ today }}">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="e.g., Client meeting">
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                    <i class="fas fa-save"></i> Log Time
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Timecards List -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Time Entries</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('timecardsTable', 'TARA_Timecards_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Date From</label>
+            <input type="date" id="timecardsBody_date_from" onchange="filterTable('timecardsBody','timecardsNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Date To</label>
+            <input type="date" id="timecardsBody_date_to" onchange="filterTable('timecardsBody','timecardsNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="timecardsBody_status" onchange="filterTable('timecardsBody','timecardsNoData')">
+                <option value="all">All</option>
+                <option value="unbilled">Unbilled</option>
+                <option value="billed">Billed</option>
+            </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('timecardsBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    
+    <form method="POST" action="/bill_timecards" id="billForm">
+    <div class="table-wrapper">
+        <table id="timecardsTable">
+            <thead>
+                <tr><th><input type="checkbox" id="selectAll" onclick="toggleAll()"></th><th>Date</th><th>Project</th><th>Hours</th><th>Rate</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="timecardsBody">
+                {% for t in timecards %}
+                <tr data-filter='{"date":"{{ t.date_worked }}","status":"{{ t.status }}"}'>
+                    <td>{% if t.status == 'unbilled' %}<input type="checkbox" name="timecard_ids" value="{{ t.id }}" class="timecard-check">{% endif %}</td>
+                    <td>{{ t.date_worked }}</td>
+                    <td>{{ t.project_name or '-' }}</td>
+                    <td>{{ t.hours }}h</td>
+                    <td>₱{{ "{:,.0f}".format(t.rate) }}/hr</td>
+                    <td style="color: #10b981; font-weight: 600;">₱ {{ "{:,.2f}".format(t.amount) }}</td>
+                    <td>{% if t.status == 'unbilled' %}<span class="badge badge-warning">Unbilled</span>{% else %}<span class="badge badge-success">Billed</span>{% endif %}</td>
+                    <td>{% if t.status == 'unbilled' %}<a href="/delete_timecard/{{ t.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a>{% else %}-{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr id="timecardsNoData"><td colspan="8" style="text-align: center; padding: 30px;">No time entries yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div style="margin-top: 12px;"><button type="submit" class="btn btn-primary" onclick="return confirm('Generate invoice?')"><i class="fas fa-file-invoice"></i> Generate Invoice</button></div>
+    </form>
+</div>
+
+<script>
+    function toggleAll() {
+        const checkAll = document.getElementById('selectAll');
+        document.querySelectorAll('.timecard-check').forEach(cb => cb.checked = checkAll.checked);
+    }
+</script>
+{% endblock %}

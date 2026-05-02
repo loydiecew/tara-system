@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block title %}Fiscal Year Closing{% endblock %}
+{% block page_title %}Fiscal Year Closing{% endblock %}
+{% block page_subtitle %}Close books and carry forward balances{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Current Year Net Income</div>
+        <div class="stat-value" style="color: {% if net_income >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+            ₱ {{ "{:,.0f}".format(net_income) }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Retained Earnings</div>
+        <div class="stat-value">₱ {{ "{:,.0f}".format(retained) }}</div>
+    </div>
+</div>
+
+<!-- Close Year -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-lock"></i> Close Fiscal Year</h2>
+    </div>
+    <div style="background: #fef2f2; padding: 16px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #ef4444;">
+        <strong>Warning:</strong> Closing a fiscal year is permanent. Revenue and expense accounts will reset to zero. Net income transfers to retained earnings.
+    </div>
+    <form method="POST" action="/close_year">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Year to Close</label>
+                <input type="number" name="year" value="{{ current_year }}" required>
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date" value="{{ current_year }}-12-31">
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary" onclick="return confirm('Permanently close this fiscal year? This cannot be undone.')" style="background: #ef4444;">
+                    <i class="fas fa-lock"></i> Close Year
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Closed Years -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-history"></i> Closed Fiscal Years</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Year</th><th>Start</th><th>End</th><th>Net Income</th><th>Closed</th></tr>
+            </thead>
+            <tbody>
+                {% for y in years %}
+                <tr>
+                    <td><strong>{{ y.year }}</strong></td>
+                    <td>{{ y.start_date }}</td>
+                    <td>{{ y.end_date }}</td>
+                    <td style="color: {% if y.net_income >= 0 %}#10b981{% else %}#ef4444{% endif %}; font-weight: 600;">
+                        ₱ {{ "{:,.2f}".format(y.net_income) }}
+                    </td>
+                    <td>{{ y.closed_at.strftime('%B %d, %Y') if y.closed_at else '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; padding: 30px;">No closed fiscal years</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

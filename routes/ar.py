@@ -29,7 +29,7 @@ def ar():
     
     # Get all invoices with customer names and total paid (excluding soft-deleted)
     cursor.execute("""
-        SELECT i.*, c.name as customer_name,
+        SELECT i.*, c.name as customer_name, c.email as customer_email,
             COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) as paid_amount
         FROM invoices i
         JOIN customers c ON i.customer_id = c.id
@@ -142,13 +142,17 @@ def edit_invoice(invoice_id):
         due_date = request.form['due_date']
         invoice_number = request.form.get('invoice_number', '')
         description = request.form.get('description', '')
+        payment_terms = request.form.get('payment_terms', 'net_15')
+        reference_po = request.form.get('reference_po', '')
+        bir_serial = request.form.get('bir_serial', '')
         
         cursor.execute("""
             UPDATE invoices 
-            SET customer_id = %s, amount = %s, due_date = %s, invoice_number = %s, description = %s
+            SET customer_id = %s, amount = %s, due_date = %s, invoice_number = %s, description = %s,
+                payment_terms = %s, reference_po = %s, bir_serial_number = %s
             WHERE id = %s AND user_id = %s AND deleted_at IS NULL
-        """, (customer_id, amount, due_date, invoice_number, description, invoice_id, session['user_id']))
-        db.commit()
+        """, (customer_id, amount, due_date, invoice_number, description,
+              payment_terms, reference_po, bir_serial, invoice_id, session['user_id']))
         
         cursor.execute("SELECT * FROM invoices WHERE id = %s", (invoice_id,))
         new_invoice = cursor.fetchone()
@@ -198,13 +202,18 @@ def add_customer():
     name = request.form['name']
     email = request.form.get('email', '')
     phone = request.form.get('phone', '')
+    contact_person = request.form.get('contact_person', '')
+    tin = request.form.get('tin', '')
+    address = request.form.get('address', '')
+    payment_terms = request.form.get('payment_terms', 'net_15')
+    credit_limit = float(request.form.get('credit_limit', 0))
     
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO customers (user_id, name, email, phone)
-        VALUES (%s, %s, %s, %s)
-    """, (session['user_id'], name, email, phone))
+        INSERT INTO customers (user_id, name, email, phone, contact_person, tin, address, payment_terms, credit_limit)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], name, email, phone, contact_person, tin, address, payment_terms, credit_limit))
     db.commit()
     cursor.close()
     db.close()
@@ -222,14 +231,19 @@ def add_invoice():
     due_date = request.form['due_date']
     description = request.form.get('description', '')
     invoice_number = request.form.get('invoice_number', f"INV-{customer_id}-{due_date}")
+    payment_terms = request.form.get('payment_terms', 'net_15')
+    reference_po = request.form.get('reference_po', '')
+    bir_serial = request.form.get('bir_serial', '')
     
     db = get_db()
     cursor = db.cursor()
     
     cursor.execute("""
-        INSERT INTO invoices (user_id, customer_id, invoice_number, amount, description, due_date)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], customer_id, invoice_number, amount, description, due_date))
+        INSERT INTO invoices (user_id, customer_id, invoice_number, amount, description, due_date,
+                            payment_terms, reference_po, bir_serial_number)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], customer_id, invoice_number, amount, description, due_date,
+          payment_terms, reference_po, bir_serial))
     db.commit()
     
     if session.get('plan') in ['pro', 'enterprise']:

@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block title %}Branches{% endblock %}
+{% block page_title %}Branch Management{% endblock %}
+{% block page_subtitle %}Manage multiple business locations{% endblock %}
+
+{% block content %}
+<!-- Add Branch -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> Add Branch</h2>
+    </div>
+    <form method="POST" action="/add_branch">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Branch Name</label>
+                <input type="text" name="name" placeholder="e.g., Makati Branch" required>
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <input type="text" name="address" placeholder="e.g., 123 Ayala Ave">
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="phone" placeholder="e.g., 09171234567">
+            </div>
+            <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="submit" class="btn btn-primary" style="width:100%;">
+                    <i class="fas fa-save"></i> Create Branch
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Branches List -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Branches</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Branch Name</th>
+                    <th>Address</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in branches %}
+                <tr>
+                    <td><strong>{{ b.name }}</strong></td>
+                    <td>{{ b.address or '-' }}</td>
+                    <td>{{ b.phone or '-' }}</td>
+                    <td>
+                        {% if b.is_active %}
+                        <span class="badge badge-success">Active</span>
+                        {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if b.is_active %}
+                        <a href="/delete_branch/{{ b.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Deactivate this branch?')">
+                            <i class="fas fa-toggle-off"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; padding: 30px;">No branches yet — Main Branch is default</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

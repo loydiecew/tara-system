@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+
+{% block title %}Tax Reports{% endblock %}
+{% block page_title %}Tax Reports{% endblock %}
+{% block page_subtitle %}{{ period }} — {{ 'VAT-Registered' if is_vat else 'Non-VAT' }}{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Gross Income</div>
+        <div class="stat-value" style="color: #10b981;">₱ {{ "{:,.0f}".format(gross_income) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Gross Expenses</div>
+        <div class="stat-value" style="color: #ef4444;">₱ {{ "{:,.0f}".format(gross_expenses) }}</div>
+    </div>
+    {% if is_vat %}
+    <div class="stat-card">
+        <div class="stat-title">VAT Payable</div>
+        <div class="stat-value" style="color: #f59e0b;">₱ {{ "{:,.0f}".format(vat_payable) }}</div>
+    </div>
+    {% else %}
+    <div class="stat-card">
+        <div class="stat-title">Percentage Tax (3%)</div>
+        <div class="stat-value" style="color: #f59e0b;">₱ {{ "{:,.0f}".format(percentage_tax) }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- VAT Breakdown -->
+{% if is_vat %}
+<div class="card">
+    <div class="card-header"><h2><i class="fas fa-calculator"></i> VAT Computation (12%)</h2></div>
+    <div class="table-wrapper">
+        <table>
+            <tr><td>Output VAT (on sales)</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(output_vat) }}</td></tr>
+            <tr><td>Less: Input VAT (on purchases)</td><td style="text-align:right; color:#10b981;">(₱ {{ "{:,.2f}".format(input_vat) }})</td></tr>
+            <tr style="border-top:2px solid var(--border-light); font-weight:700;">
+                <td>VAT Payable</td>
+                <td style="text-align:right; color:{% if vat_payable >= 0 %}#ef4444{% else %}#10b981{% endif %};">
+                    ₱ {{ "{:,.2f}".format(vat_payable) }}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Withholding Tax -->
+<div class="card">
+    <div class="card-header"><h2><i class="fas fa-hand-holding-usd"></i> Withholding Tax Summary</h2></div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Tax Type</th><th>Rate</th><th>Base</th><th>Amount</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>Professional Fees</td><td>5%</td><td>₱ {{ "{:,.2f}".format(gross_expenses) }}</td>
+                    <td style="color:#f59e0b; font-weight:600;">₱ {{ "{:,.2f}".format(gross_expenses * 0.05) }}</td>
+                </tr>
+                <tr>
+                    <td>Rent</td><td>5%</td><td>—</td><td>₱ 0.00</td>
+                </tr>
+                <tr>
+                    <td>Contractors</td><td>2%</td><td>—</td><td>₱ 0.00</td>
+                </tr>
+                <tr style="border-top:2px solid var(--border-light); font-weight:700;">
+                    <td colspan="3">Total Withholding Tax Payable</td>
+                    <td style="color:#ef4444;">₱ {{ "{:,.2f}".format(withholding_payable) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- File Tax -->
+<div class="card">
+    <div class="card-header"><h2><i class="fas fa-file-signature"></i> File Tax Return</h2></div>
+    <form method="POST" action="/file_tax">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Form Type</label>
+                <select name="form_type" required>
+                    {% if is_vat %}
+                    <option value="2550M">2550M - Monthly VAT Declaration</option>
+                    {% else %}
+                    <option value="2551M">2551M - Percentage Tax Return</option>
+                    {% endif %}
+                    <option value="2307">2307 - Withholding Tax Return</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Period</label>
+                <input type="month" name="period" value="{{ today[:7] }}" required>
+            </div>
+            <div class="form-group">
+                <label>Gross Amount (₱)</label>
+                <input type="number" name="gross_amount" step="0.01" value="{{ '%.2f'|format(gross_income) }}" required>
+            </div>
+            <div class="form-group">
+                <label>Tax Amount (₱)</label>
+                <input type="number" name="tax_amount" step="0.01" value="{{ '%.2f'|format(vat_payable if is_vat else percentage_tax) }}" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:12px;">
+            <i class="fas fa-check"></i> File Tax Return
+        </button>
+    </form>
+</div>
+
+<!-- Filed Returns -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-history"></i> Filed Returns</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('taxTable', 'TARA_Tax_Returns_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+    <div class="table-wrapper">
+        <table id="taxTable">
+            <thead>
+                <tr><th>Form</th><th>Period</th><th>Gross</th><th>Tax</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for f in filings %}
+                <tr>
+                    <td><strong>{{ f.form_type }}</strong></td>
+                    <td>{{ f.period }}</td>
+                    <td>₱ {{ "{:,.2f}".format(f.gross_amount) }}</td>
+                    <td style="color:#f59e0b; font-weight:600;">₱ {{ "{:,.2f}".format(f.tax_amount) }}</td>
+                    <td><span class="badge badge-success">Filed</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align:center; padding:30px;">No tax returns filed yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

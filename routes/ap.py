@@ -188,13 +188,18 @@ def add_supplier():
     email = request.form.get('email', '')
     phone = request.form.get('phone', '')
     address = request.form.get('address', '')
+    contact_person = request.form.get('contact_person', '')
+    tin = request.form.get('tin', '')
+    payment_terms = request.form.get('payment_terms', 'net_15')
+    bank_name = request.form.get('bank_name', '')
+    bank_account = request.form.get('bank_account', '')
     
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO suppliers (user_id, name, email, phone, address)
-        VALUES (%s, %s, %s, %s, %s)
-    """, (session['user_id'], name, email, phone, address))
+        INSERT INTO suppliers (user_id, name, email, phone, address, contact_person, tin, payment_terms, bank_name, bank_account)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], name, email, phone, address, contact_person, tin, payment_terms, bank_name, bank_account))
     db.commit()
     cursor.close()
     db.close()
@@ -212,14 +217,16 @@ def add_bill():
     due_date = request.form['due_date']
     description = request.form.get('description', '')
     bill_number = request.form.get('bill_number', f"BILL-{supplier_id}-{due_date}")
+    reference_po = request.form.get('reference_po', '')
+    bir_2307 = request.form.get('bir_2307', '')
     
     db = get_db()
     cursor = db.cursor()
     
     cursor.execute("""
-        INSERT INTO bills (user_id, supplier_id, bill_number, amount, description, due_date)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], supplier_id, bill_number, amount, description, due_date))
+        INSERT INTO bills (user_id, supplier_id, bill_number, amount, description, due_date, reference_po, bir_2307)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], supplier_id, bill_number, amount, description, due_date, reference_po, bir_2307))
     db.commit()
     
     if session.get('plan') in ['pro', 'enterprise']:

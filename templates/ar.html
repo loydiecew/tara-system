@@ -30,8 +30,12 @@
     <form method="POST" action="/add_customer">
         <div class="form-grid">
             <div class="form-group">
-                <label>Customer Name</label>
+                <label>Customer Name *</label>
                 <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Contact Person</label>
+                <input type="text" name="contact_person" placeholder="Who to contact">
             </div>
             <div class="form-group">
                 <label>Email</label>
@@ -40,6 +44,27 @@
             <div class="form-group">
                 <label>Phone</label>
                 <input type="text" name="phone">
+            </div>
+            <div class="form-group">
+                <label>TIN</label>
+                <input type="text" name="tin" placeholder="Tax identification number">
+            </div>
+            <div class="form-group">
+                <label>Payment Terms</label>
+                <select name="payment_terms">
+                    <option value="net_15">Net 15</option>
+                    <option value="net_30">Net 30</option>
+                    <option value="net_60">Net 60</option>
+                    <option value="cod">Cash on Delivery</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Credit Limit (₱)</label>
+                <input type="number" name="credit_limit" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+                <label>Address</label>
+                <input type="text" name="address" placeholder="Billing/shipping address">
             </div>
             <div class="form-group">
                 <label>&nbsp;</label>
@@ -56,7 +81,7 @@
     <form method="POST" action="/add_invoice">
         <div class="form-grid">
             <div class="form-group">
-                <label>Customer</label>
+                <label>Customer *</label>
                 <select name="customer_id" required>
                     <option value="">Select customer</option>
                     {% for c in customers %}
@@ -65,27 +90,40 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Amount (₱)</label>
+                <label>Amount (₱) *</label>
                 <input type="number" name="amount" step="0.01" required>
             </div>
             <div class="form-group">
-                <label>Due Date</label>
+                <label>Due Date *</label>
                 <input type="date" name="due_date" required>
             </div>
             <div class="form-group">
                 <label>Invoice Number</label>
                 <input type="text" name="invoice_number" placeholder="Auto-generated if blank">
             </div>
-        </div>
-        <div style="margin-top: 16px;">
+            <div class="form-group">
+                <label>Payment Terms</label>
+                <select name="payment_terms">
+                    <option value="net_15">Net 15</option>
+                    <option value="net_30">Net 30</option>
+                    <option value="net_60">Net 60</option>
+                    <option value="cod">Cash on Delivery</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Reference PO/SO</label>
+                <input type="text" name="reference_po" placeholder="Link to purchase/sales order">
+            </div>
+            <div class="form-group">
+                <label>BIR Serial Number</label>
+                <input type="text" name="bir_serial" placeholder="Official receipt serial">
+            </div>
             <div class="form-group">
                 <label>Description</label>
-                <textarea name="description" rows="2" placeholder="Products or services..." style="width:100%; padding:10px; border:1px solid var(--border-light); border-radius:10px;"></textarea>
+                <textarea name="description" rows="2" placeholder="Products or services..."></textarea>
             </div>
         </div>
-        <div style="margin-top: 16px;">
-            <button type="submit" class="btn btn-primary">Create Invoice</button>
-        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Create Invoice</button>
     </form>
 </div>
 
@@ -144,7 +182,7 @@
             </thead>
             <tbody id="arBody">
                 {% for inv in invoices %}
-                <tr class="invoice-row" onclick="togglePaymentHistory({{ inv.id }}, this)" data-filter='{"date":"{{ inv.due_date }}","status":"{{ inv.status }}","search":"{{ inv.customer_name|lower }} {{ inv.invoice_number|lower }}">
+                <tr class="invoice-row" onclick="togglePaymentHistory({{ inv.id }}, this)" data-filter='{"date":"{{ inv.due_date }}","status":"{{ inv.status }}","search":"{{ (inv.customer_name or '')|lower }} {{ (inv.invoice_number or '')|lower }}"}'>
                     <td><strong>{{ inv.invoice_number or 'INV-' + inv.id|string }}</strong></td>
                     <td>{{ inv.customer_name }}</td>
                     <td>₱ {{ "{:,.2f}".format(inv.amount) }}</td>
@@ -168,6 +206,11 @@
                         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); showPaymentModal({{ inv.id }}, '{{ inv.customer_name }}', {{ inv.remaining }})" style="padding: 5px 12px; font-size: 12px;">
                             <i class="fas fa-coins"></i> Pay
                         </button>
+                        {% if session.plan == 'enterprise' and inv.remaining > 0 and inv.customer_email %}
+                        <a href="/email_payment_link/{{ inv.id }}" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;">
+                            <i class="fas fa-paper-plane"></i> Send Payment Link
+                        </a>
+                        {% endif %}
                         {% endif %}
                         <a href="/edit_invoice/{{ inv.id }}" class="btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
                         <a href="/delete_invoice/{{ inv.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="event.stopPropagation(); return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a>

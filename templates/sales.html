@@ -29,7 +29,7 @@
             <div class="form-group">
                 <label>Sale Method</label>
                 <select id="saleMethod" name="sale_method" onchange="toggleSaleMethod()">
-                    <option value="inventory">From Inventory (Product)</option>
+                    <option value="inventory">From Inventory</option>
                     <option value="manual">Manual Entry</option>
                 </select>
             </div>
@@ -48,17 +48,9 @@
                     <label>Quantity</label>
                     <input type="number" name="quantity" value="1" min="1">
                 </div>
-                <div class="form-group">
-                    <label>Customer Name</label>
-                    <input type="text" name="customer_name" placeholder="Customer name">
-                </div>
             </div>
             
             <div id="manualFields" style="display: none;">
-                <div class="form-group">
-                    <label>Customer Name</label>
-                    <input type="text" name="customer_name_manual" placeholder="Customer name">
-                </div>
                 <div class="form-group">
                     <label>Amount (₱)</label>
                     <input type="number" name="amount_manual" step="0.01" placeholder="0.00">
@@ -70,8 +62,30 @@
             </div>
             
             <div class="form-group">
+                <label>Customer Name</label>
+                <input type="text" name="customer_name" id="customerNameInput" placeholder="Walk-in Customer">
+            </div>
+            <div class="form-group">
                 <label>Sale Date</label>
                 <input type="date" name="sale_date" value="{{ today }}">
+            </div>
+            <div class="form-group">
+                <label>Payment Method</label>
+                <select name="payment_method">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="gcash">GCash</option>
+                    <option value="maya">Maya</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Reference Number</label>
+                <input type="text" name="reference_number" placeholder="Order #, receipt #...">
+            </div>
+            <div class="form-group">
+                <label>Served By</label>
+                <input type="text" name="served_by" placeholder="Staff name">
             </div>
             <div class="form-group">
                 <label>&nbsp;</label>

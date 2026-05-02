@@ -130,6 +130,16 @@
                         </select>
                         <small style="color: var(--text-secondary); margin-top: 4px;">Affects receipt tax calculations</small>
                     </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> SMTP Email</label>
+                        <input type="email" name="smtp_email" value="{{ user.smtp_email or '' }}" placeholder="your@email.com" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                        <small style="color: var(--text-secondary); margin-top: 4px;">Used to send quotes & invoices (Gmail requires App Password)</small>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-key"></i> SMTP Password</label>
+                        <input type="password" name="smtp_password" value="{{ user.smtp_password or '' }}" placeholder="App Password (not your Gmail password)" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
+                        <small style="color: var(--text-secondary); margin-top: 4px;"><a href="https://myaccount.google.com/apppasswords" target="_blank">Get Gmail App Password</a></small>
+                    </div>
                 </div> 
                 
                 <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-light);">

@@ -93,9 +93,41 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Purchase Orders</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('poTable', 'TARA_Purchase_Orders_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
     </div>
+    
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Date From</label>
+            <input type="date" id="poBody_date_from" onchange="filterTable('poBody','poNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Date To</label>
+            <input type="date" id="poBody_date_to" onchange="filterTable('poBody','poNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="poBody_status" onchange="filterTable('poBody','poNoData')">
+                <option value="all">All</option>
+                <option value="draft">Draft</option>
+                <option value="ordered">Ordered</option>
+                <option value="received">Received</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="poBody_search" placeholder="Supplier or PO #..." oninput="filterTable('poBody','poNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('poBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    
     <div class="table-wrapper">
-        <table>
+        <table id="poTable">
             <thead>
                 <tr>
                     <th>PO #</th>
@@ -107,9 +139,9 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="poBody">
                 {% for po in orders %}
-                <tr>
+                <tr data-filter='{"date":"{{ po.order_date }}","status":"{{ po.status }}","search":"{{ (po.supplier_name or '')|lower }} {{ po.po_number|lower }}"}'>
                     <td><strong>{{ po.po_number }}</strong></td>
                     <td>{{ po.supplier_name or '-' }}</td>
                     <td>{{ po.order_date }}</td>
@@ -135,7 +167,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" style="text-align: center; padding: 30px;">No purchase orders yet</td></tr>
+                <tr id="poNoData"><td colspan="7" style="text-align: center; padding: 30px;">No purchase orders yet</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -1,0 +1,238 @@
+{% extends "layout.html" %}
+
+{% block title %}Quotations{% endblock %}
+{% block page_title %}Quotations{% endblock %}
+{% block page_subtitle %}Create and manage price quotes{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Quotes</div>
+        <div class="stat-value">{{ quotes|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Accepted</div>
+        <div class="stat-value" style="color: #10b981;">
+            {{ quotes|selectattr('status', 'equalto', 'accepted')|list|length }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Pending</div>
+        <div class="stat-value" style="color: #f59e0b;">
+            {{ quotes|selectattr('status', 'equalto', 'sent')|list|length }}
+        </div>
+    </div>
+</div>
+
+<!-- New Quotation Form -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-file-invoice"></i> New Quotation</h2>
+    </div>
+    <form method="POST" action="/add_quote" id="quoteForm">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Customer</label>
+                <select name="customer_id">
+                    <option value="">Select customer</option>
+                    {% for c in customers %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Quote Date</label>
+                <input type="date" name="quote_date" value="{{ today }}" required>
+            </div>
+            <div class="form-group">
+                <label>Valid Until</label>
+                <input type="date" name="valid_until">
+            </div>
+            <div class="form-group">
+                <label>Discount %</label>
+                <input type="number" name="discount_percent" value="0" min="0" max="100" step="0.01" onchange="updateQuoteTotal()">
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-size: 14px;">Items</h3>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addQuoteItem()">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product/Service</th>
+                            <th>Description</th>
+                            <th>Qty</th>
+                            <th>Unit Price (₱)</th>
+                            <th>Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="quoteItemsBody">
+                        <tr class="quote-item-row">
+                            <td><input type="text" name="product_name[]" placeholder="e.g., Catering service" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td><input type="text" name="item_description[]" placeholder="Details" style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updateQuoteTotal()" style="width:70px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updateQuoteTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+                            <td class="quote-item-amount" style="font-weight:600;">₱0.00</td>
+                            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updateQuoteTotal();"><i class="fas fa-times"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea name="notes" rows="2" placeholder="Additional notes..." style="width:100%; padding:10px; border:1px solid var(--border-light); border-radius:10px; background:var(--bg-secondary); color:var(--text-primary);"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Terms & Conditions</label>
+                <textarea name="terms" rows="2" placeholder="Payment terms, validity, etc..." style="width:100%; padding:10px; border:1px solid var(--border-light); border-radius:10px; background:var(--bg-secondary); color:var(--text-primary);"></textarea>
+            </div>
+        </div>
+        
+        <div style="text-align: right; margin-top: 16px; font-size: 16px; font-weight: 700;">
+            Total: <span id="quoteGrandTotal" style="color: #10b981;">₱0.00</span>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">
+            <i class="fas fa-save"></i> Create Quotation
+        </button>
+    </form>
+</div>
+
+<!-- Quotations List with Filter -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Quotations</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('quotationsTable', 'TARA_Quotations_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Date From</label>
+            <input type="date" id="quotationsBody_date_from" onchange="filterTable('quotationsBody','quotationsNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Date To</label>
+            <input type="date" id="quotationsBody_date_to" onchange="filterTable('quotationsBody','quotationsNoData')">
+        </div>
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="quotationsBody_status" onchange="filterTable('quotationsBody','quotationsNoData')">
+                <option value="all">All</option>
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="accepted">Accepted</option>
+                <option value="converted">Converted</option>
+                <option value="rejected">Rejected</option>
+                <option value="expired">Expired</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="quotationsBody_search" placeholder="Customer or quote #..." oninput="filterTable('quotationsBody','quotationsNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('quotationsBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    
+    <div class="table-wrapper">
+        <table id="quotationsTable">
+            <thead>
+                <tr>
+                    <th>Quote #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Valid Until</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="quotationsBody">
+                {% for q in quotes %}
+                <tr data-filter='{"date":"{{ q.quote_date }}","status":"{{ q.status }}","search":"{{ q.quote_number|lower }} {{ (q.customer_name or 'walk-in')|lower }}"}'>
+                    <td><strong>{{ q.quote_number }}</strong></td>
+                    <td>{{ q.customer_name or 'Walk-in' }}</td>
+                    <td>{{ q.quote_date }}</td>
+                    <td>{{ q.valid_until or '-' }}</td>
+                    <td>₱ {{ "{:,.2f}".format(q.total_amount) }}</td>
+                    <td>
+                        {% if q.status == 'draft' %}<span class="badge badge-info">Draft</span>
+                        {% elif q.status == 'sent' %}<span class="badge badge-warning">Sent</span>
+                        {% elif q.status == 'accepted' %}<span class="badge badge-success">Accepted</span>
+                        {% elif q.status == 'converted' %}<span class="badge badge-success">Converted</span>
+                        {% elif q.status == 'rejected' %}<span class="badge badge-danger">Rejected</span>
+                        {% elif q.status == 'expired' %}<span class="badge badge-danger">Expired</span>
+                        {% endif %}
+                    </td>
+                    <td style="white-space: nowrap;">
+                        <a href="/view_quote/{{ q.id }}" class="btn-icon" title="View/Print" target="_blank">
+                            <i class="fas fa-print"></i>
+                        </a>
+                        {% if q.customer_email %}
+                        <a href="/email_quote/{{ q.id }}" class="btn-icon" title="Email Quote" onclick="return confirm('Send quote via email?')">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                        {% endif %}
+                        {% if q.status == 'draft' %}
+                        <a href="/update_quote_status/{{ q.id }}/sent" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;">Send</a>
+                        {% elif q.status == 'sent' %}
+                        <a href="/update_quote_status/{{ q.id }}/accepted" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;">Accept</a>
+                        <a href="/update_quote_status/{{ q.id }}/rejected" class="btn btn-secondary btn-sm" style="padding:4px 10px; font-size:11px;">Reject</a>
+                        {% elif q.status == 'accepted' %}
+                        <a href="/convert_quote/{{ q.id }}" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;" onclick="return confirm('Convert to Sales Order?')">Convert to SO</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr id="quotationsNoData"><td colspan="7" style="text-align: center; padding: 30px;">No quotations yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function addQuoteItem() {
+        const tbody = document.getElementById('quoteItemsBody');
+        const row = document.createElement('tr');
+        row.className = 'quote-item-row';
+        row.innerHTML = `
+            <td><input type="text" name="product_name[]" placeholder="e.g., Catering service" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td><input type="text" name="item_description[]" placeholder="Details" style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updateQuoteTotal()" style="width:70px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updateQuoteTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
+            <td class="quote-item-amount" style="font-weight:600;">₱0.00</td>
+            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updateQuoteTotal();"><i class="fas fa-times"></i></button></td>
+        `;
+        tbody.appendChild(row);
+    }
+    
+    function updateQuoteTotal() {
+        const rows = document.querySelectorAll('.quote-item-row');
+        let subtotal = 0;
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+            const price = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+            const amount = qty * price;
+            row.querySelector('.quote-item-amount').textContent = '₱' + amount.toLocaleString(undefined, {minimumFractionDigits: 2});
+            subtotal += amount;
+        });
+        const discount = parseFloat(document.querySelector('input[name="discount_percent"]').value) || 0;
+        const total = subtotal - (subtotal * discount / 100);
+        document.getElementById('quoteGrandTotal').textContent = '₱' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+</script>
+{% endblock %}

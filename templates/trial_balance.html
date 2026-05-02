@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block title %}Trial Balance{% endblock %}
+{% block page_title %}Trial Balance{% endblock %}
+{% block page_subtitle %}Summary of all account balances{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Debits</div>
+        <div class="stat-value">₱ {{ "{:,.0f}".format(total_debits) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Credits</div>
+        <div class="stat-value">₱ {{ "{:,.0f}".format(total_credits) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Difference</div>
+        <div class="stat-value" style="color: {% if total_debits == total_credits %}#10b981{% else %}#ef4444{% endif %};">
+            ₱ {{ "{:,.0f}".format((total_debits - total_credits)|abs) }}
+            {% if total_debits == total_credits %}<span style="font-size:14px;">✓ Balanced</span>{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Filter -->
+<form method="GET" action="/trial-balance" style="display: flex; gap: 12px; margin-bottom: 20px; align-items: flex-end; flex-wrap: wrap;">
+    <div class="filter-group">
+        <label>Date From</label>
+        <input type="date" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="filter-group">
+        <label>Date To</label>
+        <input type="date" name="date_to" value="{{ date_to }}">
+    </div>
+    <button type="submit" class="btn btn-primary">Apply</button>
+    <a href="/trial-balance" class="btn btn-secondary">Reset</a>
+</form>
+
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-balance-scale"></i> Account Balances</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('trialBalanceTable', 'TARA_Trial_Balance_{{ today }}')">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+    <div class="table-wrapper">
+        <table id="trialBalanceTable">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Account</th>
+                    <th>Type</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Net Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in accounts %}
+                {% if a.total_debit > 0 or a.total_credit > 0 %}
+                <tr>
+                    <td>{{ a.code }}</td>
+                    <td><strong>{{ a.account_name }}</strong></td>
+                    <td><span class="badge badge-info">{{ a.account_type }}</span></td>
+                    <td>₱ {{ "{:,.2f}".format(a.total_debit) }}</td>
+                    <td>₱ {{ "{:,.2f}".format(a.total_credit) }}</td>
+                    <td style="font-weight: 600; color: {% if a.total_debit - a.total_credit >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+                        ₱ {{ "{:,.2f}".format((a.total_debit - a.total_credit)|abs) }}
+                        {{ 'Dr' if a.total_debit >= a.total_credit else 'Cr' }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="border-top: 2px solid var(--border-light); font-weight: 700;">
+                    <td colspan="3">Totals</td>
+                    <td>₱ {{ "{:,.2f}".format(total_debits) }}</td>
+                    <td>₱ {{ "{:,.2f}".format(total_credits) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endblock %}

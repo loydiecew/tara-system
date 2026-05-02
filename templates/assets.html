@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+
+{% block title %}Fixed Assets{% endblock %}
+{% block page_title %}Fixed Assets{% endblock %}
+{% block page_subtitle %}Track equipment, vehicles, and depreciation{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Asset Cost</div>
+        <div class="stat-value">₱ {{ "{:,.0f}".format(total_cost) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Current Value</div>
+        <div class="stat-value" style="color: #10b981;">₱ {{ "{:,.0f}".format(total_value) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Depreciation</div>
+        <div class="stat-value" style="color: #f59e0b;">₱ {{ "{:,.0f}".format(total_depreciation) }}</div>
+    </div>
+</div>
+
+<!-- Add Asset -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> Add Asset</h2>
+    </div>
+    <form method="POST" action="/add_asset">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Asset Name</label>
+                <input type="text" name="name" placeholder="e.g., Espresso Machine" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category">
+                    <option value="Equipment">Equipment</option>
+                    <option value="Vehicle">Vehicle</option>
+                    <option value="Furniture">Furniture</option>
+                    <option value="Computer">Computer / IT</option>
+                    <option value="Building">Building</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Purchase Date</label>
+                <input type="date" name="purchase_date" value="{{ today }}" required>
+            </div>
+            <div class="form-group">
+                <label>Cost (₱)</label>
+                <input type="number" name="cost" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="form-group">
+                <label>Useful Life (months)</label>
+                <input type="number" name="useful_life_months" value="60" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Salvage Value (₱)</label>
+                <input type="number" name="salvage_value" step="0.01" value="0" placeholder="0.00">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 12px;">
+            <i class="fas fa-save"></i> Add Asset
+        </button>
+    </form>
+</div>
+
+<!-- Assets List -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Assets</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('assetsTable', 'TARA_Assets_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Category</label>
+            <select id="assetsBody_type" onchange="filterTable('assetsBody','assetsNoData')">
+                <option value="all">All</option>
+                <option value="equipment">Equipment</option>
+                <option value="vehicle">Vehicle</option>
+                <option value="furniture">Furniture</option>
+                <option value="computer">Computer / IT</option>
+                <option value="building">Building</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="assetsBody_status" onchange="filterTable('assetsBody','assetsNoData')">
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="disposed">Disposed</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="assetsBody_search" placeholder="Asset name..." oninput="filterTable('assetsBody','assetsNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('assetsBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    
+    <div class="table-wrapper">
+        <table id="assetsTable">
+            <thead>
+                <tr><th>Asset</th><th>Category</th><th>Purchase Date</th><th>Cost</th><th>Monthly Dep.</th><th>Accumulated</th><th>Current Value</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="assetsBody">
+                {% for a in assets %}
+                <tr data-filter='{"type":"{{ a.category|lower }}","status":"{{ a.status }}","search":"{{ a.name|lower }}"}'>
+                    <td><strong>{{ a.name }}</strong></td>
+                    <td>{{ a.category or '-' }}</td>
+                    <td>{{ a.purchase_date }}</td>
+                    <td>₱ {{ "{:,.2f}".format(a.cost) }}</td>
+                    <td>₱ {{ "{:,.2f}".format(a.monthly_depreciation) }}</td>
+                    <td style="color: #f59e0b;">₱ {{ "{:,.2f}".format(a.accumulated) }}</td>
+                    <td style="color: #10b981; font-weight: 600;">₱ {{ "{:,.2f}".format(a.current_value) }}</td>
+                    <td>{% if a.status == 'active' %}<span class="badge badge-success">Active</span>{% else %}<span class="badge badge-danger">Disposed</span>{% endif %}</td>
+                    <td>
+                        {% if a.status == 'active' %}<a href="/dispose_asset/{{ a.id }}" class="btn btn-secondary btn-sm" style="padding:4px 10px; font-size:11px;" onclick="return confirm('Dispose?')">Dispose</a>{% endif %}
+                        <a href="/delete_asset/{{ a.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr id="assetsNoData"><td colspan="9" style="text-align: center; padding: 30px;">No assets yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

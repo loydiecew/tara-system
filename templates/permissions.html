@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+
+{% block title %}User Permissions{% endblock %}
+{% block page_title %}Advanced User Permissions{% endblock %}
+{% block page_subtitle %}Create custom roles with specific access{% endblock %}
+
+{% block extra_css %}
+<style>
+    .perm-grid { display: grid; grid-template-columns: 180px repeat(4, 60px); gap: 2px; align-items: center; font-size: 12px; }
+    .perm-header { font-weight: 700; color: var(--text-secondary); font-size: 10px; text-transform: uppercase; text-align: center; padding: 6px 0; }
+    .perm-module { padding: 6px 8px; font-weight: 500; }
+    .perm-check { text-align: center; }
+    .perm-check input { width: 16px; height: 16px; cursor: pointer; }
+    .perm-row:nth-child(even) { background: var(--bg-primary); }
+    .perm-table-wrapper thead th {
+        position: sticky;
+        top: 0;
+        background: #1e293b;
+        z-index: 2;
+        box-shadow: 0 1px 0 var(--border-light);
+        padding: 10px 8px;
+    }
+    body.dark .perm-table-wrapper thead th {
+        background: #0f172a;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+
+<!-- LEFT: Create Role + Existing Roles -->
+<div style="display: flex; flex-direction: column; gap: 20px;">
+
+<!-- Create Role -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> Create Role</h2>
+    </div>
+    <form method="POST" action="/add_role">
+        <div class="form-group" style="margin-bottom: 12px;">
+            <label>Role Name</label>
+            <input type="text" name="name" placeholder="e.g., Bookkeeper, Auditor" required>
+        </div>
+        
+        <h3 style="font-size: 13px; margin-bottom: 8px;">Permissions</h3>
+        <div style="max-height: 400px; overflow-y: auto;">
+            <div class="perm-table-wrapper">
+            <table style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Module</th>
+                        <th style="text-align:center;">View</th>
+                        <th style="text-align:center;">Create</th>
+                        <th style="text-align:center;">Edit</th>
+                        <th style="text-align:center;">Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for code, name in modules %}
+                    <tr>
+                        <td>{{ name }}</td>
+                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_view"></td>
+                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_create"></td>
+                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_edit"></td>
+                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_delete"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-top: 12px; width: 100%;">
+            <i class="fas fa-save"></i> Create Role
+        </button>
+    </form>
+</div>
+
+<!-- Existing Roles -->
+{% for role in roles %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-user-tag"></i> {{ role.name }}</h2>
+        <a href="/delete_role/{{ role.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete this role?')">
+            <i class="fas fa-trash-alt"></i>
+        </a>
+    </div>
+    <table style="font-size: 11px;">
+        <thead>
+            <tr><th>Module</th><th style="text-align:center;">View</th><th style="text-align:center;">Create</th><th style="text-align:center;">Edit</th><th style="text-align:center;">Delete</th></tr>
+        </thead>
+        <tbody>
+            {% for p in role.permissions %}
+            <tr>
+                <td>{{ p.module|replace('_', ' ')|title }}</td>
+                <td style="text-align:center;">{{ '✅' if p.can_view else '—' }}</td>
+                <td style="text-align:center;">{{ '✅' if p.can_create else '—' }}</td>
+                <td style="text-align:center;">{{ '✅' if p.can_edit else '—' }}</td>
+                <td style="text-align:center;">{{ '✅' if p.can_delete else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endfor %}
+
+</div>
+
+<!-- RIGHT: Assign Users -->
+<div class="card" style="height: fit-content;">
+    <div class="card-header">
+        <h2><i class="fas fa-users"></i> Assign Roles</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>User</th><th>Role</th><th></th></tr></thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td>
+                        <form method="POST" action="/assign_role" style="display: flex; gap: 6px; align-items: center;">
+                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                            <select name="role_id" style="padding: 4px 8px; border-radius: 6px; font-size: 11px;">
+                                <option value="">Default</option>
+                                {% for role in roles %}
+                                <option value="{{ role.id }}" {% if u.custom_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-primary btn-sm" style="padding:3px 8px; font-size:10px;">Save</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+
+{% block title %}Recurring Transactions{% endblock %}
+{% block page_title %}Recurring Transactions{% endblock %}
+{% block page_subtitle %}Auto-generate rent, salaries, and repeat payments{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Active</div>
+        <div class="stat-value">{{ transactions|selectattr('is_active', 'equalto', true)|list|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Due Today</div>
+        <div class="stat-value" style="color: #f59e0b;">
+            {{ transactions|selectattr('next_date', 'equalto', today)|list|length }}
+        </div>
+    </div>
+</div>
+
+<!-- Add Recurring -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> New Recurring Transaction</h2>
+    </div>
+    <form method="POST" action="/add_recurring">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="e.g., Monthly Rent" required>
+            </div>
+            <div class="form-group">
+                <label>Amount (₱)</label>
+                <input type="number" name="amount" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="type" required>
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" name="category" placeholder="e.g., Rent, Salaries">
+            </div>
+            <div class="form-group">
+                <label>Frequency</label>
+                <select name="frequency" required>
+                    <option value="monthly">Monthly</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="daily">Daily</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="{{ today }}" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 12px;">
+            <i class="fas fa-save"></i> Save
+        </button>
+    </form>
+</div>
+
+<!-- Recurring List -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Recurring Transactions</h2>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('recurringTable', 'TARA_Recurring_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+            <a href="/process_recurring" class="btn btn-primary btn-sm" onclick="return confirm('Process all due transactions?')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-play"></i> Process Now
+            </a>
+        </div>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Type</label>
+            <select id="recurringBody_type" onchange="filterTable('recurringBody','recurringNoData')">
+                <option value="all">All</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Frequency</label>
+            <select id="recurringBody_freq" onchange="filterTable('recurringBody','recurringNoData')">
+                <option value="all">All</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="recurringBody_search" placeholder="Description..." oninput="filterTable('recurringBody','recurringNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('recurringBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    
+    <div class="table-wrapper">
+        <table id="recurringTable">
+            <thead>
+                <tr><th>Description</th><th>Amount</th><th>Type</th><th>Frequency</th><th>Next Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="recurringBody">
+                {% for t in transactions %}
+                <tr data-filter='{"type":"{{ t.type }}","freq":"{{ t.frequency }}","search":"{{ t.description|lower }}"}'>
+                    <td><strong>{{ t.description }}</strong></td>
+                    <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">₱ {{ "{:,.2f}".format(t.amount) }}</td>
+                    <td><span class="badge {{ 'badge-success' if t.type == 'income' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
+                    <td><span class="badge badge-info">{{ t.frequency|capitalize }}</span></td>
+                    <td>{{ t.next_date }}</td>
+                    <td><a href="/delete_recurring/{{ t.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a></td>
+                </tr>
+                {% else %}
+                <tr id="recurringNoData"><td colspan="6" style="text-align: center; padding: 30px;">No recurring transactions set</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

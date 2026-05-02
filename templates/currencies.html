@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block title %}Currencies{% endblock %}
+{% block page_title %}Multi-Currency{% endblock %}
+{% block page_subtitle %}Manage foreign exchange rates{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-exchange-alt"></i> Exchange Rates</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Currency</th>
+                    <th>Code</th>
+                    <th>Symbol</th>
+                    <th>Rate (₱)</th>
+                    <th>Last Updated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in currencies %}
+                <tr>
+                    <td><strong>{{ c.name }}</strong></td>
+                    <td><span class="badge badge-info">{{ c.code }}</span></td>
+                    <td>{{ c.symbol }}</td>
+                    <td style="font-weight: 600;">₱ {{ "{:,.4f}".format(c.rate_to_php) }}</td>
+                    <td style="font-size: 12px; color: var(--text-secondary);">{{ c.updated_at.strftime('%B %d, %Y %H:%M') if c.updated_at else '-' }}</td>
+                    <td>
+                        {% if c.code != 'PHP' %}
+                        <button class="btn btn-primary btn-sm" onclick="showRateForm('{{ c.code }}', {{ c.rate_to_php }})" style="padding:4px 10px; font-size:11px;">
+                            <i class="fas fa-edit"></i> Update Rate
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Update Rate Modal -->
+<div id="rateModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3>Update Exchange Rate</h3>
+            <span class="close-modal" onclick="closeRateModal()">&times;</span>
+        </div>
+        <form method="POST" action="/update_rate">
+            <input type="hidden" name="code" id="rateCode">
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Currency</label>
+                <input type="text" id="rateCurrency" readonly style="background: var(--bg-primary);">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label>Rate to PHP (₱)</label>
+                <input type="number" name="rate" id="rateValue" step="0.0001" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Update Rate</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function showRateForm(code, rate) {
+        document.getElementById('rateCode').value = code;
+        document.getElementById('rateCurrency').value = code;
+        document.getElementById('rateValue').value = rate;
+        document.getElementById('rateModal').style.display = 'flex';
+    }
+    function closeRateModal() {
+        document.getElementById('rateModal').style.display = 'none';
+    }
+    window.onclick = function(event) {
+        if (event.target === document.getElementById('rateModal')) closeRateModal();
+    };
+</script>
+{% endblock %}

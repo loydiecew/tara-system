@@ -167,13 +167,17 @@ def add_sale():
         amount = float(request.form.get('amount_manual', request.form.get('amount', 0)))
         sale_date = request.form.get('sale_date', date.today())
         description = request.form.get('description_manual', request.form.get('description', ''))
+        reference_number = request.form.get('reference_number', '')
+        payment_method = request.form.get('payment_method', 'cash')
+        served_by = request.form.get('served_by', '')
         
         db = get_db()
         cursor = db.cursor()
         cursor.execute("""
-            INSERT INTO sales (user_id, customer_name, amount, sale_date, description)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (session['user_id'], customer_name, amount, sale_date, description))
+            INSERT INTO sales (user_id, customer_name, amount, sale_date, description, reference_number, payment_method, served_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (session['user_id'], customer_name, amount, sale_date, description, reference_number, payment_method, served_by))
+
         db.commit()
         
         # Create journal entry for Pro users

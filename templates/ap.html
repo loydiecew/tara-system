@@ -30,8 +30,12 @@
     <form method="POST" action="/add_supplier">
         <div class="form-grid">
             <div class="form-group">
-                <label>Supplier Name</label>
+                <label>Supplier Name *</label>
                 <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Contact Person</label>
+                <input type="text" name="contact_person" placeholder="Who to contact">
             </div>
             <div class="form-group">
                 <label>Email</label>
@@ -40,6 +44,27 @@
             <div class="form-group">
                 <label>Phone</label>
                 <input type="text" name="phone">
+            </div>
+            <div class="form-group">
+                <label>TIN</label>
+                <input type="text" name="tin" placeholder="For withholding tax">
+            </div>
+            <div class="form-group">
+                <label>Payment Terms</label>
+                <select name="payment_terms">
+                    <option value="net_15">Net 15</option>
+                    <option value="net_30">Net 30</option>
+                    <option value="net_60">Net 60</option>
+                    <option value="cod">Cash on Delivery</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Bank Name</label>
+                <input type="text" name="bank_name" placeholder="For bank transfers">
+            </div>
+            <div class="form-group">
+                <label>Bank Account #</label>
+                <input type="text" name="bank_account" placeholder="Account number">
             </div>
             <div class="form-group">
                 <label>Address</label>
@@ -60,7 +85,7 @@
     <form method="POST" action="/add_bill">
         <div class="form-grid">
             <div class="form-group">
-                <label>Supplier</label>
+                <label>Supplier *</label>
                 <select name="supplier_id" required>
                     <option value="">Select supplier</option>
                     {% for s in suppliers %}
@@ -69,27 +94,31 @@
                 </select>
             </div>
             <div class="form-group">
-                <label>Amount (₱)</label>
+                <label>Amount (₱) *</label>
                 <input type="number" name="amount" step="0.01" required>
             </div>
             <div class="form-group">
-                <label>Due Date</label>
+                <label>Due Date *</label>
                 <input type="date" name="due_date" required>
             </div>
             <div class="form-group">
                 <label>Bill Number</label>
                 <input type="text" name="bill_number" placeholder="Auto-generated if blank">
             </div>
-        </div>
-        <div style="margin-top: 16px;">
+            <div class="form-group">
+                <label>Reference PO #</label>
+                <input type="text" name="reference_po" placeholder="Link to purchase order">
+            </div>
+            <div class="form-group">
+                <label>BIR 2307</label>
+                <input type="text" name="bir_2307" placeholder="Withholding tax certificate">
+            </div>
             <div class="form-group">
                 <label>Description</label>
-                <textarea name="description" rows="2" placeholder="What is this bill for?" style="width:100%; padding:10px; border:1px solid var(--border-light); border-radius:10px;"></textarea>
+                <textarea name="description" rows="2" placeholder="What is this bill for?"></textarea>
             </div>
         </div>
-        <div style="margin-top: 16px;">
-            <button type="submit" class="btn btn-primary">Create Bill</button>
-        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Create Bill</button>
     </form>
 </div>
 

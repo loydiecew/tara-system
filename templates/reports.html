@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block page_subtitle %}Export professional PDF reports{% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <a href="/export/pdf/profit_loss" class="stat-card" style="text-decoration: none; text-align: center;">
+        <i class="fas fa-chart-line" style="font-size: 36px; color: #10b981; margin-bottom: 12px; display: block;"></i>
+        <div class="stat-title">Profit & Loss</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Monthly income statement</div>
+    </a>
+    
+    <a href="/export/pdf/ar_aging" class="stat-card" style="text-decoration: none; text-align: center;">
+        <i class="fas fa-file-invoice-dollar" style="font-size: 36px; color: #f59e0b; margin-bottom: 12px; display: block;"></i>
+        <div class="stat-title">AR Aging Report</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Outstanding receivables</div>
+    </a>
+    
+    <a href="/export/pdf/inventory" class="stat-card" style="text-decoration: none; text-align: center;">
+        <i class="fas fa-boxes" style="font-size: 36px; color: #3b82f6; margin-bottom: 12px; display: block;"></i>
+        <div class="stat-title">Inventory Report</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Products & stock value</div>
+    </a>
+</div>
+{% endblock %}

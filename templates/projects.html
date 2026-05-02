@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+
+{% block title %}Projects{% endblock %}
+{% block page_title %}Projects / Profit Centers{% endblock %}
+{% block page_subtitle %}Track profitability by project or department{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Active Projects</div>
+        <div class="stat-value">{{ projects|selectattr('status', 'equalto', 'active')|list|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Revenue</div>
+        <div class="stat-value" style="color: #10b981;">₱ {{ "{:,.0f}".format(projects|sum(attribute='revenue')) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Total Profit</div>
+        <div class="stat-value" style="color: {% if projects|sum(attribute='profit') >= 0 %}#10b981{% else %}#ef4444{% endif %};">
+            ₱ {{ "{:,.0f}".format(projects|sum(attribute='profit')) }}
+        </div>
+    </div>
+</div>
+
+<!-- New Project -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-plus-circle"></i> New Project</h2>
+    </div>
+    <form method="POST" action="/add_project">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" name="name" placeholder="e.g., Smith Residence" required>
+            </div>
+            <div class="form-group">
+                <label>Client Name</label>
+                <input type="text" name="client_name" placeholder="e.g., Juan Dela Cruz">
+            </div>
+            <div class="form-group">
+                <label>Budget (₱)</label>
+                <input type="number" name="budget" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" name="start_date" value="{{ today }}">
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" name="end_date">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="Brief description">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 12px;">
+            <i class="fas fa-save"></i> Create Project
+        </button>
+    </form>
+</div>
+
+<!-- Projects List -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-list"></i> Projects</h2>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('projectsTable', 'TARA_Projects_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+    </div>
+    
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>Status</label>
+            <select id="projectsBody_status" onchange="filterTable('projectsBody','projectsNoData')">
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+        <div class="filter-group" style="flex:1; min-width:150px;">
+            <label>Search</label>
+            <input type="text" id="projectsBody_search" placeholder="Project or client..." oninput="filterTable('projectsBody','projectsNoData')">
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('projectsBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
+    
+    <div class="table-wrapper">
+        <table id="projectsTable">
+            <thead>
+                <tr><th>Project</th><th>Client</th><th>Budget</th><th>Revenue</th><th>Expenses</th><th>Profit</th><th>Margin</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="projectsBody">
+                {% for p in projects %}
+                <tr data-filter='{"status":"{{ p.status }}","search":"{{ p.name|lower }} {{ (p.client_name or '')|lower }}"}'>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.client_name or '-' }}</td>
+                    <td>₱ {{ "{:,.0f}".format(p.budget) }}</td>
+                    <td style="color: #10b981;">₱ {{ "{:,.0f}".format(p.revenue) }}</td>
+                    <td style="color: #ef4444;">₱ {{ "{:,.0f}".format(p.expense) }}</td>
+                    <td style="color: {% if p.profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.0f}".format(p.profit) }}</td>
+                    <td>{{ p.margin }}%</td>
+                    <td>
+                        {% if p.status == 'active' %}<span class="badge badge-success">Active</span>
+                        {% elif p.status == 'completed' %}<span class="badge badge-info">Completed</span>
+                        {% else %}<span class="badge badge-danger">Cancelled</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if p.status == 'active' %}
+                        <form method="POST" action="/update_project/{{ p.id }}" style="display:inline;">
+                            <input type="hidden" name="status" value="completed">
+                            <button type="submit" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;">Complete</button>
+                        </form>
+                        {% endif %}
+                        <a href="/delete_project/{{ p.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr id="projectsNoData"><td colspan="9" style="text-align: center; padding: 30px;">No projects yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

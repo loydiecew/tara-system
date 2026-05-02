@@ -32,6 +32,14 @@ def inventory():
     # Get low stock products (quantity < reorder_level)
     low_stock = [p for p in products if p['quantity'] < p['reorder_level']]
     
+    # Get suppliers for dropdown
+    cursor.execute("""
+        SELECT s.id, s.name FROM suppliers s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.deleted_at IS NULL
+    """, (session['business_id'],))
+    suppliers = cursor.fetchall()
+    
     cursor.close()
     db.close()
     
@@ -40,6 +48,7 @@ def inventory():
                          products=products,
                          total_value=total_value,
                          low_stock=low_stock,
+                         suppliers=suppliers,
                          today=date.today().isoformat())
 
 @inventory_bp.route('/add_product', methods=['POST'])
@@ -54,13 +63,19 @@ def add_product():
     category = request.form.get('category', '')
     description = request.form.get('description', '')
     reorder_level = int(request.form.get('reorder_level', 5))
+    sku = request.form.get('sku', '')
+    barcode = request.form.get('barcode', '')
+    unit_of_measure = request.form.get('unit_of_measure', 'pcs')
+    supplier_id = request.form.get('supplier_id') or None
     
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
-        INSERT INTO products (user_id, name, description, quantity, price, cogs, category, reorder_level)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], name, description, quantity, price, cogs, category, reorder_level))
+        INSERT INTO products (user_id, name, description, quantity, price, cogs, category, reorder_level,
+                            sku, barcode, unit_of_measure, supplier_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], name, description, quantity, price, cogs, category, reorder_level,
+          sku, barcode, unit_of_measure, supplier_id))
     db.commit()
     cursor.close()
     db.close()
@@ -140,14 +155,19 @@ def edit_product(product_id):
         category = request.form.get('category', '')
         description = request.form.get('description', '')
         reorder_level = int(request.form.get('reorder_level', 5))
+        sku = request.form.get('sku', '')
+        barcode = request.form.get('barcode', '')
+        unit_of_measure = request.form.get('unit_of_measure', 'pcs')
+        supplier_id = request.form.get('supplier_id') or None
         
         cursor.execute("""
             UPDATE products 
             SET name = %s, price = %s, cogs = %s, quantity = %s, category = %s, 
-                description = %s, reorder_level = %s
+                description = %s, reorder_level = %s, sku = %s, barcode = %s,
+                unit_of_measure = %s, supplier_id = %s
             WHERE id = %s AND user_id = %s AND deleted_at IS NULL
-        """, (name, price, cogs, quantity, category, description, reorder_level, 
-              product_id, session['user_id']))
+        """, (name, price, cogs, quantity, category, description, reorder_level,
+              sku, barcode, unit_of_measure, supplier_id, product_id, session['user_id']))
         db.commit()
         
         cursor.close()
@@ -166,6 +186,10 @@ def edit_product(product_id):
     cursor.close()
     db.close()
     
-    return render_template('edit_product.html',
+    return render_template('inventory.html',
                          username=session['username'],
-                         product=product)
+                         products=products,
+                         total_value=total_value,
+                         low_stock=low_stock,
+                         suppliers=suppliers,
+                         today=date.today().isoformat())

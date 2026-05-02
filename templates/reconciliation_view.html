@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+
+{% block title %}Reconciliation #{{ rec.id }}{% endblock %}
+{% block page_title %}Reconciliation — {{ rec.bank_name }}{% endblock %}
+{% block page_subtitle %}{{ rec.statement_date }} | Opening: ₱{{ "{:,.2f}".format(rec.opening_balance) }} | Closing: ₱{{ "{:,.2f}".format(rec.closing_balance) }}{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Matched</div>
+        <div class="stat-value" style="color: #10b981;">{{ matched|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Unmatched (TARA)</div>
+        <div class="stat-value" style="color: #f59e0b;">{{ unmatched_tara|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Unmatched (Bank)</div>
+        <div class="stat-value" style="color: #3b82f6;">{{ unmatched_bank|length }}</div>
+    </div>
+</div>
+
+<!-- Matched -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-check-circle" style="color: #10b981;"></i> Matched ({{ matched|length }})</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Description</th><th>Amount</th><th>Type</th></tr></thead>
+            <tbody>
+                {% for m in matched %}
+                <tr>
+                    <td>{{ m.description }}</td>
+                    <td style="color: {{ '#10b981' if m.type == 'deposit' else '#ef4444' }};">₱ {{ "{:,.2f}".format(m.amount) }}</td>
+                    <td><span class="badge {{ 'badge-success' if m.type == 'deposit' else 'badge-danger' }}">{{ m.type|capitalize }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center;">None</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Unmatched TARA -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i> In TARA, Not in Bank ({{ unmatched_tara|length }})</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Description</th><th>Amount</th><th>Type</th></tr></thead>
+            <tbody>
+                {% for t in unmatched_tara %}
+                <tr>
+                    <td>{{ t.description }}</td>
+                    <td>₱ {{ "{:,.2f}".format(t.amount) }}</td>
+                    <td><span class="badge {{ 'badge-success' if t.type == 'deposit' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center;">None — all clear</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Unmatched Bank -->
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-university" style="color: #3b82f6;"></i> In Bank, Not in TARA ({{ unmatched_bank|length }})</h2>
+    </div>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Description</th><th>Amount</th><th>Type</th></tr></thead>
+            <tbody>
+                {% for b in unmatched_bank %}
+                <tr>
+                    <td>{{ b.description }}</td>
+                    <td>₱ {{ "{:,.2f}".format(b.amount) }}</td>
+                    <td><span class="badge {{ 'badge-success' if b.type == 'deposit' else 'badge-danger' }}">{{ b.type|capitalize }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center;">None — all clear</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<a href="/bank-reconciliation" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+{% endblock %}

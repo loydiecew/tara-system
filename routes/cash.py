@@ -93,6 +93,8 @@ def add_transaction():
     trans_type = request.form['type']
     category = request.form.get('category', '')
     transaction_date = request.form.get('transaction_date', date.today())
+    reference_number = request.form.get('reference_number', '')
+    payment_method = request.form.get('payment_method', 'cash')
     
     # CHECK: Cashiers cannot add expenses
     if session.get('role') == 'cashier' and trans_type == 'expense':
@@ -102,11 +104,10 @@ def add_transaction():
     db = get_db()
     cursor = db.cursor()
     
-    # Insert into transactions table
     cursor.execute("""
-        INSERT INTO transactions (user_id, description, amount, type, category, transaction_date)
-        VALUES (%s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], description, amount, trans_type, category, transaction_date))
+        INSERT INTO transactions (user_id, description, amount, type, category, transaction_date, reference_number, payment_method)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], description, amount, trans_type, category, transaction_date, reference_number, payment_method))
     db.commit()
 
     new_transaction = {
