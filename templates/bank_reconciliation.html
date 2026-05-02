@@ -53,48 +53,23 @@
 </div>
 
 <!-- Previous Reconciliations -->
-<div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-history"></i> Previous Reconciliations</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('bankRecTable', 'TARA_Bank_Reconciliation_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+<div class="card-header">
+    <h2><i class="fas fa-history"></i> Previous Reconciliations</h2>
+    <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('bankRecTable', 'TARA_Bank_Rec_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+        <i class="fas fa-download"></i> Export CSV
+    </button>
+</div>
+<div class="filter-bar">
+    <div class="filter-group">
+        <label>Date From</label>
+        <input type="date" id="bankRecBody_date_from" onchange="filterTable('bankRecBody','bankRecNoData')">
     </div>
-    <div class="table-wrapper">
-        <table id="bankRecTable">
-            <thead>
-                <tr>
-                    <th>Bank</th>
-                    <th>Date</th>
-                    <th>Opening</th>
-                    <th>Closing</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in reconciliations %}
-                <tr>
-                    <td><strong>{{ r.bank_name }}</strong></td>
-                    <td>{{ r.statement_date }}</td>
-                    <td>₱ {{ "{:,.2f}".format(r.opening_balance) }}</td>
-                    <td>₱ {{ "{:,.2f}".format(r.closing_balance) }}</td>
-                    <td>
-                        {% if r.status == 'completed' %}
-                        <span class="badge badge-success">Completed</span>
-                        {% else %}
-                        <span class="badge badge-warning">Draft</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="/reconciliation/{{ r.id }}" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;">View</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" style="text-align: center; padding: 30px;">No reconciliations yet</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="filter-group">
+        <label>Date To</label>
+        <input type="date" id="bankRecBody_date_to" onchange="filterTable('bankRecBody','bankRecNoData')">
     </div>
+    <button class="btn btn-secondary btn-sm" onclick="clearFilters('bankRecBody')" style="padding:8px 12px; font-size:11px;">
+        <i class="fas fa-times"></i> Clear
+    </button>
 </div>
 {% endblock %}

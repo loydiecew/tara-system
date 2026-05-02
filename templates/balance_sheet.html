@@ -3,32 +3,39 @@
 {% block page_title %}Balance Sheet{% endblock %}
 {% block page_subtitle %}As of {{ today }}{% endblock %}
 {% block content %}
+
+<div style="display: flex; gap: 12px; margin-bottom: 20px;">
+    <a href="/export/pdf/balance_sheet" class="btn btn-secondary btn-sm" style="padding:8px 12px; font-size:12px;"><i class="fas fa-file-pdf"></i> Export PDF</a>
+    <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('bsTable', 'TARA_Balance_Sheet_{{ today }}')" style="padding:8px 12px; font-size:12px;"><i class="fas fa-download"></i> Export CSV</button>
+</div>
+
 <div class="stats-grid">
     <div class="stat-card"><div class="stat-title">Total Assets</div><div class="stat-value" style="color:#10b981;">₱ {{ "{:,.0f}".format(total_assets) }}</div></div>
     <div class="stat-card"><div class="stat-title">Total Liabilities</div><div class="stat-value" style="color:#ef4444;">₱ {{ "{:,.0f}".format(total_liabilities) }}</div></div>
     <div class="stat-card"><div class="stat-title">Equity</div><div class="stat-value">₱ {{ "{:,.0f}".format(equity) }}</div></div>
 </div>
+
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-coins"></i> Assets</h2></div>
-    <div class="table-wrapper"><table>
+    <table id="bsTable">
         <tr><td>Cash</td><td style="text-align:right;font-weight:600;">₱ {{ "{:,.2f}".format(cash) }}</td></tr>
         <tr><td>Accounts Receivable</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(net_ar) }}</td></tr>
         <tr><td>Inventory</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(inventory) }}</td></tr>
         <tr><td>Fixed Assets</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(fixed_assets) }}</td></tr>
         <tr style="border-top:2px solid var(--border-light);font-weight:700;"><td>Total Assets</td><td style="text-align:right;color:#10b981;">₱ {{ "{:,.2f}".format(total_assets) }}</td></tr>
-    </table></div>
+    </table>
 </div>
+
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-file-invoice"></i> Liabilities</h2></div>
-    <div class="table-wrapper"><table>
+    <table>
         <tr><td>Accounts Payable</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(net_ap) }}</td></tr>
         <tr style="border-top:2px solid var(--border-light);font-weight:700;"><td>Total Liabilities</td><td style="text-align:right;color:#ef4444;">₱ {{ "{:,.2f}".format(total_liabilities) }}</td></tr>
-    </table></div>
+    </table>
 </div>
+
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-chart-pie"></i> Equity</h2></div>
-    <div class="table-wrapper"><table>
-        <tr style="font-weight:700;"><td>Owner's Equity</td><td style="text-align:right;color:#10b981;">₱ {{ "{:,.2f}".format(equity) }}</td></tr>
-    </table></div>
+    <table><tr style="font-weight:700;"><td>Owner's Equity</td><td style="text-align:right;color:#10b981;">₱ {{ "{:,.2f}".format(equity) }}</td></tr></table>
 </div>
 {% endblock %}

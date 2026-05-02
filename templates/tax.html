@@ -116,13 +116,27 @@
         </button>
     </div>
     <div class="table-wrapper">
+        <div class="filter-bar">
+        <div class="filter-group">
+            <label>Form Type</label>
+            <select id="taxBody_type" onchange="filterTable('taxBody','taxNoData')">
+                <option value="all">All</option>
+                <option value="2550M">2550M - VAT</option>
+                <option value="2551M">2551M - Percentage</option>
+                <option value="2307">2307 - Withholding</option>
+            </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('taxBody')" style="padding:8px 12px; font-size:11px;">
+            <i class="fas fa-times"></i> Clear
+        </button>
+    </div>
         <table id="taxTable">
             <thead>
                 <tr><th>Form</th><th>Period</th><th>Gross</th><th>Tax</th><th>Status</th></tr>
             </thead>
-            <tbody>
+            <tbody id="taxBody">
                 {% for f in filings %}
-                <tr>
+                <tr data-filter='{"type":"{{ f.form_type }}"}'>
                     <td><strong>{{ f.form_type }}</strong></td>
                     <td>{{ f.period }}</td>
                     <td>₱ {{ "{:,.2f}".format(f.gross_amount) }}</td>
@@ -130,7 +144,7 @@
                     <td><span class="badge badge-success">Filed</span></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align:center; padding:30px;">No tax returns filed yet</td></tr>
+                <tr id="taxNoData"><td colspan="5" style="text-align:center; padding:30px;">No tax returns filed yet</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -3,29 +3,43 @@
 {% block page_title %}Income Statement{% endblock %}
 {% block page_subtitle %}{{ start_date.strftime('%B %d, %Y') }} — {{ end_date.strftime('%B %d, %Y') }}{% endblock %}
 {% block content %}
+
+<div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: flex-end; flex-wrap: wrap;">
+    <form method="GET" action="/income-statement" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="filter-group">
+            <label>Period</label>
+            <select name="period" style="padding: 8px 10px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
+                <option value="month" {% if period == 'month' %}selected{% endif %}>This Month</option>
+                <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>This Quarter</option>
+                <option value="year" {% if period == 'year' %}selected{% endif %}>This Year</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 12px; font-size:12px;">Apply</button>
+    </form>
+    <a href="/export/pdf/profit_loss" class="btn btn-secondary btn-sm" style="padding:8px 12px; font-size:12px;"><i class="fas fa-file-pdf"></i> Export PDF</a>
+    <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('incomeTable', 'TARA_Income_Statement_{{ today }}')" style="padding:8px 12px; font-size:12px;"><i class="fas fa-download"></i> Export CSV</button>
+</div>
+
 <div class="stats-grid">
     <div class="stat-card"><div class="stat-title">Revenue</div><div class="stat-value" style="color:#10b981;">₱ {{ "{:,.0f}".format(total_revenue) }}</div></div>
     <div class="stat-card"><div class="stat-title">Expenses</div><div class="stat-value" style="color:#ef4444;">₱ {{ "{:,.0f}".format(total_expenses) }}</div></div>
     <div class="stat-card"><div class="stat-title">Net Income</div><div class="stat-value" style="color:{% if net_income >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.0f}".format(net_income) }}</div></div>
 </div>
+
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-chart-line"></i> Revenue</h2></div>
-    <div class="table-wrapper"><table>
-        <tr><td>Total Revenue</td><td style="text-align:right;font-weight:700;color:#10b981;">₱ {{ "{:,.2f}".format(total_revenue) }}</td></tr>
-    </table></div>
+    <table id="incomeTable"><tr><td>Total Revenue</td><td style="text-align:right;font-weight:700;color:#10b981;">₱ {{ "{:,.2f}".format(total_revenue) }}</td></tr></table>
 </div>
+
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-chart-pie"></i> Expenses</h2></div>
-    <div class="table-wrapper"><table>
-        <thead><tr><th>Category</th><th style="text-align:right;">Amount</th></tr></thead>
-        <tbody>
-            {% for e in expenses %}
-            <tr><td>{{ e.category or 'Other' }}</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(e.total) }}</td></tr>
-            {% endfor %}
-            <tr style="border-top:2px solid var(--border-light);font-weight:700;"><td>Total Expenses</td><td style="text-align:right;color:#ef4444;">₱ {{ "{:,.2f}".format(total_expenses) }}</td></tr>
-        </tbody>
-    </table></div>
+    <table><thead><tr><th>Category</th><th style="text-align:right;">Amount</th></tr></thead>
+    <tbody>
+        {% for e in expenses %}<tr><td>{{ e.category or 'Other' }}</td><td style="text-align:right;">₱ {{ "{:,.2f}".format(e.total) }}</td></tr>{% endfor %}
+        <tr style="border-top:2px solid var(--border-light);font-weight:700;"><td>Total Expenses</td><td style="text-align:right;color:#ef4444;">₱ {{ "{:,.2f}".format(total_expenses) }}</td></tr>
+    </tbody></table>
 </div>
+
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-calculator"></i> Net Income</h2></div>
     <div style="font-size:32px;font-weight:800;text-align:center;padding:20px;color:{% if net_income >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.2f}".format(net_income) }}</div>

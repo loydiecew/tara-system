@@ -5,11 +5,17 @@
 {% block page_subtitle %}Export professional PDF reports{% endblock %}
 
 {% block content %}
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+<div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
     <a href="/export/pdf/profit_loss" class="stat-card" style="text-decoration: none; text-align: center;">
         <i class="fas fa-chart-line" style="font-size: 36px; color: #10b981; margin-bottom: 12px; display: block;"></i>
         <div class="stat-title">Profit & Loss</div>
         <div style="font-size: 12px; color: var(--text-secondary);">Monthly income statement</div>
+    </a>
+    
+    <a href="/export/pdf/balance_sheet" class="stat-card" style="text-decoration: none; text-align: center;">
+        <i class="fas fa-balance-scale" style="font-size: 36px; color: #8b5cf6; margin-bottom: 12px; display: block;"></i>
+        <div class="stat-title">Balance Sheet</div>
+        <div style="font-size: 12px; color: var(--text-secondary);">Assets, liabilities, equity</div>
     </a>
     
     <a href="/export/pdf/ar_aging" class="stat-card" style="text-decoration: none; text-align: center;">
