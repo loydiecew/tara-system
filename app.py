@@ -67,7 +67,6 @@ app.register_blueprint(tax_bp)
 app.register_blueprint(currencies_bp)
 app.register_blueprint(permissions_bp)
 
-
 @app.context_processor
 def inject_plan():
     def is_active(endpoint_name):

@@ -658,6 +658,31 @@
         body.dark .modal-content {
             color: var(--text-primary);
         }
+
+        .sidebar.enterprise-hide { 
+            display: none !important; 
+        }
+        .sidebar.enterprise-hide ~ .main-content { 
+            margin-left: 0 !important; 
+        }
+
+        .category-bar-fixed {
+            position: sticky; top: 0; z-index: 50;
+            margin-bottom: 24px;
+            display: flex; gap: 6px; flex-wrap: wrap;
+            background: var(--glass-bg); backdrop-filter: var(--backdrop-blur);
+            -webkit-backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--glass-border); border-radius: 16px;
+            padding: 8px 12px; box-shadow: var(--card-shadow);
+        }        
+        body.enterprise-mode .main-content { margin-left: 0 !important; padding: 0 20px; }
+
+        .en-cat-tab.active {
+            background: var(--accent) !important;
+            color: white !important;
+            border-color: var(--accent) !important;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }       
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -666,8 +691,8 @@
     <div class="particles-container" id="particlesContainer"></div>
 
     <div class="app">
-        <aside class="sidebar">
-            <!-- Fixed Header -->
+        <aside class="sidebar {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}enterprise-hide{% endif %}">
+        <!-- Fixed Header -->
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">T</div>
@@ -820,35 +845,47 @@
         
         <main class="main-content">
             <div class="top-bar">
-                <div class="greeting">
-                    <h1 id="greetingMessage"></h1>
-                    <p id="currentDate"></p>
-                </div>
-                {% if session.plan == 'enterprise' %}
-                <form method="POST" action="/set_branch" style="display: flex; align-items: center; gap: 8px;">
-                    <select name="branch_id" onchange="this.form.submit()" style="padding: 6px 12px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
-                        <option value="all" {% if not session.get('active_branch') %}selected{% endif %}>All Branches</option>
-                        {% set branches = get_branches() %}
-                        {% for b in branches %}
-                        <option value="{{ b.id }}" {% if session.get('active_branch') == b.id|string %}selected{% endif %}>{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
-                {% endif %}
-                <div class="search-bar" style="gap: 6px;">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="globalSearch" placeholder="Search anything...">
-                    <button><i class="fas fa-arrow-right"></i></button>
-                    <span style="width: 1px; height: 20px; background: var(--border-light); margin: 0 4px;"></span>
-                    <a href="/help" style="display: flex; align-items: center; gap: 6px; color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500; padding: 4px 8px; border-radius: 8px; transition: all 0.2s; white-space: nowrap;"
-                       onmouseover="this.style.color='var(--accent)'; this.style.background='var(--accent-light)';"
-                       onmouseout="this.style.color='var(--text-secondary)'; this.style.background='transparent';">
-                        <i class="fas fa-circle-question"></i> Help
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <!-- Profile Button -->
+                    {% if request.path == '/profile' %}
+                    <a href="/dashboard" style="width: 38px; height: 38px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 16px; text-decoration: none; flex-shrink: 0; transition: all 0.3s ease;"
+                       onmouseover="this.style.borderColor='var(--accent)'; this.style.background='var(--accent-light)';"
+                       onmouseout="this.style.borderColor='var(--glass-border)'; this.style.background='var(--glass-bg)';"
+                       title="Home">
+                        <i class="fas fa-home"></i>
                     </a>
+                    {% else %}
+                    <a href="/profile" style="width: 38px; height: 38px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; text-decoration: none; flex-shrink: 0; box-shadow: 0 4px 12px var(--accent-glow); transition: all 0.3s ease;"
+                       onmouseover="this.style.transform='scale(1.1)';"
+                       onmouseout="this.style.transform='scale(1)';"
+                       title="Profile">
+                        {{ session.username[0]|upper }}
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Greeting -->
+                    <div class="greeting">
+                        <h1 id="greetingMessage"></h1>
+                        <p id="currentDate"></p>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <!-- Search + Help -->
+                    <div class="search-bar" style="gap: 6px;">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="globalSearch" placeholder="Search anything...">
+                        <button><i class="fas fa-arrow-right"></i></button>
+                        <span style="width: 1px; height: 20px; background: var(--border-light); margin: 0 4px;"></span>
+                        <a href="/help" style="display: flex; align-items: center; gap: 6px; color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500; padding: 4px 8px; border-radius: 8px; transition: all 0.2s; white-space: nowrap;"
+                           onmouseover="this.style.color='var(--accent)'; this.style.background='var(--accent-light)';"
+                           onmouseout="this.style.color='var(--text-secondary)'; this.style.background='transparent';">
+                            <i class="fas fa-circle-question"></i> Help
+                        </a>
+                    </div>
                 </div>
             </div>
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     <div class="flash-messages">
                         {% for category, message in messages %}
@@ -857,6 +894,38 @@
                     </div>
                 {% endif %}
             {% endwith %}
+
+            <!-- Enterprise Navigation Bar -->
+            {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+            <div id="enterpriseNav" style="margin-bottom: 24px; display: none;">
+                <!-- Layer 1: Category Tabs -->
+                <div style="display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap;">
+                    <a href="/dashboard" id="enCat-home" class="en-cat-tab" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
+                       onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
+                        <i class="fas fa-home" style="margin-right: 6px;"></i>Home
+                    </a>
+                    <a href="#" id="enCat-finance" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
+                       onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
+                        <i class="fas fa-coins" style="margin-right: 6px;"></i>Finance
+                    </a>
+                    <a href="#" id="enCat-receivables" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
+                       onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
+                        <i class="fas fa-hand-holding-usd" style="margin-right: 6px;"></i>Receivables
+                    </a>
+                    <a href="#" id="enCat-operations" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
+                       onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
+                        <i class="fas fa-boxes-stacked" style="margin-right: 6px;"></i>Operations
+                    </a>
+                    <a href="#" id="enCat-accounting" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
+                       onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
+                        <i class="fas fa-chart-line" style="margin-right: 6px;"></i>Reports
+                    </a>
+                </div>
+                <!-- Layer 2: Module Pills -->
+                <div id="enModulePills" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
+            </div>
+            {% endif %}
+
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -895,6 +964,11 @@
         // ========== DARK MODE ==========
         const savedTheme = localStorage.getItem('theme') || 'light';
         if (savedTheme === 'dark') document.body.classList.add('dark');
+
+        // ========== ENTERPRISE MODE ==========
+        {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+        document.body.classList.add('enterprise-mode');
+        {% endif %}
 
         // ========== GREETING ==========
         const hour = new Date().getHours();
@@ -1027,6 +1101,109 @@
             });
             window.filterTable(tableBodyId, tableBodyId.replace('Body', 'NoData'));
         };
+
+        // ========== ENTERPRISE NAVIGATION BAR ==========
+        {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+        (function() {
+            const MODULE_CATEGORIES = {
+                '/cash': 'finance', '/sales': 'finance', '/recurring': 'finance',
+                '/bank-reconciliation': 'finance', '/fiscal-year': 'finance',
+                '/tax': 'finance', '/currencies': 'finance',
+                '/ar': 'receivables', '/ap': 'receivables',
+                '/inventory': 'operations', '/purchase-orders': 'operations',
+                '/sales-orders': 'operations', '/quotations': 'operations',
+                '/budgets': 'operations', '/projects': 'operations',
+                '/timecards': 'operations', '/assets': 'operations',
+                '/branches': 'operations', '/permissions': 'operations',
+                '/all-transactions': 'accounting', '/journal': 'accounting',
+                '/ledger': 'accounting', '/trial-balance': 'accounting',
+                '/income-statement': 'accounting', '/balance-sheet': 'accounting',
+                '/insights': 'accounting','/reports': 'accounting'     
+            };
+            
+            const CATEGORY_MODULES = {
+                'finance': [
+                    {name:'Cash Management',url:'/cash',icon:'fa-coins'},{name:'Sales',url:'/sales',icon:'fa-chart-simple'},
+                    {name:'Recurring',url:'/recurring',icon:'fa-redo-alt'},{name:'Bank Reconciliation',url:'/bank-reconciliation',icon:'fa-university'},
+                    {name:'Fiscal Year',url:'/fiscal-year',icon:'fa-calendar-check'},{name:'Tax Reports',url:'/tax',icon:'fa-file-invoice'},
+                    {name:'Currencies',url:'/currencies',icon:'fa-dollar-sign'}
+                ],
+                'receivables': [
+                    {name:'Accounts Receivable',url:'/ar',icon:'fa-hand-holding-usd'},{name:'Accounts Payable',url:'/ap',icon:'fa-truck-fast'}
+                ],
+                'operations': [
+                    {name:'Inventory',url:'/inventory',icon:'fa-boxes-stacked'},{name:'Purchase Orders',url:'/purchase-orders',icon:'fa-truck-loading'},
+                    {name:'Sales Orders',url:'/sales-orders',icon:'fa-clipboard-list'},{name:'Quotations',url:'/quotations',icon:'fa-file-contract'},
+                    {name:'Budgeting',url:'/budgets',icon:'fa-chart-pie'},{name:'Projects',url:'/projects',icon:'fa-folder-tree'},
+                    {name:'Timecards',url:'/timecards',icon:'fa-clock'},{name:'Fixed Assets',url:'/assets',icon:'fa-building'},
+                    {name:'Branches',url:'/branches',icon:'fa-store-alt'},{name:'Permissions',url:'/permissions',icon:'fa-shield-alt'}
+                ],
+                'accounting': [
+                    {name:'Business Insights',url:'/insights',icon:'fa-chart-line'},
+                    {name:'Reports',url:'/reports',icon:'fa-file-pdf'},
+                    {name:'All Transactions',url:'/all-transactions',icon:'fa-list-ul'},
+                    {name:'General Journal',url:'/journal',icon:'fa-book-open'},
+                    {name:'General Ledger',url:'/ledger',icon:'fa-balance-scale'},
+                    {name:'Trial Balance',url:'/trial-balance',icon:'fa-balance-scale-right'},
+                    {name:'Income Statement',url:'/income-statement',icon:'fa-file-invoice-dollar'},
+                    {name:'Balance Sheet',url:'/balance-sheet',icon:'fa-file-invoice'}
+                ]
+            };
+            
+            // Make category tabs clickable to show their modules
+            document.querySelectorAll('.en-cat-tab').forEach(tab => {
+                if (tab.id === 'enCat-home') return; // Skip home
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const catId = this.id.replace('enCat-', '');
+                    
+                    // Highlight this tab
+                    document.querySelectorAll('.en-cat-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show its modules
+                    const modules = CATEGORY_MODULES[catId];
+                    const pillsContainer = document.getElementById('enModulePills');
+                    if (modules && pillsContainer) {
+                        pillsContainer.innerHTML = modules.map(m => {
+                            const isActive = currentPath === m.url;
+                            return `<a href="${m.url}" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:${isActive?'700':'500'};text-decoration:none;color:${isActive?'white':'var(--text-secondary)'};background:${isActive?'var(--accent)':'var(--glass-bg)'};border:1px solid ${isActive?'var(--accent)':'var(--glass-border)'};transition:all 0.25s ease;"
+                                onmouseover="if(!${isActive}){this.style.borderColor='var(--accent)';this.style.color='var(--accent)';this.style.background='var(--accent-light)';}"
+                                onmouseout="if(!${isActive}){this.style.borderColor='var(--glass-border)';this.style.color='var(--text-secondary)';this.style.background='var(--glass-bg)';}">
+                                <i class="fas ${m.icon}" style="margin-right:5px;"></i>${m.name}
+                            </a>`;
+                        }).join('');
+                    }
+                });
+            });
+
+            const currentPath = window.location.pathname;
+            const activeCategory = MODULE_CATEGORIES[currentPath];
+            const nav = document.getElementById('enterpriseNav');
+            
+            if (activeCategory && CATEGORY_MODULES[activeCategory]) {
+                if (nav) nav.style.display = 'block';
+                
+                // Highlight active category tab
+                document.querySelectorAll('.en-cat-tab').forEach(t => t.classList.remove('active'));
+                const activeTab = document.getElementById('enCat-' + activeCategory);
+                if (activeTab) activeTab.classList.add('active');
+                
+                // Build module pills
+                const pillsContainer = document.getElementById('enModulePills');
+                if (pillsContainer) {
+                    pillsContainer.innerHTML = CATEGORY_MODULES[activeCategory].map(m => {
+                        const isActive = currentPath === m.url;
+                        return `<a href="${m.url}" style="padding:7px 16px;border-radius:20px;font-size:12px;font-weight:${isActive?'700':'500'};text-decoration:none;color:${isActive?'white':'var(--text-secondary)'};background:${isActive?'var(--accent)':'var(--glass-bg)'};border:1px solid ${isActive?'var(--accent)':'var(--glass-border)'};transition:all 0.25s ease;"
+                            onmouseover="if(!${isActive}){this.style.borderColor='var(--accent)';this.style.color='var(--accent)';this.style.background='var(--accent-light)';}"
+                            onmouseout="if(!${isActive}){this.style.borderColor='var(--glass-border)';this.style.color='var(--text-secondary)';this.style.background='var(--glass-bg)';}">
+                            <i class="fas ${m.icon}" style="margin-right:5px;"></i>${m.name}
+                        </a>`;
+                    }).join('');
+                }
+            }
+        })();
+        {% endif %}
 
         // ========== SIDEBAR SCROLL POSITION ==========
         const sidebarNav = document.querySelector('.sidebar-nav-scroll');

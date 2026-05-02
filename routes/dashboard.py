@@ -242,7 +242,7 @@ def dashboard():
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s 
         ORDER BY t.transaction_date DESC 
-        LIMIT 10
+        LIMIT 5
     """, (business_id,))
     recent = cursor.fetchall()
     

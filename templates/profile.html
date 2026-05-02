@@ -83,6 +83,21 @@
                             </button>
                         </div>
                     </div>
+                    {% if session.plan == 'enterprise' %}
+                    <div class="form-group">
+                        <label><i class="fas fa-store-alt"></i> Active Branch</label>
+                        <form method="POST" action="/set_branch" style="display: flex; gap: 8px;">
+                            <select name="branch_id" onchange="this.form.submit()" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; flex: 1;">
+                                <option value="all" {% if not session.get('active_branch') %}selected{% endif %}>All Branches</option>
+                                {% set branches = get_branches() %}
+                                {% for b in branches %}
+                                <option value="{{ b.id }}" {% if session.get('active_branch') == b.id|string %}selected{% endif %}>{{ b.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                        <small style="color: var(--text-secondary); margin-top: 4px;">Select which branch to view data for</small>
+                    </div>
+                    {% endif %}
                     <div class="form-group">
                         <label><i class="fas fa-building"></i> Business Name</label>
                         <input type="text" value="{{ session.business_name }}" disabled style="background:var(--bg-primary);">

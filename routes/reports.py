@@ -81,7 +81,69 @@ def export_pdf(report_type):
         html = render_template('pdf/ar_aging.html',
                              business_name=session.get('business_name', 'My Business'),
                              invoices=invoices, today=today)
+
+    elif report_type == 'balance_sheet':
+        cursor.execute("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) as cash
+            FROM transactions t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s
+        """, (business_id,))
+        cash = float(cursor.fetchone()['cash'] or 0)
         
+        cursor.execute("""
+            SELECT COALESCE(SUM(i.amount), 0) as total FROM invoices i
+            JOIN users u ON i.user_id = u.id
+            WHERE u.business_id = %s AND i.status IN ('unpaid', 'partially_paid') AND i.deleted_at IS NULL
+        """, (business_id,))
+        ar = float(cursor.fetchone()['total'] or 0)
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(p.amount), 0) as total FROM payments p
+            JOIN invoices i ON p.invoice_id = i.id JOIN users u ON i.user_id = u.id
+            WHERE u.business_id = %s
+        """, (business_id,))
+        ar_paid = float(cursor.fetchone()['total'] or 0)
+        net_ar = ar - ar_paid
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(p.quantity * p.price), 0) as total FROM products p
+            JOIN users u ON p.user_id = u.id WHERE u.business_id = %s AND p.deleted_at IS NULL
+        """, (business_id,))
+        inventory = float(cursor.fetchone()['total'] or 0)
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(a.current_value), 0) as total FROM assets a
+            JOIN users u ON a.user_id = u.id WHERE u.business_id = %s AND a.status = 'active'
+        """, (business_id,))
+        fixed_assets = float(cursor.fetchone()['total'] or 0)
+        
+        total_assets = cash + net_ar + inventory + fixed_assets
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(b.amount), 0) as total FROM bills b
+            JOIN users u ON b.user_id = u.id
+            WHERE u.business_id = %s AND b.status IN ('unpaid', 'partially_paid') AND b.deleted_at IS NULL
+        """, (business_id,))
+        ap = float(cursor.fetchone()['total'] or 0)
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(p.amount), 0) as total FROM payments p
+            JOIN bills b ON p.bill_id = b.id JOIN users u ON b.user_id = u.id
+            WHERE u.business_id = %s
+        """, (business_id,))
+        ap_paid = float(cursor.fetchone()['total'] or 0)
+        net_ap = ap - ap_paid
+        total_liabilities = net_ap
+        equity = total_assets - total_liabilities
+        
+        html = render_template('pdf/balance_sheet.html',
+                             business_name=session.get('business_name', 'My Business'),
+                             cash=cash, net_ar=net_ar, inventory=inventory, fixed_assets=fixed_assets,
+                             total_assets=total_assets, net_ap=net_ap, total_liabilities=total_liabilities,
+                             equity=equity, today=today)
+
     elif report_type == 'inventory':
         cursor.execute("""
             SELECT p.* FROM products p

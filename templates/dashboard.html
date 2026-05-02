@@ -1,352 +1,433 @@
 {% extends "layout.html" %}
-
 {% block title %}Dashboard{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
-{% block page_subtitle %}Welcome back, {{ session.username }}{% endblock %}
-
+{% block page_title %}{% endblock %}
+{% block page_subtitle %}{% endblock %}
 {% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    .quick-calendar {
-        background: var(--glass-bg);
-        backdrop-filter: var(--backdrop-blur);
-        -webkit-backdrop-filter: var(--backdrop-blur);
-        border: 1px solid var(--glass-border);
-        border-radius: 16px;
-        padding: 14px;
-        box-shadow: var(--card-shadow);
-        width: 100%;
-        max-width: 240px;
+    /* Sidebar calendar */
+    .dash-calendar {
+        background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid var(--glass-border); border-radius: 20px;
+        padding: 16px; box-shadow: var(--card-shadow);
     }
-    .quick-cal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
+    .dash-cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .dash-cal-header button { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px 8px; border-radius: 6px; font-size: 11px; }
+    .dash-cal-header button:hover { color: var(--accent); background: var(--accent-light); }
+    .dash-cal-title { font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: center; min-width: 90px; }
+    .dash-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+    .dash-cal-day { font-size: 9px; color: var(--text-secondary); font-weight: 600; padding: 2px 0; }
+    .dash-cal-cell { aspect-ratio: 1; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; color: var(--text-primary); }
+    .dash-cal-cell:hover { transform: scale(1.6); z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    .dash-cal-cell.empty { background: transparent; cursor: default; }
+    .dash-cal-cell.empty:hover { transform: none; box-shadow: none; }
+    .dash-cal-total { text-align: center; font-size: 11px; font-weight: 600; color: var(--accent); margin-top: 8px; }
+
+    /* Category bar */
+    .dash-catbar {
+        position: sticky; top: 0; z-index: 50; margin-bottom: 24px;
+        display: flex; gap: 4px;
+        background: var(--glass-bg); backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid var(--glass-border); border-radius: 20px;
+        padding: 6px; box-shadow: var(--card-shadow);
     }
-    .quick-cal-header button {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 3px 7px;
-        border-radius: 5px;
-        font-size: 11px;
-        transition: all 0.2s;
+    .dash-catbar a {
+        flex: 1; padding: 12px 16px; border-radius: 16px; font-size: 13px; font-weight: 600;
+        text-decoration: none; color: var(--text-secondary); text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
     }
-    .quick-cal-header button:hover { color: var(--accent); background: var(--accent-light); }
-    .quick-cal-title {
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text-primary);
-        text-align: center;
-        min-width: 90px;
+    .dash-catbar a:hover { background: var(--accent-light); color: var(--accent); }
+    .dash-catbar a.active { background: var(--accent); color: white; box-shadow: 0 4px 16px var(--accent-glow); }
+
+    /* Main two-column layout */
+    .dash-layout { display: grid; grid-template-columns: 1fr 270px; gap: 20px; }
+    .dash-right { display: flex; flex-direction: column; gap: 16px; }
+
+    /* KPI cards */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    .kpi-card {
+        background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border); border-radius: 20px;
+        padding: 20px; box-shadow: var(--card-shadow);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .quick-cal-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-        text-align: center;
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: rgba(16,185,129,0.2); }
+    .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; font-weight: 800; color: var(--text-primary); }
+    .kpi-sub { font-size: 11px; margin-top: 6px; }
+
+    /* Chart cards */
+    .chart-card {
+        background: var(--glass-bg); backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid var(--glass-border); border-radius: 20px;
+        padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 16px;
     }
-    .quick-cal-day {
-        font-size: 8px;
-        color: var(--text-secondary);
-        font-weight: 600;
-        padding: 1px 0;
+    .chart-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); }
+    .chart-card h3 i { color: var(--accent); margin-right: 8px; }
+
+    /* Quick action buttons */
+    .quick-btn {
+        background: var(--glass-bg); backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border); border-radius: 16px;
+        padding: 14px 18px; text-decoration: none; font-weight: 600; font-size: 13px;
+        color: var(--text-primary); text-align: center;
+        transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .quick-cal-cell {
-        aspect-ratio: 1;
-        border-radius: 3px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 9px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: transform 0.15s ease;
-        color: var(--text-primary);
+    .quick-btn:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-2px); }
+    .quick-btn.primary { background: linear-gradient(135deg, #10b981, #059669); color: white; border-color: transparent; box-shadow: 0 4px 16px rgba(16,185,129,0.3); }
+    .quick-btn.primary:hover { box-shadow: 0 8px 24px rgba(16,185,129,0.4); }
+
+    /* Alert card */
+    .alert-card {
+        background: var(--glass-bg); backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border); border-radius: 20px;
+        padding: 16px; box-shadow: var(--card-shadow);
     }
-    .quick-cal-cell:hover {
-        transform: scale(1.5);
-        z-index: 2;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .quick-cal-cell.empty { background: transparent; cursor: default; }
-    .quick-cal-cell.empty:hover { transform: none; box-shadow: none; }
-    .quick-cal-total {
-        text-align: center;
-        font-size: 10px;
-        font-weight: 600;
-        color: var(--accent);
-        margin-top: 6px;
-    }
-    .dashboard-layout {
-        display: flex;
-        gap: 20px;
-        flex-wrap: wrap;
-    }
-    .dashboard-main {
-        flex: 1;
-        min-width: 0;
-    }
-    .dashboard-sidebar {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        width: 240px;
-        flex-shrink: 0;
-    }
-    @media (max-width: 1100px) {
-        .dashboard-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; }
-        .quick-calendar { max-width: 100%; }
+    .alert-card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 12px; }
+    .alert-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg-primary); text-decoration: none; transition: all 0.2s; border: 1px solid transparent; margin-bottom: 6px; }
+    .alert-item:hover { border-color: var(--accent); }
+    .alert-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; }
+    .alert-msg { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    .alert-detail { font-size: 10px; color: var(--text-secondary); }
+
+    .period-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .period-row span { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .period-row select { padding: 7px 12px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px; font-family: 'Inter', sans-serif; }
+
+    .positive { color: #10b981; }
+    .negative { color: #ef4444; }
+
+    @media (max-width: 900px) {
+        .dash-layout { grid-template-columns: 1fr; }
+        .kpi-row { grid-template-columns: repeat(2, 1fr); }
     }
 </style>
 {% endblock %}
-
 {% block content %}
-<div class="dashboard-layout">
-    <!-- MAIN CONTENT -->
-    <div class="dashboard-main">
-        <!-- PERIOD SELECTOR -->
-        <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
-            <select id="dashboardPeriod" onchange="switchDashboardPeriod()" style="padding: 6px 12px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 12px;">
-                <option value="month" {{ 'selected' if period == 'month' else '' }}>This Month</option>
-                <option value="last_month" {{ 'selected' if period == 'last_month' else '' }}>Last Month</option>
-                <option value="week" {{ 'selected' if period == 'week' else '' }}>This Week</option>
-                <option value="today" {{ 'selected' if period == 'today' else '' }}>Today</option>
-            </select>
-        </div>
-        <!-- ROW 1: CORE FINANCIAL -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title">Revenue ({{ period_label }})</div>
-                <div class="stat-value">₱ {{ "{:,.0f}".format(monthly_income|default(0)) }}</div>
-                <div class="stat-change {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
-                    <i class="fas {% if sales_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>
-                    {{ "%.1f"|format(sales_change|abs) }}% from {{ compare_label|lower }}
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Expenses ({{ period_label }})</div>
-                <div class="stat-value">₱ {{ "{:,.0f}".format(monthly_expense|default(0)) }}</div>
-                <div class="stat-change {% if expense_change <= 0 %}positive{% else %}negative{% endif %}">
-                    <i class="fas {% if expense_change <= 0 %}fa-arrow-down{% else %}fa-arrow-up{% endif %}"></i>
-                    {{ "%.1f"|format(expense_change|abs) }}% from {{ compare_label|lower }}
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Net Profit</div>
-                <div class="stat-value" style="color: {% if profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.0f}".format(profit|default(0)) }}</div>
-                <div class="stat-change {% if profit_change >= 0 %}positive{% else %}negative{% endif %}">
-                    <i class="fas {% if profit_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>
-                    {{ "%.1f"|format(profit_change|abs) }}%
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Profit Margin</div>
-                <div class="stat-value">{{ "%.1f"|format(profit_margin|default(0)) }}%</div>
-                <div class="stat-change">of total sales</div>
-            </div>
-        </div>
 
-        <!-- ROW 2: OPERATIONS -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title"><i class="fas fa-coins"></i> Cash Balance</div>
-                <div class="stat-value" style="color: #10b981; font-size: 26px;">₱ {{ "{:,.0f}".format(cash_balance|default(0)) }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title"><i class="fas fa-users"></i> AR Outstanding</div>
-                <div class="stat-value" style="color: #f59e0b; font-size: 26px;">₱ {{ "{:,.0f}".format(ar_outstanding|default(0)) }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title"><i class="fas fa-truck"></i> AP Outstanding</div>
-                <div class="stat-value" style="color: #ef4444; font-size: 26px;">₱ {{ "{:,.0f}".format(ap_outstanding|default(0)) }}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title"><i class="fas fa-boxes"></i> Inventory Value</div>
-                <div class="stat-value">₱ {{ "{:,.0f}".format(inventory_value|default(0)) }}</div>
-                <div class="stat-change">{{ total_products|default(0) }} products · {{ low_stock_count|default(0) }} low stock</div>
-            </div>
-        </div>
+<!-- Category Bar -->
+{% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+<div class="dash-catbar">
+    <a href="#" onclick="loadCategory('dashboard')" class="active" id="cat-home"><i class="fas fa-home"></i> Home</a>
+    <a href="#" onclick="loadCategory('finance')" id="cat-finance"><i class="fas fa-coins"></i> Finance</a>
+    <a href="#" onclick="loadCategory('receivables')" id="cat-receivables"><i class="fas fa-hand-holding-usd"></i> Receivables</a>
+    <a href="#" onclick="loadCategory('operations')" id="cat-operations"><i class="fas fa-boxes-stacked"></i> Operations</a>
+    <a href="#" onclick="loadCategory('accounting')" id="cat-accounting"><i class="fas fa-chart-line"></i> Reports</a>
+</div>
+{% endif %}
+<div id="mainContent">
+    <!-- Period -->
+    <div class="period-row">
+        <span>Showing:</span>
+        <select id="dashboardPeriod" onchange="switchDashboardPeriod()">
+            <option value="month" {{ 'selected' if period == 'month' else '' }}>This Month</option>
+            <option value="last_month" {{ 'selected' if period == 'last_month' else '' }}>Last Month</option>
+            <option value="week" {{ 'selected' if period == 'week' else '' }}>This Week</option>
+            <option value="today" {{ 'selected' if period == 'today' else '' }}>Today</option>
+        </select>
+    </div>
 
-        <!-- RECENT TRANSACTIONS -->
-        <div class="card">
-            <div class="card-header">
-                <h2><i class="fas fa-clock"></i> Recent Transactions</h2>
-                <a href="/journal" style="color: #10b981; text-decoration: none; font-size: 13px;">View All →</a>
+    <!-- FULL TWO-COLUMN LAYOUT: Left = everything, Right = calendar bar -->
+    <div class="dash-layout">
+        <!-- LEFT COLUMN: All content -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- KPI Row 1 -->
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-label">Revenue</div>
+                    <div class="kpi-value">₱ {{ "{:,.0f}".format(monthly_income|default(0)) }}</div>
+                    <div class="kpi-sub {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
+                        <i class="fas {% if sales_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i> {{ "%.1f"|format(sales_change|abs) }}% vs {{ compare_label|lower }}
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Expenses</div>
+                    <div class="kpi-value">₱ {{ "{:,.0f}".format(monthly_expense|default(0)) }}</div>
+                    <div class="kpi-sub {% if expense_change <= 0 %}positive{% else %}negative{% endif %}">
+                        <i class="fas {% if expense_change <= 0 %}fa-arrow-down{% else %}fa-arrow-up{% endif %}"></i> {{ "%.1f"|format(expense_change|abs) }}% vs {{ compare_label|lower }}
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Profit</div>
+                    <div class="kpi-value" style="color:{% if profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱ {{ "{:,.0f}".format(profit|default(0)) }}</div>
+                    <div class="kpi-sub">Margin: {{ "%.1f"|format(profit_margin|default(0)) }}%</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Cash</div>
+                    <div class="kpi-value" style="color:#10b981;">₱ {{ "{:,.0f}".format(cash_balance|default(0)) }}</div>
+                </div>
             </div>
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <thead>
-                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Type</th></tr>
-                    </thead>
+
+            <!-- KPI Row 2 -->
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-label">Receivables</div>
+                    <div class="kpi-value" style="color:#f59e0b;">₱ {{ "{:,.0f}".format(ar_outstanding|default(0)) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Payables</div>
+                    <div class="kpi-value" style="color:#ef4444;">₱ {{ "{:,.0f}".format(ap_outstanding|default(0)) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Inventory</div>
+                    <div class="kpi-value">₱ {{ "{:,.0f}".format(inventory_value|default(0)) }}</div>
+                    <div class="kpi-sub">{{ total_products|default(0) }} items · {{ low_stock_count|default(0) }} low</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Budgets</div>
+                    <div class="kpi-value">{{ budget_count|default(0) }}</div>
+                    <div class="kpi-sub">{{ over_budget_count|default(0) }} over</div>
+                </div>
+            </div>
+
+            <!-- Enterprise KPI Row -->
+            {% if session.plan == 'enterprise' %}
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-label">Projects</div>
+                    <div class="kpi-value">{{ project_count|default(0) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Assets</div>
+                    <div class="kpi-value">₱ {{ "{:,.0f}".format(asset_value|default(0)) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Quotes</div>
+                    <div class="kpi-value" style="color:#f59e0b;">{{ pending_quotes|default(0) }}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Recurring</div>
+                    <div class="kpi-value">{{ recurring_due|default(0) }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Mini Chart -->
+            <div class="chart-card" style="padding: 16px;">
+                <h3 style="margin-bottom: 6px;"><i class="fas fa-chart-line"></i> Revenue vs Expenses</h3>
+                <div id="miniChartContainer" style="height: 40px; width: 100%;">
+                    <canvas id="revExpChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="chart-card" style="padding: 16px;">
+                <h3 style="margin-bottom: 12px;"><i class="fas fa-clock"></i> Recent Transactions</h3>
+                <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">
+                    <thead><tr><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Date</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Description</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Amount</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Type</th></tr></thead>
                     <tbody>
                         {% for t in transactions %}
                         <tr>
-                            <td>{{ t.transaction_date }}</td>
-                            <td>{{ t.description }}</td>
-                            <td>{{ t.category or '-' }}</td>
-                            <td style="color: {{ '#10b981' if t.type == 'income' else '#ef4444' }};">₱ {{ "{:,.2f}".format(t.amount) }}</td>
-                            <td><span class="badge {{ 'badge-success' if t.type == 'income' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
+                            <td style="padding:10px 8px;font-size:13px;border-bottom:1px solid var(--border-light);">{{ t.transaction_date }}</td>
+                            <td style="padding:10px 8px;font-size:13px;border-bottom:1px solid var(--border-light);">{{ t.description }}</td>
+                            <td style="padding:10px 8px;font-size:13px;border-bottom:1px solid var(--border-light);color:{{ '#10b981' if t.type == 'income' else '#ef4444' }};">₱ {{ "{:,.2f}".format(t.amount) }}</td>
+                            <td style="padding:10px 8px;font-size:13px;border-bottom:1px solid var(--border-light);"><span class="badge {{ 'badge-success' if t.type == 'income' else 'badge-danger' }}">{{ t.type|capitalize }}</span></td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-secondary);"><i class="fas fa-receipt" style="font-size: 24px; opacity: 0.3; margin-bottom: 8px; display: block;"></i>No transactions yet</td></tr>
+                        <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-secondary);">No transactions yet</td></tr>
                         {% endfor %}
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div>
-    </div>
 
-    <!-- SIDEBAR: CALENDAR + QUICK ACTIONS -->
-    <div class="dashboard-sidebar" style="display: flex; flex-direction: column; height: 100%;">
-        <div>
-            <div class="quick-calendar">
-                <div class="quick-cal-header">
+        <!-- RIGHT COLUMN: Calendar + Quick Actions + Alerts (starts from top) -->
+        <div class="dash-right">
+            <div class="dash-calendar">
+                <div class="dash-cal-header">
                     <button onclick="prevQuickMonth()"><i class="fas fa-chevron-left"></i></button>
-                    <div class="quick-cal-title" id="quickCalTitle"></div>
+                    <div class="dash-cal-title" id="quickCalTitle"></div>
                     <button onclick="nextQuickMonth()"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <div class="quick-cal-grid" id="quickCalGrid"></div>
-                <div class="quick-cal-total" id="quickCalTotal"></div>
+                <div class="dash-cal-grid" id="quickCalGrid"></div>
+                <div class="dash-cal-total" id="quickCalTotal"></div>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:8px; margin-top: 12px;">
-                <a href="/sales" class="btn btn-primary" style="width:100%; text-align:center; text-decoration: none;"><i class="fas fa-cart-plus"></i> Record Sale</a>
-                <a href="/cash" class="btn btn-secondary" style="width:100%; text-align:center; text-decoration: none;"><i class="fas fa-plus-circle"></i> Add Transaction</a>
-                <a href="/ar" class="btn btn-secondary" style="width:100%; text-align:center; text-decoration: none;"><i class="fas fa-file-invoice"></i> Create Invoice</a>
-            </div>
-        </div>
-        
-        <div style="margin-top: auto;">
+            <a href="/sales" class="quick-btn primary"><i class="fas fa-cart-plus"></i> Record Sale</a>
+            <a href="/cash" class="quick-btn"><i class="fas fa-plus-circle"></i> Add Transaction</a>
+            <a href="/ar" class="quick-btn"><i class="fas fa-file-invoice"></i> Create Invoice</a>
+
             {% if alerts %}
-            <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 16px; padding: 14px; box-shadow: var(--card-shadow);">
-                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); margin-bottom: 10px;">
-                    <i class="fas fa-bell" style="color: #f59e0b; margin-right: 6px;"></i>Alerts
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    {% for alert in alerts %}
-                    <a href="{{ alert.link }}" style="text-decoration: none; display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-primary); transition: all 0.2s; border: 1px solid transparent;"
-                       onmouseover="this.style.borderColor='{{ alert.color }}'" onmouseout="this.style.borderColor='transparent'">
-                        <div style="width: 28px; height: 28px; border-radius: 8px; background: {{ alert.color }}15; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <i class="fas {{ alert.icon }}" style="color: {{ alert.color }}; font-size: 12px;"></i>
-                        </div>
-                        <div style="min-width: 0;">
-                            <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); line-height: 1.3;">{{ alert.message }}</div>
-                            <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">{{ alert.detail }}</div>
-                        </div>
-                    </a>
-                    {% endfor %}
-                </div>
+            <div class="alert-card">
+                <div class="alert-card-title"><i class="fas fa-bell" style="color:#f59e0b;margin-right:6px;"></i>Alert Status</div>
+                {% for alert in alerts %}
+                <a href="{{ alert.link }}" class="alert-item">
+                    <div class="alert-icon" style="background:{{ alert.color }}15;color:{{ alert.color }};"><i class="fas {{ alert.icon }}"></i></div>
+                    <div><div class="alert-msg">{{ alert.message }}</div><div class="alert-detail">{{ alert.detail }}</div></div>
+                </a>
+                {% endfor %}
             </div>
             {% else %}
-            <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; box-shadow: var(--card-shadow); text-align: center;">
-                <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">All Clear</div>
-                <div style="font-size: 10px; color: var(--text-secondary); margin-top: 2px;">No alerts at this time</div>
+            <div class="alert-card" style="text-align:center;">
+                <div class="alert-card-title">Alert Status</div>
+                <div style="color:var(--text-secondary);font-size:12px;">All Clear</div>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
-
 {% block extra_js %}
 <script>
+// Calendar
 let quickMonth = new Date().getMonth();
 let quickYear = new Date().getFullYear();
 const quickSalesData = {{ heatmap_data|safe if heatmap_data else '[]' }};
 
-document.addEventListener('DOMContentLoaded', function() {
-    const salesByDate = {};
-    let allMax = 0;
-    quickSalesData.forEach(d => {
-        salesByDate[d.date] = d.amount;
-        if (d.amount > allMax) allMax = d.amount;
+document.addEventListener('DOMContentLoaded',function(){
+    const s={};let m=0;quickSalesData.forEach(d=>{s[d.date]=d.amount;if(d.amount>m)m=d.amount;});
+    window._quickSales=s;window._quickMax=m||1;
+    renderQuickCalendar(quickYear,quickMonth);
+    const dp=document.getElementById('dashboardPeriod');if(dp)dp.value='{{ period }}';
+    loadMiniChart();
+});
+
+function renderQuickCalendar(y,m){
+    const g=document.getElementById('quickCalGrid'),t=document.getElementById('quickCalTitle'),e=document.getElementById('quickCalTotal');
+    if(!g)return;
+    const s=window._quickSales||{},M=window._quickMax||1,ms=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    t.textContent=`${ms[m]} ${y}`;
+    const d=new Date(y,m+1,0).getDate(),f=new Date(y,m,1).getDay(),a=f===0?6:f-1;
+    function c(v){if(!v||v===0)return'var(--border-light)';const r=M>0?v/M:0;if(r<0.25)return'#bbf7d0';if(r<0.5)return'#86efac';if(r<0.75)return'#4ade80';return'#16a34a';}
+    let h='',T=0;
+    ['Mo','Tu','We','Th','Fr','Sa','Su'].forEach(x=>{h+=`<div class="dash-cal-day">${x}</div>`;});
+    for(let i=0;i<a;i++)h+='<div class="dash-cal-cell empty"></div>';
+    for(let day=1;day<=d;day++){
+        const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const amt=s[ds]||0;T+=amt;const col=c(amt),tc=amt>M*0.5?'#fff':'var(--text-primary)';
+        h+=`<div class="dash-cal-cell" style="background:${col};color:${tc};" onclick="showDayDetail('${ds}',${amt})" title="${ds}: ${amt>0?'₱'+amt.toLocaleString():'No sales'}">${day}</div>`;
+    }
+    g.innerHTML=h;if(e)e.innerHTML=`₱${T.toLocaleString()} <span style="font-size:9px;color:var(--text-secondary);">this month</span>`;
+}
+
+// Minimal Chart
+function loadMiniChart(){
+    const container = document.getElementById('miniChartContainer');
+    if(!container) return;
+    fetch('/api/chart-data?period=30')
+        .then(r=>r.json())
+        .then(d=>{
+            const ctx=document.getElementById('revExpChart').getContext('2d');
+            new Chart(ctx,{
+                type:'line',
+                data:{
+                    labels:d.labels,
+                    datasets:[
+                        {label:'Rev',data:d.sales,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.05)',borderWidth:1.5,pointRadius:0,tension:0.4},
+                        {label:'Exp',data:d.expenses,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.02)',borderWidth:1.5,pointRadius:0,tension:0.4}
+                    ]
+                },
+                options:{
+                    responsive:true,maintainAspectRatio:false,
+                    plugins:{legend:{display:false}},
+                    scales:{x:{display:false},y:{display:false}}
+                }
+            });
+        });
+}
+
+function showDayDetail(d,a){
+    showToast(a>0?`${d}: ₱${a.toLocaleString()} in sales`:`${d}: No sales`,'info');
+}
+function switchDashboardPeriod(){
+    window.location.href=`/dashboard?period=${document.getElementById('dashboardPeriod').value}`;
+}
+function prevQuickMonth(){
+    if(quickMonth===0){quickMonth=11;quickYear--;}else{quickMonth--;}renderQuickCalendar(quickYear,quickMonth);
+}
+function nextQuickMonth(){
+    const t=new Date();if(quickYear===t.getFullYear()&&quickMonth===t.getMonth())return;if(quickMonth===11){quickMonth=0;quickYear++;}else{quickMonth++;}renderQuickCalendar(quickYear,quickMonth);
+}
+
+const CATEGORY_DATA = {
+    finance: {
+        name: 'Finance',
+        icon: 'fa-coins',
+        modules: [
+            {name:'Cash Management',icon:'fa-coins',url:'/cash',desc:'Track income and expenses'},
+            {name:'Sales Management',icon:'fa-chart-simple',url:'/sales',desc:'Record sales transactions'},
+            {name:'Recurring',icon:'fa-redo-alt',url:'/recurring',desc:'Auto-generate repeat transactions'},
+            {name:'Bank Reconciliation',icon:'fa-university',url:'/bank-reconciliation',desc:'Match bank statements'},
+            {name:'Fiscal Year',icon:'fa-calendar-check',url:'/fiscal-year',desc:'Close yearly books'},
+            {name:'Tax Reports',icon:'fa-file-invoice',url:'/tax',desc:'VAT and withholding tax'},
+            {name:'Currencies',icon:'fa-dollar-sign',url:'/currencies',desc:'Exchange rates'},
+        ]
+    },
+    receivables: {
+        name: 'Receivables & Payables',
+        icon: 'fa-hand-holding-usd',
+        modules: [
+            {name:'Accounts Receivable',icon:'fa-hand-holding-usd',url:'/ar',desc:'Customer invoices and payments'},
+            {name:'Accounts Payable',icon:'fa-truck-fast',url:'/ap',desc:'Supplier bills and payments'},
+        ]
+    },
+    operations: {
+        name: 'Operations',
+        icon: 'fa-boxes-stacked',
+        modules: [
+            {name:'Inventory',icon:'fa-boxes-stacked',url:'/inventory',desc:'Products and stock'},
+            {name:'Purchase Orders',icon:'fa-truck-loading',url:'/purchase-orders',desc:'Order from suppliers'},
+            {name:'Sales Orders',icon:'fa-clipboard-list',url:'/sales-orders',desc:'Customer orders'},
+            {name:'Quotations',icon:'fa-file-contract',url:'/quotations',desc:'Price quotes'},
+            {name:'Budgeting',icon:'fa-chart-pie',url:'/budgets',desc:'Set and track budgets'},
+            {name:'Projects',icon:'fa-folder-tree',url:'/projects',desc:'Profit centers'},
+            {name:'Timecards',icon:'fa-clock',url:'/timecards',desc:'Billable hours'},
+            {name:'Fixed Assets',icon:'fa-building',url:'/assets',desc:'Equipment and depreciation'},
+            {name:'Branches',icon:'fa-store-alt',url:'/branches',desc:'Multi-location'},
+            {name:'Permissions',icon:'fa-shield-alt',url:'/permissions',desc:'User access control'},
+        ]
+    },
+    accounting: {
+        name: 'Reports',
+        icon: 'fa-chart-line',
+        modules: [
+            {name:'Business Insights',icon:'fa-chart-line',url:'/insights',desc:'Analytics and predictions'},
+            {name:'PDF Reports',icon:'fa-file-pdf',url:'/reports',desc:'Export professional reports'},
+            {name:'All Transactions',icon:'fa-list-ul',url:'/all-transactions',desc:'Complete transaction log'},
+            {name:'General Journal',icon:'fa-book-open',url:'/journal',desc:'Financial entries'},
+            {name:'General Ledger',icon:'fa-balance-scale',url:'/ledger',desc:'Double-entry view'},
+            {name:'Trial Balance',icon:'fa-balance-scale-right',url:'/trial-balance',desc:'Account balances'},
+            {name:'Income Statement',icon:'fa-file-invoice-dollar',url:'/income-statement',desc:'Profit & loss'},
+            {name:'Balance Sheet',icon:'fa-file-invoice',url:'/balance-sheet',desc:'Assets & liabilities'},
+        ]
+    }
+};
+
+function loadCategory(cat) {
+    document.querySelectorAll('.dash-catbar a').forEach(a => a.classList.remove('active'));
+    const tab = document.getElementById('cat-' + cat);
+    if (tab) tab.classList.add('active');
+    
+    if (cat === 'dashboard') {
+        window.location.href = '/dashboard';
+        return;
+    }
+    
+    const data = CATEGORY_DATA[cat];
+    if (!data) return;
+    
+    const container = document.getElementById('mainContent');
+    if (!container) return;
+    
+    let html = '<div style="animation:fadeInUp 0.5s cubic-bezier(0.2,0.9,0.4,1.1);">';
+    html += '<div style="font-size:22px;font-weight:700;color:var(--text-primary);margin-bottom:24px;"><i class="fas ' + data.icon + '" style="color:var(--accent);margin-right:10px;"></i>' + data.name + '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">';
+    
+    data.modules.forEach(function(mod) {
+        html += '<a href="' + mod.url + '" style="background:var(--glass-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--glass-border);border-radius:20px;padding:28px 20px;text-align:center;text-decoration:none;color:var(--text-primary);transition:all 0.4s cubic-bezier(0.4,0,0.2,1);box-shadow:var(--card-shadow);" onmouseover="this.style.transform=\'translateY(-6px)\';this.style.boxShadow=\'var(--card-shadow-hover)\';this.style.borderColor=\'rgba(16,185,129,0.3)\';" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'var(--card-shadow)\';this.style.borderColor=\'var(--glass-border)\';">';
+        html += '<div style="width:56px;height:56px;background:var(--accent-light);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px;color:var(--accent);"><i class="fas ' + mod.icon + '"></i></div>';
+        html += '<h3 style="font-size:15px;font-weight:600;margin-bottom:6px;">' + mod.name + '</h3>';
+        html += '<p style="font-size:12px;color:var(--text-secondary);">' + mod.desc + '</p>';
+        html += '</a>';
     });
-    window._quickSales = salesByDate;
-    window._quickMax = allMax || 1;
-    renderQuickCalendar(quickYear, quickMonth);
-});
-
-function renderQuickCalendar(year, month) {
-    const grid = document.getElementById('quickCalGrid');
-    const title = document.getElementById('quickCalTitle');
-    const totalEl = document.getElementById('quickCalTotal');
-    if (!grid) return;
-
-    const salesByDate = window._quickSales || {};
-    const allMax = window._quickMax || 1;
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const dayNames = ['Mo','Tu','We','Th','Fr','Sa','Su'];
-
-    title.textContent = `${months[month]} ${year}`;
-
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDay = new Date(year, month, 1).getDay();
-    const adjustedFirst = firstDay === 0 ? 6 : firstDay - 1;
-
-    function getColor(amt) {
-        if (!amt || amt === 0) return 'var(--border-light)';
-        const ratio = allMax > 0 ? amt / allMax : 0;
-        if (ratio < 0.25) return '#bbf7d0';
-        if (ratio < 0.5) return '#86efac';
-        if (ratio < 0.75) return '#4ade80';
-        return '#16a34a';
-    }
-
-    let html = '';
-    dayNames.forEach(d => { html += `<div class="quick-cal-day">${d}</div>`; });
-
-    let monthTotal = 0;
-    for (let i = 0; i < adjustedFirst; i++) {
-        html += '<div class="quick-cal-cell empty"></div>';
-    }
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const amount = salesByDate[dateStr] || 0;
-        monthTotal += amount;
-        const color = getColor(amount);
-        const textColor = amount > allMax * 0.5 ? '#fff' : 'var(--text-primary)';
-        html += `<div class="quick-cal-cell" style="background:${color}; color:${textColor};" onclick="showDayDetail('${dateStr}', ${amount})" title="${dateStr}: ${amount > 0 ? '₱'+amount.toLocaleString() : 'No sales'}">${day}</div>`;
-    }
-    grid.innerHTML = html;
-    if (totalEl) totalEl.innerHTML = `₱${monthTotal.toLocaleString()} <span style="font-size:9px;color:var(--text-secondary);">this month</span>`;
-}
-
-function showDayDetail(dateStr, amount) {
-    if (amount > 0) {
-        showToast(`${dateStr}: ₱${amount.toLocaleString()} in sales`, 'info');
-    } else {
-        showToast(`${dateStr}: No sales recorded`, 'info');
-    }
-}
-
-function switchDashboardPeriod() {
-    const period = document.getElementById('dashboardPeriod').value;
-    window.location.href = `/dashboard?period=${period}`;
-}
-
-// Set dropdown to match current period on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const currentPeriod = '{{ period }}';
-    const dropdown = document.getElementById('dashboardPeriod');
-    if (dropdown && currentPeriod) {
-        dropdown.value = currentPeriod;
-    }
-});
-
-function prevQuickMonth() {
-    if (quickMonth === 0) { quickMonth = 11; quickYear--; }
-    else { quickMonth--; }
-    renderQuickCalendar(quickYear, quickMonth);
-}
-
-function nextQuickMonth() {
-    const today = new Date();
-    if (quickYear === today.getFullYear() && quickMonth === today.getMonth()) return;
-    if (quickMonth === 11) { quickMonth = 0; quickYear++; }
-    else { quickMonth++; }
-    renderQuickCalendar(quickYear, quickMonth);
+    
+    html += '</div></div>';
+    container.innerHTML = html;
 }
 </script>
 {% endblock %}
