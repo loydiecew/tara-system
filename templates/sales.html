@@ -87,6 +87,17 @@
                 <label>Served By</label>
                 <input type="text" name="served_by" placeholder="Staff name">
             </div>
+            {% if user_can_view('projects') %}
+            <div class="form-group">
+                <label>Project</label>
+                <select name="project_id">
+                    <option value="">No project</option>
+                    {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
             <div class="form-group">
                 <label>&nbsp;</label>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">
@@ -100,12 +111,18 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-history"></i> Sales History</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('salesTable', 'TARA_Sales_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+        <div style="display: flex; gap: 8px;">
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=sales" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-upload"></i> Import
+            </a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('salesTable', 'TARA_Sales_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
     </div>
     
-    <!-- UNIVERSAL FILTER BAR -->
     {% if session.role in ['admin', 'owner', 'manager'] %}
     <div class="filter-bar">
         <div class="filter-group">
@@ -148,6 +165,11 @@
                         <a href="/receipt/{{ s.id }}" class="btn-icon" title="View Receipt" target="_blank">
                             <i class="fas fa-receipt"></i>
                         </a>
+                        {% if user_can_view('ar') and s.customer_name and s.customer_name != 'Walk-in Customer' %}
+                        <a href="/convert_sale_to_invoice/{{ s.id }}" class="btn-icon" title="Create Invoice from Sale" onclick="return confirm('Create an AR invoice from this sale?')">
+                            <i class="fas fa-file-invoice"></i>
+                        </a>
+                        {% endif %}
                         <a href="/edit_sale/{{ s.id }}" class="btn-icon" title="Edit">
                             <i class="fas fa-pen"></i>
                         </a>
@@ -170,12 +192,9 @@
         const method = methodSelect ? methodSelect.value : 'inventory';
         const inventoryFields = document.getElementById('inventoryFields');
         const manualFields = document.getElementById('manualFields');
-        
         if (inventoryFields) inventoryFields.style.display = method === 'inventory' ? 'block' : 'none';
         if (manualFields) manualFields.style.display = method === 'manual' ? 'block' : 'none';
     }
-    
-    // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
         toggleSaleMethod();
     });

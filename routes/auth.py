@@ -31,9 +31,7 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
-            session['business_id'] = user['business_id']
-            session['business_name'] = user['business_name']
-            
+            session['custom_role_id'] = user.get('custom_role_id')
             # Get user's plan
             plan_id = user.get('plan_id', 1)
             cursor.execute("SELECT slug, name FROM plans WHERE id = %s", (plan_id,))
@@ -41,7 +39,8 @@ def login():
             
             session['plan'] = plan['slug'] if plan else 'basic'
             session['plan_name'] = plan['name'] if plan else 'Basic'
-            
+            session['vat_registered'] = bool(user.get('vat_registered', 0))
+
             cursor.close()
             db.close()
             return redirect(url_for('dashboard.dashboard'))
@@ -111,7 +110,8 @@ def register():
             session['role'] = user['role']
             session['business_id'] = user['business_id']
             session['business_name'] = user['business_name']
-            
+            session['vat_registered'] = bool(user.get('vat_registered', 0))
+
             # Set plan in session
             if business_size == 'solo':
                 session['plan'] = 'basic'
@@ -122,7 +122,10 @@ def register():
             else:
                 session['plan'] = 'enterprise'
                 session['plan_name'] = 'Enterprise'
-            
+                # Create enterprise role templates
+                from routes.permissions import create_enterprise_role_templates
+                create_enterprise_role_templates(business_id, user['id'])
+
             cursor.close()
             db.close()
             

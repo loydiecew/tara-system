@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import date
 from models.database import get_db
 from models.audit import log_audit
+from models.access_control import check_module_access
 
 inventory_bp = Blueprint('inventory', __name__)
 
@@ -10,6 +11,8 @@ def inventory():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
+    if not check_module_access('inventory'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('role') not in ['admin', 'owner', 'manager']:
         flash('Access restricted.', 'error')
         return redirect(url_for('dashboard.dashboard'))

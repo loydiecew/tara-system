@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import date, timedelta
 from dateutil.relativedelta import relativedelta
 from models.database import get_db
+from models.access_control import check_module_access
 
 tax_bp = Blueprint('tax', __name__)
 
@@ -9,7 +10,9 @@ tax_bp = Blueprint('tax', __name__)
 def tax():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('tax'): return redirect(url_for('dashboard.dashboard'))
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])

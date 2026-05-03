@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import date, timedelta
 from models.database import get_db
 from models.audit import log_audit
+from models.access_control import check_module_access
 
 ar_bp = Blueprint('ar', __name__)
 
@@ -9,6 +10,8 @@ ar_bp = Blueprint('ar', __name__)
 def ar():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+
+    if not check_module_access('ar'): return redirect(url_for('dashboard.dashboard'))
     
     if session.get('role') not in ['admin', 'owner']:
         flash('Access restricted to admins and owners.', 'error')
@@ -90,8 +93,8 @@ def ar():
                          customers=customers,
                          invoices=invoices,
                          total_outstanding=total_outstanding,
-                         today=date.today().isoformat())
-
+                         today=date.today())
+                         
 @ar_bp.route('/delete_invoice/<int:invoice_id>')
 def delete_invoice(invoice_id):
     if 'user_id' not in session:
@@ -438,3 +441,58 @@ def payment_receipt(payment_id):
                          receipt_number=receipt_number,
                          today=today,
                          username=session['username'])
+
+@ar_bp.route('/email_invoice/<int:invoice_id>')
+def email_invoice(invoice_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT i.*, c.name as customer_name, c.email as customer_email
+        FROM invoices i JOIN customers c ON i.customer_id = c.id
+        WHERE i.id = %s AND i.user_id = %s
+    """, (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if not invoice or not invoice.get('customer_email'):
+        flash('Customer has no email.', 'error')
+        return redirect(url_for('ar.ar'))
+    
+    from models.email_service import send_invoice_email
+    business_name = session.get('business_name', 'My Business')
+    success, msg = send_invoice_email(invoice, invoice['customer_name'], invoice['customer_email'], business_name)
+    
+    flash('Invoice emailed!' if success else f'Failed: {msg}', 'success' if success else 'error')
+    return redirect(url_for('ar.ar'))
+
+@ar_bp.route('/send_reminder/<int:invoice_id>')
+def send_reminder(invoice_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT i.*, c.name as customer_name, c.email as customer_email
+        FROM invoices i JOIN customers c ON i.customer_id = c.id
+        WHERE i.id = %s AND i.user_id = %s
+    """, (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if not invoice or not invoice.get('customer_email'):
+        flash('Customer has no email.', 'error')
+        return redirect(url_for('ar.ar'))
+    
+    from models.email_service import send_email
+    subject = f"Payment Reminder: Invoice {invoice.get('invoice_number', 'INV-'+str(invoice_id))}"
+    body = f"""<p>Dear {invoice['customer_name']},</p><p>This is a reminder that your invoice is due.</p>
+    <p><strong>Amount Due:</strong> ₱{float(invoice['amount']):,.2f}<br><strong>Due Date:</strong> {invoice['due_date']}</p>
+    <p>Please settle at your earliest convenience.</p>"""
+    
+    success, msg = send_email(invoice['customer_email'], subject, body)
+    flash('Reminder sent!' if success else f'Failed: {msg}', 'success' if success else 'error')
+    return redirect(url_for('ar.ar'))

@@ -44,6 +44,16 @@ def cash():
     income_categories = [c for c in categories if c['type'] == 'income']
     expense_categories = [c for c in categories if c['type'] == 'expense']
     
+    # Get projects for dropdown
+    projects = []
+    if session.get('plan') in ['pro', 'enterprise']:
+        cursor.execute("""
+            SELECT p.id, p.name FROM projects p
+            JOIN users u ON p.user_id = u.id
+            WHERE u.business_id = %s AND p.status = 'active'
+        """, (business_id,))
+        projects = cursor.fetchall()
+
     # Get transactions for this business
     cursor.execute("""
         SELECT t.* FROM transactions t
@@ -81,8 +91,8 @@ def cash():
                          balance=balance,
                          today=today,
                          income_categories=income_categories,
-                         expense_categories=expense_categories)
-
+                         expense_categories=expense_categories,
+                         projects=projects)
 @cash_bp.route('/add_transaction', methods=['POST'])
 def add_transaction():
     if 'user_id' not in session:
@@ -95,7 +105,8 @@ def add_transaction():
     transaction_date = request.form.get('transaction_date', date.today())
     reference_number = request.form.get('reference_number', '')
     payment_method = request.form.get('payment_method', 'cash')
-    
+    project_id = request.form.get('project_id') or None
+
     # CHECK: Cashiers cannot add expenses
     if session.get('role') == 'cashier' and trans_type == 'expense':
         flash("Cashiers cannot add expenses. Only owners and admins can.", 'error')
@@ -105,9 +116,9 @@ def add_transaction():
     cursor = db.cursor()
     
     cursor.execute("""
-        INSERT INTO transactions (user_id, description, amount, type, category, transaction_date, reference_number, payment_method)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], description, amount, trans_type, category, transaction_date, reference_number, payment_method))
+        INSERT INTO transactions (user_id, description, amount, type, category, transaction_date, reference_number, payment_method, project_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], description, amount, trans_type, category, transaction_date, reference_number, payment_method, project_id))
     db.commit()
 
     new_transaction = {
@@ -283,9 +294,9 @@ def receipt_cash(transaction_id):
         flash('Transaction not found or is not an income transaction', 'error')
         return redirect(url_for('cash.cash'))
     
-    # Get business owner details
+    # Get business owner details (including VAT)
     cursor.execute("""
-        SELECT username, business_name, business_id FROM users
+        SELECT username, business_name, business_id, vat_registered FROM users
         WHERE business_id = %s AND role IN ('admin', 'owner')
         LIMIT 1
     """, (business_id,))
@@ -296,13 +307,13 @@ def receipt_cash(transaction_id):
     
     business_name = owner['business_name'] if owner and owner.get('business_name') else 'My Business'
     business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
+    vat_registered = bool(owner['vat_registered']) if owner else False
     
     receipt_number = f"RCPT-{transaction_id:06d}"
     today = date.today()
     
     # Determine who paid — extract name from description if possible
     customer_name = transaction['description']
-    # Try to extract name patterns like "Payment from [Name]" or "Received from [Name]"
     if ' from ' in customer_name.lower():
         parts = customer_name.split(' from ', 1)
         customer_name = parts[1] if len(parts) > 1 else customer_name
@@ -325,7 +336,8 @@ def receipt_cash(transaction_id):
                          invoice_number='',
                          today=today,
                          back_url='cash',
-                         username=session['username'])
+                         username=session['username'],
+                         vat_registered=vat_registered)
 
 def create_journal_entry(user_id, entry_date, description, lines):
     """Create a journal entry with debit/credit lines"""

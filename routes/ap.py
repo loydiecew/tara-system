@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import date, timedelta
 from models.database import get_db
 from models.audit import log_audit
+from models.access_control import check_module_access
 
 ap_bp = Blueprint('ap', __name__)
 
@@ -10,6 +11,8 @@ def ap():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
+    if not check_module_access('ap'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('role') not in ['admin', 'owner']:
         flash('Access restricted to admins and owners.', 'error')
         return redirect(url_for('dashboard.dashboard'))

@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from models.database import get_db
 from models.audit import log_audit
 from models.email_service import send_quote_email
+from models.access_control import check_module_access
 
 quotations_bp = Blueprint('quotations', __name__)
 
@@ -10,7 +11,9 @@ quotations_bp = Blueprint('quotations', __name__)
 def quotations():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('quotations'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('plan') not in ['enterprise']:
         flash('Quotations are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))

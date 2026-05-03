@@ -29,47 +29,15 @@
     </div>
     <form method="POST" action="/add_customer">
         <div class="form-grid">
-            <div class="form-group">
-                <label>Customer Name *</label>
-                <input type="text" name="name" required>
-            </div>
-            <div class="form-group">
-                <label>Contact Person</label>
-                <input type="text" name="contact_person" placeholder="Who to contact">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email">
-            </div>
-            <div class="form-group">
-                <label>Phone</label>
-                <input type="text" name="phone">
-            </div>
-            <div class="form-group">
-                <label>TIN</label>
-                <input type="text" name="tin" placeholder="Tax identification number">
-            </div>
-            <div class="form-group">
-                <label>Payment Terms</label>
-                <select name="payment_terms">
-                    <option value="net_15">Net 15</option>
-                    <option value="net_30">Net 30</option>
-                    <option value="net_60">Net 60</option>
-                    <option value="cod">Cash on Delivery</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Credit Limit (₱)</label>
-                <input type="number" name="credit_limit" step="0.01" value="0">
-            </div>
-            <div class="form-group">
-                <label>Address</label>
-                <input type="text" name="address" placeholder="Billing/shipping address">
-            </div>
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary">Add Customer</button>
-            </div>
+            <div class="form-group"><label>Customer Name *</label><input type="text" name="name" required></div>
+            <div class="form-group"><label>Contact Person</label><input type="text" name="contact_person" placeholder="Who to contact"></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email"></div>
+            <div class="form-group"><label>Phone</label><input type="text" name="phone"></div>
+            <div class="form-group"><label>TIN</label><input type="text" name="tin" placeholder="Tax identification number"></div>
+            <div class="form-group"><label>Payment Terms</label><select name="payment_terms"><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_60">Net 60</option><option value="cod">Cash on Delivery</option></select></div>
+            <div class="form-group"><label>Credit Limit (₱)</label><input type="number" name="credit_limit" step="0.01" value="0"></div>
+            <div class="form-group"><label>Address</label><input type="text" name="address" placeholder="Billing/shipping address"></div>
+            <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-primary">Add Customer</button></div>
         </div>
     </form>
 </div>
@@ -80,48 +48,14 @@
     </div>
     <form method="POST" action="/add_invoice">
         <div class="form-grid">
-            <div class="form-group">
-                <label>Customer *</label>
-                <select name="customer_id" required>
-                    <option value="">Select customer</option>
-                    {% for c in customers %}
-                    <option value="{{ c.id }}">{{ c.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Amount (₱) *</label>
-                <input type="number" name="amount" step="0.01" required>
-            </div>
-            <div class="form-group">
-                <label>Due Date *</label>
-                <input type="date" name="due_date" required>
-            </div>
-            <div class="form-group">
-                <label>Invoice Number</label>
-                <input type="text" name="invoice_number" placeholder="Auto-generated if blank">
-            </div>
-            <div class="form-group">
-                <label>Payment Terms</label>
-                <select name="payment_terms">
-                    <option value="net_15">Net 15</option>
-                    <option value="net_30">Net 30</option>
-                    <option value="net_60">Net 60</option>
-                    <option value="cod">Cash on Delivery</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Reference PO/SO</label>
-                <input type="text" name="reference_po" placeholder="Link to purchase/sales order">
-            </div>
-            <div class="form-group">
-                <label>BIR Serial Number</label>
-                <input type="text" name="bir_serial" placeholder="Official receipt serial">
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="description" rows="2" placeholder="Products or services..."></textarea>
-            </div>
+            <div class="form-group"><label>Customer *</label><select name="customer_id" required><option value="">Select customer</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label>Amount (₱) *</label><input type="number" name="amount" step="0.01" required></div>
+            <div class="form-group"><label>Due Date *</label><input type="date" name="due_date" required></div>
+            <div class="form-group"><label>Invoice Number</label><input type="text" name="invoice_number" placeholder="Auto-generated if blank"></div>
+            <div class="form-group"><label>Payment Terms</label><select name="payment_terms"><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_60">Net 60</option><option value="cod">Cash on Delivery</option></select></div>
+            <div class="form-group"><label>Reference PO/SO</label><input type="text" name="reference_po" placeholder="Link to purchase/sales order"></div>
+            <div class="form-group"><label>BIR Serial Number</label><input type="text" name="bir_serial" placeholder="Official receipt serial"></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="Products or services..."></textarea></div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Create Invoice</button>
     </form>
@@ -130,38 +64,28 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-file-invoice-dollar"></i> Invoices</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('arTable', 'TARA_AR_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=customers" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-upload"></i> Import
+            </a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('arTable', 'TARA_AR_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+            <a href="/export/pdf/ar_aging" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-file-pdf"></i> Export PDF
+            </a>
+        </div>
     </div>
     
-    <!-- UNIVERSAL FILTER BAR -->
     {% if session.role in ['admin', 'owner', 'manager'] %}
     <div class="filter-bar">
-        <div class="filter-group">
-            <label>Date From</label>
-            <input type="date" id="arBody_date_from" onchange="filterTable('arBody','arNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Date To</label>
-            <input type="date" id="arBody_date_to" onchange="filterTable('arBody','arNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Status</label>
-            <select id="arBody_status" onchange="filterTable('arBody','arNoData')">
-                <option value="all">All</option>
-                <option value="paid">Paid</option>
-                <option value="partially_paid">Partial</option>
-                <option value="unpaid">Unpaid</option>
-            </select>
-        </div>
-        <div class="filter-group" style="flex:1; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="arBody_search" placeholder="Customer or invoice #..." oninput="filterTable('arBody','arNoData')">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('arBody')" style="padding:8px 12px; font-size:11px;">
-            <i class="fas fa-times"></i> Clear
-        </button>
+        <div class="filter-group"><label>Date From</label><input type="date" id="arBody_date_from" onchange="filterTable('arBody','arNoData')"></div>
+        <div class="filter-group"><label>Date To</label><input type="date" id="arBody_date_to" onchange="filterTable('arBody','arNoData')"></div>
+        <div class="filter-group"><label>Status</label><select id="arBody_status" onchange="filterTable('arBody','arNoData')"><option value="all">All</option><option value="paid">Paid</option><option value="partially_paid">Partial</option><option value="unpaid">Unpaid</option></select></div>
+        <div class="filter-group" style="flex:1; min-width:150px;"><label>Search</label><input type="text" id="arBody_search" placeholder="Customer or invoice #..." oninput="filterTable('arBody','arNoData')"></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('arBody')" style="padding:8px 12px; font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
     {% endif %}
     
@@ -169,15 +93,7 @@
         <table class="data-table" id="arTable">
             <thead>
                 <tr>
-                    <th>Invoice #</th>
-                    <th>Customer</th>
-                    <th>Total</th>
-                    <th>Paid</th>
-                    <th>Remaining</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Aging</th>
-                    <th>Actions</th>
+                    <th>Invoice #</th><th>Customer</th><th>Total</th><th>Paid</th><th>Remaining</th><th>Due Date</th><th>Status</th><th>Aging</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody id="arBody">
@@ -187,29 +103,25 @@
                     <td>{{ inv.customer_name }}</td>
                     <td>₱ {{ "{:,.2f}".format(inv.amount) }}</td>
                     <td>₱ {{ "{:,.2f}".format(inv.paid_amount) }}</td>
-                    <td class="{% if inv.remaining <= 0 %}remaining-zero{% else %}remaining-positive{% endif %}">
-                        ₱ {{ "{:,.2f}".format(inv.remaining) }}
-                    </td>
+                    <td class="{% if inv.remaining <= 0 %}remaining-zero{% else %}remaining-positive{% endif %}">₱ {{ "{:,.2f}".format(inv.remaining) }}</td>
                     <td>{{ inv.due_date }}</td>
                     <td>
-                        {% if inv.status == 'paid' %}
-                        <span class="badge badge-success">Paid</span>
-                        {% elif inv.status == 'partially_paid' %}
-                        <span class="badge badge-info">Partial</span>
-                        {% else %}
-                        <span class="badge badge-danger">Unpaid</span>
-                        {% endif %}
+                        {% if inv.status == 'paid' %}<span class="badge badge-success">Paid</span>
+                        {% elif inv.status == 'partially_paid' %}<span class="badge badge-info">Partial</span>
+                        {% else %}<span class="badge badge-danger">Unpaid</span>{% endif %}
                     </td>
                     <td><span class="badge {{ inv.aging_class }}">{{ inv.aging_label }}</span></td>
                     <td style="white-space: nowrap;">
                         {% if inv.remaining > 0 %}
-                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); showPaymentModal({{ inv.id }}, '{{ inv.customer_name }}', {{ inv.remaining }})" style="padding: 5px 12px; font-size: 12px;">
-                            <i class="fas fa-coins"></i> Pay
-                        </button>
-                        {% if session.plan == 'enterprise' and inv.remaining > 0 and inv.customer_email %}
-                        <a href="/email_payment_link/{{ inv.id }}" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;">
-                            <i class="fas fa-paper-plane"></i> Send Payment Link
-                        </a>
+                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); showPaymentModal({{ inv.id }}, '{{ inv.customer_name }}', {{ inv.remaining }})" style="padding: 5px 12px; font-size: 12px;"><i class="fas fa-coins"></i> Pay</button>
+                        {% if user_can_view('payments') and inv.remaining > 0 and inv.customer_email %}
+                        <a href="/email_payment_link/{{ inv.id }}" class="btn btn-primary btn-sm" style="padding:4px 10px; font-size:11px;"><i class="fas fa-paper-plane"></i> Send Payment Link</a>
+                        {% endif %}
+                        {% if inv.customer_email and inv.status != 'paid' %}
+                        <a href="/email_invoice/{{ inv.id }}" class="btn-icon" title="Email Invoice" onclick="event.stopPropagation();"><i class="fas fa-envelope"></i></a>
+                        {% endif %}
+                        {% if inv.status in ['unpaid', 'partially_paid'] and inv.due_date < today %}
+                        <a href="/send_reminder/{{ inv.id }}" class="btn-icon" title="Send Reminder" onclick="event.stopPropagation(); return confirm('Send payment reminder to {{ inv.customer_name }}?')"><i class="fas fa-bell"></i></a>
                         {% endif %}
                         {% endif %}
                         <a href="/edit_invoice/{{ inv.id }}" class="btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
@@ -218,19 +130,11 @@
                 </tr>
                 <tr id="payments-{{ inv.id }}" class="payment-history-row" style="display: none;">
                     <td colspan="9" style="padding: 0;">
-                        <div id="payments-content-{{ inv.id }}" style="padding: 12px 20px; color: var(--text-secondary);">
-                            Loading payments...
-                        </div>
+                        <div id="payments-content-{{ inv.id }}" style="padding: 12px 20px; color: var(--text-secondary);">Loading payments...</div>
                     </td>
                 </tr>
                 {% else %}
-                <tr id="arNoData"><td colspan="9" style="text-align: center; padding: 30px;">
-                    <div class="empty-state">
-                        <i class="fas fa-file-invoice"></i>
-                        <h3>No invoices yet</h3>
-                        <p>Add a customer and create your first invoice</p>
-                    </div>
-                </td></tr>
+                <tr id="arNoData"><td colspan="9" style="text-align: center; padding: 30px;"><div class="empty-state"><i class="fas fa-file-invoice"></i><h3>No invoices yet</h3><p>Add a customer and create your first invoice</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -240,47 +144,17 @@
 <!-- PAYMENT MODAL -->
 <div id="paymentModal" class="modal">
     <div class="modal-content" style="max-width: 450px;">
-        <div class="modal-header">
-            <h3><i class="fas fa-coins"></i> Record Payment</h3>
-            <span class="close-modal" onclick="closePaymentModal()">&times;</span>
-        </div>
+        <div class="modal-header"><h3><i class="fas fa-coins"></i> Record Payment</h3><span class="close-modal" onclick="closePaymentModal()">&times;</span></div>
         <form method="POST" id="paymentForm">
             <input type="hidden" id="paymentInvoiceId" name="invoice_id">
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Customer</label>
-                <input type="text" id="paymentCustomerName" readonly style="background: var(--bg-primary);">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Remaining Balance</label>
-                <input type="text" id="paymentRemaining" readonly style="background: var(--bg-primary); font-weight: 700; color: #f59e0b;">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Payment Amount (₱)</label>
-                <input type="number" name="amount" id="paymentAmount" step="0.01" required autofocus>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Payment Date</label>
-                <input type="date" name="payment_date" id="paymentDate" value="{{ today }}" required>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Payment Method</label>
-                <select name="payment_method" id="paymentMethod">
-                    <option value="cash">Cash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="gcash">GCash</option>
-                    <option value="maya">Maya</option>
-                    <option value="check">Check</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Reference Number</label>
-                <input type="text" name="reference_number" placeholder="Check #, transaction ID...">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Notes</label>
-                <input type="text" name="notes" placeholder="Optional">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Record Payment</button>
+            <div class="form-group" style="margin-bottom:12px;"><label>Customer</label><input type="text" id="paymentCustomerName" readonly style="background:var(--bg-primary);"></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Remaining Balance</label><input type="text" id="paymentRemaining" readonly style="background:var(--bg-primary);font-weight:700;color:#f59e0b;"></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Payment Amount (₱)</label><input type="number" name="amount" id="paymentAmount" step="0.01" required autofocus></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Payment Date</label><input type="date" name="payment_date" id="paymentDate" value="{{ today }}" required></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Payment Method</label><select name="payment_method" id="paymentMethod"><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="gcash">GCash</option><option value="maya">Maya</option><option value="check">Check</option></select></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Reference Number</label><input type="text" name="reference_number" placeholder="Check #, transaction ID..."></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Notes</label><input type="text" name="notes" placeholder="Optional"></div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Record Payment</button>
         </form>
     </div>
 </div>
@@ -295,15 +169,10 @@
         document.getElementById('paymentForm').action = '/record_payment/' + invoiceId;
         document.getElementById('paymentModal').style.display = 'flex';
     }
-    
-    function closePaymentModal() {
-        document.getElementById('paymentModal').style.display = 'none';
-    }
-    
+    function closePaymentModal() { document.getElementById('paymentModal').style.display = 'none'; }
     function togglePaymentHistory(invoiceId, row) {
         const historyRow = document.getElementById('payments-' + invoiceId);
         const contentDiv = document.getElementById('payments-content-' + invoiceId);
-        
         if (historyRow.style.display === 'none' || !historyRow.style.display) {
             fetch('/invoice_payments/' + invoiceId)
                 .then(res => res.json())
@@ -311,29 +180,15 @@
                     if (data.payments && data.payments.length > 0) {
                         let html = '<table style="width:100%; font-size:12px;"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Notes</th><th></th></tr></thead><tbody>';
                         data.payments.forEach(p => {
-                            html += `<tr>
-                                <td>${p.payment_date}</td>
-                                <td style="color:#10b981; font-weight:600;">₱${parseFloat(p.amount).toFixed(2)}</td>
-                                <td>${p.payment_method.replace('_', ' ')}</td>
-                                <td>${p.reference_number || '-'}</td>
-                                <td>${p.notes || '-'}</td>
-                                <td><a href="/receipt/payment/${p.id}" target="_blank" class="btn-icon" title="Receipt"><i class="fas fa-receipt"></i></a></td>
-                            </tr>`;
+                            html += `<tr><td>${p.payment_date}</td><td style="color:#10b981;font-weight:600;">₱${parseFloat(p.amount).toFixed(2)}</td><td>${p.payment_method.replace('_', ' ')}</td><td>${p.reference_number || '-'}</td><td>${p.notes || '-'}</td><td><a href="/receipt/payment/${p.id}" target="_blank" class="btn-icon" title="Receipt"><i class="fas fa-receipt"></i></a></td></tr>`;
                         });
                         html += '</tbody></table>';
                         contentDiv.innerHTML = html;
-                    } else {
-                        contentDiv.innerHTML = '<p style="text-align:center; padding:10px;">No payments recorded yet</p>';
-                    }
+                    } else { contentDiv.innerHTML = '<p style="text-align:center;padding:10px;">No payments recorded yet</p>'; }
                 });
             historyRow.style.display = 'table-row';
-        } else {
-            historyRow.style.display = 'none';
-        }
+        } else { historyRow.style.display = 'none'; }
     }
-    
-    window.onclick = function(event) {
-        if (event.target === document.getElementById('paymentModal')) closePaymentModal();
-    };
+    window.onclick = function(event) { if (event.target === document.getElementById('paymentModal')) closePaymentModal(); };
 </script>
 {% endblock %}

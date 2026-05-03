@@ -4,432 +4,228 @@
 {% block page_title %}Profile Settings{% endblock %}
 {% block page_subtitle %}Manage your account and preferences{% endblock %}
 
+{% block extra_css %}
+<style>
+    .profile-layout { display: flex; gap: 24px; flex-wrap: wrap; }
+    .profile-sidebar { width: 260px; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); overflow: hidden; flex-shrink: 0; }
+    .profile-avatar-area { padding: 28px; text-align: center; border-bottom: 1px solid var(--border-light); background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(5,150,105,0.02) 100%); }
+    .profile-avatar { width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 8px 20px rgba(16,185,129,0.3); font-size: 32px; font-weight: 600; color: white; }
+    .profile-nav-link { display: flex; align-items: center; gap: 12px; padding: 12px 20px; margin: 4px 12px; border-radius: 12px; color: var(--text-secondary); text-decoration: none; transition: all 0.2s; font-size: 13px; font-weight: 500; }
+    .profile-nav-link:hover { background: rgba(16,185,129,0.08); color: #10b981; }
+    .profile-nav-link.active { background: rgba(16,185,129,0.12); color: #10b981; }
+    .profile-nav-link i { width: 20px; font-size: 14px; }
+    .profile-content { flex: 1; min-width: 500px; height: calc(100vh - 160px); overflow: hidden; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px; display: flex; flex-direction: column; }
+    .profile-content-inner { flex: 1; overflow-y: auto; padding-right: 4px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .theme-toggle-switch { position: relative; display: inline-block; width: 60px; height: 30px; }
+    .theme-toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .theme-toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: 0.3s; border-radius: 30px; }
+    .theme-toggle-slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 3px; bottom: 3px; background-color: white; transition: 0.3s; border-radius: 50%; }
+    input:checked + .theme-toggle-slider { background-color: #10b981; }
+    input:checked + .theme-toggle-slider:before { transform: translateX(30px); }
+    @media (max-width: 768px) { .profile-content { min-width: 0; height: auto; } .profile-sidebar { width: 100%; } }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="display: flex; gap: 24px; flex-wrap: wrap;">
-    <!-- Sidebar Tabs - Clean vertical menu -->
-    <div style="width: 280px; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); overflow: hidden;">
-        <div style="padding: 28px; text-align: center; border-bottom: 1px solid var(--border-light); background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(5,150,105,0.02) 100%);">
-            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; box-shadow: 0 8px 20px rgba(16,185,129,0.3);">
-                <span style="font-size: 32px; font-weight: 600; color: white;">{{ session.username[0]|upper }}</span>
-            </div>
+<div class="profile-layout">
+    <!-- Sidebar -->
+    <div class="profile-sidebar">
+        <div class="profile-avatar-area">
+            <div class="profile-avatar">{{ session.username[0]|upper }}</div>
             <h3 style="margin-top: 12px; font-size: 18px;">{{ session.username }}</h3>
             <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
                 <span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; padding: 4px 12px;">{{ session.role|capitalize }}</span>
                 <span class="badge" style="background: rgba(16,185,129,0.1); color: var(--text-secondary); padding: 4px 12px;">{{ session.plan_name }} Plan</span>
             </p>
         </div>
-        
         <div style="padding: 12px 0;">
-            <a href="#" class="profile-nav active" data-tab="profile">
-                <i class="fas fa-user-circle"></i> Profile
-            </a>
-            <a href="#" class="profile-nav" data-tab="plan">
-                <i class="fas fa-crown"></i> Billing & Plan
-            </a>
-            <a href="#" class="profile-nav" data-tab="appearance">
-                <i class="fas fa-palette"></i> Appearance
-            </a>
-            
-            {% if session.role == 'admin' and session.plan != 'basic' %}
-            <a href="#" class="profile-nav" data-tab="team">
-                <i class="fas fa-users"></i> Team Management
-            </a>
-            {% endif %}
-            
+            <a href="#" class="profile-nav-link active" data-tab="profile"><i class="fas fa-user-circle"></i> Profile</a>
+            <a href="#" class="profile-nav-link" data-tab="plan"><i class="fas fa-crown"></i> Billing & Plan</a>
+            <a href="#" class="profile-nav-link" data-tab="appearance"><i class="fas fa-palette"></i> Appearance</a>
             {% if session.role == 'admin' %}
-            <a href="#" class="profile-nav" data-tab="restore">
-                <i class="fas fa-trash-restore"></i> Restore Data
-            </a>
-            <a href="#" class="profile-nav" data-tab="audit">
-                <i class="fas fa-history"></i> Audit Log
-            </a>
-            <a href="#" class="profile-nav" data-tab="import">
-                <i class="fas fa-upload"></i> Import Data
-            </a>
+            <a href="#" class="profile-nav-link" data-tab="restore"><i class="fas fa-trash-restore"></i> Restore Data</a>
             {% endif %}
-            
             <div style="height: 1px; background: var(--border-light); margin: 12px 16px;"></div>
-
-            <a href="/logout" class="profile-nav" style="color: #ef4444;">
-                <i class="fas fa-sign-out-alt"></i> Sign Out
-            </a>
+            <a href="/logout" class="profile-nav-link" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
         </div>
     </div>
-    
-    <!-- Content Area -->
-    <div style="flex: 1; min-width: 500px; height: calc(100vh - 160px); overflow: hidden; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px; display: flex; flex-direction: column;">
-        <div style="flex: 1; overflow-y: auto; padding-right: 4px;">
-        <!-- ========== TAB 1: PROFILE ========== -->
-        <div id="tab-profile" class="profile-tab-content active">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Profile Information</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Update your personal information and preferences</p>
+
+    <!-- Content -->
+    <div class="profile-content">
+        <div class="profile-content-inner">
             
-            <form method="POST" action="/update_profile">
-                <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
-                    <div class="form-group">
-                        <label><i class="fas fa-user"></i> Username</label>
-                        <input type="text" value="{{ session.username }}" disabled style="background:var(--bg-primary);">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-user-tag"></i> Full Name</label>
-                        <input type="text" name="full_name" value="{{ user.full_name or session.username }}" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-building"></i> Business ID</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" value="{{ session.business_id }}" readonly disabled style="background:var(--bg-primary); flex: 1; font-family: monospace;">
-                            <button class="btn btn-secondary" onclick="copyBusinessId()" style="padding: 8px 16px;">
-                                <i class="fas fa-copy"></i> Copy
-                            </button>
+            <!-- TAB: Profile -->
+            <div id="tab-profile" class="tab-content active">
+                <h2 style="font-size: 22px; margin-bottom: 8px;">Profile Information</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 28px;">Update your personal information and preferences</p>
+                <form method="POST" action="/update_profile">
+                    <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+                        <div class="form-group"><label>Username</label><input type="text" value="{{ session.username }}" disabled></div>
+                        <div class="form-group"><label>Full Name</label><input type="text" name="full_name" value="{{ user.full_name or session.username }}"></div>
+                        <div class="form-group">
+                            <label>Business ID</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" value="{{ session.business_id }}" readonly disabled style="font-family: monospace; flex: 1;">
+                                <button type="button" class="btn btn-secondary" onclick="copyBusinessId()" style="padding: 8px 16px;"><i class="fas fa-copy"></i> Copy</button>
+                            </div>
                         </div>
-                    </div>
-                    {% if session.plan == 'enterprise' %}
-                    <div class="form-group">
-                        <label><i class="fas fa-store-alt"></i> Active Branch</label>
-                        <form method="POST" action="/set_branch" style="display: flex; gap: 8px;">
-                            <select name="branch_id" onchange="this.form.submit()" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; flex: 1;">
-                                <option value="all" {% if not session.get('active_branch') %}selected{% endif %}>All Branches</option>
-                                {% set branches = get_branches() %}
-                                {% for b in branches %}
-                                <option value="{{ b.id }}" {% if session.get('active_branch') == b.id|string %}selected{% endif %}>{{ b.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </form>
-                        <small style="color: var(--text-secondary); margin-top: 4px;">Select which branch to view data for</small>
-                    </div>
-                    {% endif %}
-                    <div class="form-group">
-                        <label><i class="fas fa-building"></i> Business Name</label>
-                        <input type="text" value="{{ session.business_name }}" disabled style="background:var(--bg-primary);">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-envelope"></i> Email Address</label>
-                        <input type="email" name="email" value="{{ user.email or '' }}" placeholder="your@email.com" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-briefcase"></i> Role</label>
-                        <input type="text" value="{{ session.role|capitalize }}" disabled style="background:var(--bg-primary);">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-store"></i> Industry Category</label>
-                        <select id="industryCategoryProfile" onchange="updateProfileSubcategories()" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                            <option value="">Select category...</option>
-                            <option value="food_beverage">Food & Beverage</option>
-                            <option value="retail">Retail</option>
-                            <option value="health_wellness">Health & Wellness</option>
-                            <option value="professional_services">Professional Services</option>
-                            <option value="service_based">Service-Based</option>
-                            <option value="construction_realestate">Construction & Real Estate</option>
-                            <option value="hospitality_travel">Hospitality & Travel</option>
-                            <option value="logistics">Logistics</option>
-                            <option value="technology">Technology</option>
-                            <option value="creative_media">Creative & Media</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <div id="subcategoryGroupProfile" style="display: none; margin-top: 10px;">
-                            <label style="font-size: 11px; color: var(--text-secondary);">Specific Industry</label>
-                            <select name="industry" id="industrySubcategoryProfile" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; margin-top: 4px; width: 100%;">
-                                <option value="">Select specific industry...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-calendar-alt"></i> Member Since</label>
-                        <input type="text" value="{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}" disabled style="background:var(--bg-primary);">
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-receipt"></i> Tax Registration</label>
-                        <select name="vat_registered" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                            <option value="1" {% if user.vat_registered %}selected{% endif %}>VAT-Registered (12% VAT)</option>
-                            <option value="0" {% if not user.vat_registered %}selected{% endif %}>Non-VAT (No VAT)</option>
-                        </select>
-                        <small style="color: var(--text-secondary); margin-top: 4px;">Affects receipt tax calculations</small>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-envelope"></i> SMTP Email</label>
-                        <input type="email" name="smtp_email" value="{{ user.smtp_email or '' }}" placeholder="your@email.com" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                        <small style="color: var(--text-secondary); margin-top: 4px;">Used to send quotes & invoices (Gmail requires App Password)</small>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-key"></i> SMTP Password</label>
-                        <input type="password" name="smtp_password" value="{{ user.smtp_password or '' }}" placeholder="App Password (not your Gmail password)" style="border: 1px solid var(--border-light); border-radius: 12px; padding: 12px;">
-                        <small style="color: var(--text-secondary); margin-top: 4px;"><a href="https://myaccount.google.com/apppasswords" target="_blank">Get Gmail App Password</a></small>
-                    </div>
-                </div> 
-                
-                <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-light);">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- ========== TAB 2: BILLING & PLAN ========== -->
-        <div id="tab-plan" class="profile-tab-content">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Billing & Subscription</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Manage your plan and billing information</p>
-            
-            <!-- Current Plan Card -->
-            <div style="background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid var(--border-light);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-                    <div>
-                        <h3 style="font-size: 20px; margin-bottom: 4px;">{{ session.plan_name }} Plan</h3>
-                        <p style="color: var(--text-secondary);">Active • <span id="planPrice">{% if session.plan == 'basic' %}₱500{% elif session.plan == 'pro' %}₱1,500{% else %}₱5,000{% endif %}</span>/month</p>
-                    </div>
-                    <div>
-                        <span class="badge" style="background: #10b981; color: white; padding: 6px 16px;">Current Plan</span>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <h4 style="margin-bottom: 12px;">Features included:</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Cash Management</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Sales Management</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> General Journal</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Business Insights</div>
-                        {% if session.plan != 'basic' %}
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Receivable</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Payable</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Inventory Management</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Audit Log</div>
-                        {% endif %}
                         {% if session.plan == 'enterprise' %}
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Multi-Branch Support</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> API Access</div>
-                        <div><i class="fas fa-check-circle" style="color: #10b981;"></i> BIR Integration</div>
+                        <div class="form-group">
+                            <label>Active Branch</label>
+                            <form method="POST" action="/set_branch" style="display: flex; gap: 8px;">
+                                <select name="branch_id" onchange="this.form.submit()" style="flex: 1;">
+                                    <option value="all" {% if not session.get('active_branch') %}selected{% endif %}>All Branches</option>
+                                    {% for b in get_branches() %}
+                                    <option value="{{ b.id }}" {% if session.get('active_branch') == b.id|string %}selected{% endif %}>{{ b.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </form>
+                        </div>
                         {% endif %}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Upgrade Options -->
-            {% if session.plan != 'enterprise' %}
-            <h3 style="margin-bottom: 20px;">Upgrade Options</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                {% if session.plan == 'basic' %}
-                <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; border: 2px solid transparent; transition: all 0.2s; position: relative;">
-                    <div style="position: absolute; top: -10px; right: 20px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
-                    <h3 style="font-size: 22px; margin-bottom: 8px;">Pro Plan</h3>
-                    <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱1,500<span style="font-size: 14px;">/month</span></div>
-                    <ul style="margin: 20px 0; padding-left: 20px;">
-                        <li>AR, AP, Inventory</li>
-                        <li>Multi-user (up to 10)</li>
-                        <li>Audit Log</li>
-                        <li>CSV Import</li>
-                    </ul>
-                    <button class="btn btn-primary" style="width: 100%;" onclick="alert('Contact support@tara.com to upgrade')">Upgrade to Pro</button>
-                </div>
-                {% endif %}
-                <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; border: 1px solid var(--border-light);">
-                    <h3 style="font-size: 22px; margin-bottom: 8px;">Enterprise Plan</h3>
-                    <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱5,000<span style="font-size: 14px;">/month</span></div>
-                    <ul style="margin: 20px 0; padding-left: 20px;">
-                        <li>All Pro features</li>
-                        <li>Multi-branch</li>
-                        <li>API Access</li>
-                        <li>BIR Integration</li>
-                        <li>Priority Support</li>
-                    </ul>
-                    <button class="btn btn-primary" style="width: 100%;" onclick="alert('Contact support@tara.com to upgrade')">Upgrade to Enterprise</button>
-                </div>
-            </div>
-            {% else %}
-            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; padding: 40px; text-align: center;">
-                <i class="fas fa-check-circle" style="font-size: 48px; color: white;"></i>
-                <h3 style="color: white; margin-top: 16px;">You're on the best plan!</h3>
-                <p style="color: rgba(255,255,255,0.9); margin-top: 8px;">You have access to all features.</p>
-            </div>
-            {% endif %}
-        </div>
-        
-        <!-- ========== TAB 3: APPEARANCE (Simplified Toggle) ========== -->
-        <div id="tab-appearance" class="profile-tab-content">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Appearance</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Choose your preferred theme</p>
-            
-            <div style="background: var(--bg-primary); border-radius: 20px; padding: 28px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
-                    <div>
-                        <h3 style="margin-bottom: 4px;">Dark Mode</h3>
-                        <p style="color: var(--text-secondary); font-size: 13px;">Switch between light and dark theme</p>
-                    </div>
-                    <div>
-                        <label class="theme-toggle-switch">
-                            <input type="checkbox" id="themeToggleCheckbox">
-                            <span class="theme-toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 20px; padding: 16px; background: var(--bg-primary); border-radius: 12px;">
-                <p><i class="fas fa-info-circle" style="color: #10b981;"></i> Your preference is saved automatically and applies across all devices.</p>
-            </div>
-        </div>
-        
-        <!-- ========== TAB 4: TEAM ========== -->
-        {% if session.role == 'admin' and session.plan != 'basic' %}
-        <div id="tab-team" class="profile-tab-content">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Team Management</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Manage your team members and their access levels</p>
-            
-            <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; margin-bottom: 24px;">
-                <h3 style="margin-bottom: 20px;">Current Team Members</h3>
-                <div id="teamContainer" style="overflow-x: auto;">
-                    <p style="color: var(--text-secondary);">Loading team members...</p>
-                </div>
-            </div>
-            
-            <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
-                <h3 style="margin-bottom: 20px;">Add New Team Member</h3>
-                <form id="addUserForm">
-                    <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+                        <div class="form-group"><label>Business Name</label><input type="text" value="{{ session.business_name }}" disabled></div>
+                        <div class="form-group"><label>Email Address</label><input type="email" name="email" value="{{ user.email or '' }}" placeholder="your@email.com"></div>
+                        <div class="form-group"><label>Role</label><input type="text" value="{{ session.role|capitalize }}" disabled></div>
                         <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" name="full_name" id="fullName" required placeholder="Juan Dela Cruz" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
+                            <label>Industry Category</label>
+                            <select id="industryCategoryProfile" onchange="updateProfileSubcategories()">
+                                <option value="">Select category...</option>
+                                <option value="food_beverage">Food & Beverage</option>
+                                <option value="retail">Retail</option>
+                                <option value="health_wellness">Health & Wellness</option>
+                                <option value="professional_services">Professional Services</option>
+                                <option value="service_based">Service-Based</option>
+                                <option value="construction_realestate">Construction & Real Estate</option>
+                                <option value="hospitality_travel">Hospitality & Travel</option>
+                                <option value="logistics">Logistics</option>
+                                <option value="technology">Technology</option>
+                                <option value="creative_media">Creative & Media</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <div id="subcategoryGroupProfile" style="display: none; margin-top: 8px;">
+                                <select name="industry" id="industrySubcategoryProfile" style="width: 100%;">
+                                    <option value="">Select specific industry...</option>
+                                </select>
+                            </div>
                         </div>
+                        <div class="form-group"><label>Member Since</label><input type="text" value="{{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'N/A' }}" disabled></div>
                         <div class="form-group">
-                            <label>Username</label>
-                            <input type="text" name="username" id="username" required placeholder="juan123" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" id="password" required placeholder="••••••" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
-                        </div>
-                        <div class="form-group">
-                            <label>Role</label>
-                            <select name="role" id="role" style="padding: 10px; border-radius: 10px; border: 1px solid var(--border-light);">
-                                <option value="cashier">Cashier</option>
-                                <option value="manager">Manager</option>
-                                <option value="admin">Admin</option>
+                            <label>Tax Registration</label>
+                            <select name="vat_registered">
+                                <option value="1" {% if user.vat_registered %}selected{% endif %}>VAT-Registered (12% VAT)</option>
+                                <option value="0" {% if not user.vat_registered %}selected{% endif %}>Non-VAT (No VAT)</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label>SMTP Email</label>
+                            <input type="email" name="smtp_email" value="{{ user.smtp_email or '' }}" placeholder="your@email.com">
+                            <small style="color: var(--text-secondary); margin-top: 4px;">Used for sending quotes & invoices</small>
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP Password</label>
+                            <input type="password" name="smtp_password" value="{{ user.smtp_password or '' }}" placeholder="App Password">
+                            <small style="color: var(--text-secondary); margin-top: 4px;"><a href="https://myaccount.google.com/apppasswords" target="_blank">Get Gmail App Password</a></small>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;"><i class="fas fa-plus"></i> Add User</button>
+                    <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border-light);">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                    </div>
                 </form>
             </div>
-        </div>
-        {% endif %}
-        
-        <!-- ========== TAB 5: RESTORE ========== -->
-        {% if session.role == 'admin' %}
-        <div id="tab-restore" class="profile-tab-content">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Restore Deleted Items</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Recover accidentally deleted records</p>
-            
-            <div id="restoreContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
-                <p style="color: var(--text-secondary);">Loading deleted items...</p>
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- ========== TAB 6: AUDIT LOG (NEW) ========== -->
-        {% if session.role == 'admin' %}
-        <div id="tab-audit" class="profile-tab-content">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Audit Log</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Track all changes made to your data</p>
-            
-            <div id="auditContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
-                <p style="color: var(--text-secondary);">Loading audit log...</p>
-            </div>
-        </div>
-        {% endif %}
 
-        <!-- ========== TAB 7: IMPORT DATA ========== -->
-        <div id="tab-import" class="profile-tab-content">
-            <h2 style="font-size: 22px; margin-bottom: 8px;">Import Data</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 28px;">Bulk import records from CSV files</p>
-            <div id="importContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
-                <p style="color: var(--text-secondary);">Loading import tool...</p>
-            </div>
-        </div>
-        <!-- Audit Detail Modal -->
-        <div id="detailModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Change Details</h3>
-                    <span class="close-modal" onclick="closeAuditModal()">&times;</span>
+            <!-- TAB: Billing & Plan -->
+            <div id="tab-plan" class="tab-content">
+                <h2 style="font-size: 22px; margin-bottom: 8px;">Billing & Subscription</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 28px;">Manage your plan and billing information</p>
+                <div style="background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid var(--border-light);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h3 style="font-size: 20px; margin-bottom: 4px;">{{ session.plan_name }} Plan</h3>
+                            <p style="color: var(--text-secondary);">Active • <span>{% if session.plan == 'basic' %}₱500{% elif session.plan == 'pro' %}₱1,500{% else %}₱5,000{% endif %}</span>/month</p>
+                        </div>
+                        <span class="badge" style="background: #10b981; color: white; padding: 6px 16px;">Current Plan</span>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 12px;">Features included:</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Cash Management</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Sales Management</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> General Journal</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Business Insights</div>
+                            {% if session.plan != 'basic' %}
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Receivable</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Payable</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Inventory Management</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Audit Log</div>
+                            {% endif %}
+                            {% if session.plan == 'enterprise' %}
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Multi-Branch Support</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> API Access</div>
+                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> BIR Integration</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-                <div id="modalBody" style="max-height: 60vh; overflow-y: auto;"></div>
+                {% if session.plan != 'enterprise' %}
+                <h3 style="margin-bottom: 20px;">Upgrade Options</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                    {% if session.plan == 'basic' %}
+                    <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; position: relative;">
+                        <div style="position: absolute; top: -10px; right: 20px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
+                        <h3 style="font-size: 22px; margin-bottom: 8px;">Pro Plan</h3>
+                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱1,500<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 20px 0; padding-left: 20px;"><li>AR, AP, Inventory</li><li>Multi-user (up to 10)</li><li>Audit Log</li><li>CSV Import</li></ul>
+                        <a href="/upgrade_to_pro" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Pro</a>
+                    </div>
+                    {% endif %}
+                    <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; border: 1px solid var(--border-light);">
+                        <h3 style="font-size: 22px; margin-bottom: 8px;">Enterprise Plan</h3>
+                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱5,000<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 20px 0; padding-left: 20px;"><li>All Pro features</li><li>Multi-branch</li><li>API Access</li><li>BIR Integration</li><li>Priority Support</li></ul>
+                        <a href="/upgrade_to_enterprise" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Enterprise</a>
+                    </div>
+                </div>
+                {% else %}
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; padding: 40px; text-align: center;">
+                    <i class="fas fa-check-circle" style="font-size: 48px; color: white;"></i>
+                    <h3 style="color: white; margin-top: 16px;">You're on the best plan!</h3>
+                    <p style="color: rgba(255,255,255,0.9); margin-top: 8px;">You have access to all features.</p>
+                </div>
+                {% endif %}
             </div>
-        </div>
+
+            <!-- TAB: Appearance -->
+            <div id="tab-appearance" class="tab-content">
+                <h2 style="font-size: 22px; margin-bottom: 8px;">Appearance</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 28px;">Choose your preferred theme</p>
+                <div style="background: var(--bg-primary); border-radius: 20px; padding: 28px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div><h3 style="margin-bottom: 4px;">Dark Mode</h3><p style="color: var(--text-secondary); font-size: 13px;">Switch between light and dark theme</p></div>
+                        <label class="theme-toggle-switch"><input type="checkbox" id="themeToggleCheckbox"><span class="theme-toggle-slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Restore -->
+            {% if session.role == 'admin' %}
+            <div id="tab-restore" class="tab-content">
+                <h2 style="font-size: 22px; margin-bottom: 8px;">Restore Deleted Items</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 28px;">Recover accidentally deleted records</p>
+                <div id="restoreContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
+                    <p style="color: var(--text-secondary);">Loading deleted items...</p>
+                </div>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>
 
-<style>
-.profile-nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    margin: 4px 12px;
-    border-radius: 12px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: all 0.2s;
-}
-.profile-nav:hover { background: rgba(16,185,129,0.08); color: #10b981; }
-.profile-nav.active { background: rgba(16,185,129,0.12); color: #10b981; }
-.profile-nav i { width: 20px; }
-.profile-tab-content { display: none; }
-.profile-tab-content.active { display: block; }
-
-/* Toggle Switch CSS */
-.theme-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-}
-.theme-toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-.theme-toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #cbd5e1;
-    transition: 0.3s;
-    border-radius: 30px;
-}
-.theme-toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 24px;
-    width: 24px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: 0.3s;
-    border-radius: 50%;
-}
-input:checked + .theme-toggle-slider {
-    background-color: #10b981;
-}
-input:checked + .theme-toggle-slider:before {
-    transform: translateX(30px);
-}
-
-#detailModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-#detailModal .modal-content { background: var(--bg-secondary); border-radius: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 24px; }
-#detailModal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-light); }
-
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
-    const tabs = document.querySelectorAll('.profile-nav');
-    const contents = document.querySelectorAll('.profile-tab-content');
-    const currentUserId = {{ session.user_id|tojson }};
+    const tabs = document.querySelectorAll('.profile-nav-link');
+    const contents = document.querySelectorAll('.tab-content');
 
     tabs.forEach(tab => {
         if (tab.getAttribute('href') === '/logout') return;
@@ -442,41 +238,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const activeContent = document.getElementById(`tab-${targetTab}`);
             if (activeContent) activeContent.classList.add('active');
             localStorage.setItem('profileTab', targetTab);
-            if (targetTab === 'team') loadTeamData();
             if (targetTab === 'restore') loadRestoreData();
-            if (targetTab === 'audit') loadAuditData();
-            if (targetTab === 'import') loadImportData();
         });
     });
 
     const savedTab = localStorage.getItem('profileTab');
     if (savedTab) {
-        const targetNav = document.querySelector(`.profile-nav[data-tab="${savedTab}"]`);
+        const targetNav = document.querySelector(`.profile-nav-link[data-tab="${savedTab}"]`);
         if (targetNav) targetNav.click();
     }
 
-    // TEAM
-    window.loadTeamData = function () {
-        const container = document.getElementById('teamContainer');
-        if (!container) return;
-        container.innerHTML = 'Loading...';
-        fetch('/admin/users/api')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.length) { container.innerHTML = '<p>No team members found.</p>'; return; }
-                let html = `<table style="width:100%; border-collapse: collapse;">
-                    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Action</th></tr></thead><tbody>`;
-                data.forEach(u => {
-                    html += `<tr><td>${u.full_name || u.username}</td><td>${u.username}</td><td><span class="badge">${u.role}</span></td>
-                        <td>${u.id != currentUserId ? `<a href="/admin/delete_user/${u.id}" class="btn btn-danger" onclick="return confirm('Delete?')">Delete</a>` : '-'}</td></tr>`;
-                });
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            })
-            .catch(() => container.innerHTML = '<p>Error loading team data.</p>');
-    };
-
-    // RESTORE
     window.loadRestoreData = function () {
         const container = document.getElementById('restoreContainer');
         if (!container) return;
@@ -485,11 +256,9 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(res => res.json())
             .then(data => {
                 if (!data.items || !data.items.length) { container.innerHTML = '<p>No deleted items found.</p>'; return; }
-                let html = `<table style="width:100%; border-collapse: collapse;">
-                    <thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
+                let html = `<table style="width:100%;"><thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
                 data.items.forEach(item => {
-                    html += `<tr><td>${item.module_type || '-'}</td><td>${item.description || '-'}</td><td>₱${parseFloat(item.amount).toFixed(2)}</td>
-                        <td>${item.date || '-'}</td><td><a href="/admin/restore/${item.type_code}/${item.id}" class="btn btn-primary" onclick="return confirm('Restore?')">Restore</a></td></tr>`;
+                    html += `<tr><td>${item.module_type||'-'}</td><td>${item.description||'-'}</td><td>₱${parseFloat(item.amount).toFixed(2)}</td><td>${item.date||'-'}</td><td><a href="/admin/restore/${item.type_code}/${item.id}" class="btn btn-primary btn-sm" onclick="return confirm('Restore?')">Restore</a></td></tr>`;
                 });
                 html += '</tbody></table>';
                 container.innerHTML = html;
@@ -497,109 +266,34 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(() => container.innerHTML = '<p>Error loading restore data.</p>');
     };
 
-    // AUDIT
-    window.loadAuditData = function () {
-        const container = document.getElementById('auditContainer');
-        if (!container) return;
-        container.innerHTML = 'Loading...';
-        fetch('/admin/audit/api')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.length) { container.innerHTML = '<p>No audit records found.</p>'; return; }
-                let html = `<table style="width:100%; border-collapse: collapse;">
-                    <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Table</th><th>Record ID</th><th>Details</th></tr></thead><tbody>`;
-                data.forEach(log => {
-                    let badgeClass = 'badge-info';
-                    if (log.action === 'DELETE') badgeClass = 'badge-danger';
-                    else if (log.action === 'CREATE') badgeClass = 'badge-success';
-                    else if (log.action === 'RESTORE') badgeClass = 'badge-warning';
-                    const hasDetails = (log.old_values_display && Object.keys(log.old_values_display).length > 0) || 
-                                      (log.new_values_display && Object.keys(log.new_values_display).length > 0);
-                    html += `<tr><td>${log.created_at || '-'}</td><td>${log.username || '-'}</td>
-                        <td><span class="badge ${badgeClass}">${log.action || '-'}</span></td>
-                        <td>${log.table_name || '-'}</td><td>${log.record_id || '-'}</td>
-                        <td>${hasDetails ? `<button onclick="showAuditDetail(${log.id})" style="background:transparent; border:1px solid var(--border-light); padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; color:var(--text-primary);">View</button>` : '-'}</td></tr>`;
-                });
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            })
-            .catch(() => container.innerHTML = '<p>Error loading audit log.</p>');
-    };
-
-    // IMPORT
-    window.loadImportData = function () {
-        const container = document.getElementById('importContainer');
-        if (!container) return;
-        container.innerHTML = '<iframe src="/import-data" style="width:100%; height:600px; border:none; border-radius:12px;"></iframe>';
-    };
-
-    // DARK MODE
+    // Dark mode
     const themeCheckbox = document.getElementById('themeToggleCheckbox');
     const setLight = () => { document.body.classList.remove('dark'); localStorage.setItem('theme', 'light'); if (themeCheckbox) themeCheckbox.checked = false; };
     const setDark = () => { document.body.classList.add('dark'); localStorage.setItem('theme', 'dark'); if (themeCheckbox) themeCheckbox.checked = true; };
     const savedTheme = localStorage.getItem('theme') || 'light';
     if (savedTheme === 'dark') { if (themeCheckbox) themeCheckbox.checked = true; document.body.classList.add('dark'); }
     else { if (themeCheckbox) themeCheckbox.checked = false; document.body.classList.remove('dark'); }
-    if (themeCheckbox) { themeCheckbox.addEventListener('change', function(e) { if (e.target.checked) setDark(); else setLight(); }); }
-
-    // ADD USER
-    const addForm = document.getElementById('addUserForm');
-    if (addForm) {
-        addForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const data = new FormData(this);
-            fetch('/admin/add_user', { method: 'POST', body: data })
-                .then(() => { loadTeamData(); this.reset(); });
-        });
-    }
+    if (themeCheckbox) themeCheckbox.addEventListener('change', function(e) { if (e.target.checked) setDark(); else setLight(); });
 });
-
-// ========== GLOBAL FUNCTIONS (outside DOMContentLoaded) ==========
 
 function copyBusinessId() {
     const input = document.querySelector('input[value="{{ session.business_id }}"]');
-    if (input) { navigator.clipboard.writeText(input.value); alert('Business ID copied!'); }
-}
-
-function showAuditDetail(logId) {
-    fetch('/admin/audit/api')
-        .then(res => res.json())
-        .then(data => {
-            const log = data.find(l => l.id === logId);
-            if (!log) return;
-            let html = `<div style="margin-bottom:12px;"><strong>Time:</strong> ${log.created_at || '-'}</div>`;
-            html += `<div style="margin-bottom:12px;"><strong>User:</strong> ${log.username || '-'}</div>`;
-            html += `<div style="margin-bottom:12px;"><strong>Action:</strong> ${log.action || '-'}</div>`;
-            html += `<div style="margin-bottom:12px;"><strong>Table:</strong> ${log.table_name || '-'}</div>`;
-            html += `<div style="margin-bottom:12px;"><strong>Record ID:</strong> ${log.record_id || '-'}</div>`;
-            if (log.old_values_display && Object.keys(log.old_values_display).length > 0) {
-                html += `<div style="margin-bottom:12px;"><strong>Before:</strong><pre style="background:var(--bg-primary); padding:8px; border-radius:8px; font-size:11px; overflow-x:auto;">${JSON.stringify(log.old_values_display, null, 2)}</pre></div>`;
-            }
-            if (log.new_values_display && Object.keys(log.new_values_display).length > 0) {
-                html += `<div style="margin-bottom:12px;"><strong>After:</strong><pre style="background:var(--bg-primary); padding:8px; border-radius:8px; font-size:11px; overflow-x:auto;">${JSON.stringify(log.new_values_display, null, 2)}</pre></div>`;
-            }
-            document.getElementById('modalBody').innerHTML = html;
-            document.getElementById('detailModal').style.display = 'flex';
-        });
-}
-
-function closeAuditModal() {
-    document.getElementById('detailModal').style.display = 'none';
+    if (input) { navigator.clipboard.writeText(input.value); showToast ? showToast('Business ID copied!', 'success') : alert('Business ID copied!'); }
 }
 
 // Industry cascading
 const profileSubcategories = {
-    'food_beverage': [{value:'restaurant',label:'Restaurant'},{value:'cafe',label:'Cafe / Coffee Shop'},{value:'bakery',label:'Bakery'},{value:'catering',label:'Catering'},{value:'food_cart',label:'Food Cart / Street Food'}],
-    'retail': [{value:'retail',label:'Retail Store'},{value:'sari_sari',label:'Sari-Sari Store'},{value:'pharmacy',label:'Pharmacy'},{value:'hardware',label:'Hardware Store'},{value:'bookstore',label:'Bookstore / School Supplies'}],
-    'health_wellness': [{value:'gym',label:'Gym / Fitness Center'},{value:'salon',label:'Salon / Barbershop'},{value:'spa',label:'Spa / Massage'},{value:'dental',label:'Dental Clinic'},{value:'medical',label:'Medical Clinic'}],
-    'professional_services': [{value:'law_firm',label:'Law Firm'},{value:'accounting_firm',label:'Accounting Firm'},{value:'consultancy',label:'Consultancy'},{value:'architecture',label:'Architecture Firm'},{value:'freelancer',label:'Freelancer'}],
-    'service_based': [{value:'laundry',label:'Laundry Shop'},{value:'repair_shop',label:'Repair Shop'},{value:'tutoring',label:'Tutoring Center'},{value:'cleaning',label:'Cleaning Services'},{value:'printing',label:'Printing Shop'}],
-    'construction_realestate': [{value:'construction',label:'Construction'},{value:'real_estate',label:'Real Estate'},{value:'property_mgmt',label:'Property Management'}],
-    'hospitality_travel': [{value:'hotel',label:'Hotel / Inn'},{value:'hostel',label:'Hostel / Dormitory'},{value:'event_venue',label:'Event Venue'},{value:'travel_agency',label:'Travel Agency'}],
-    'logistics': [{value:'delivery',label:'Delivery Service'},{value:'trucking',label:'Trucking / Hauling'},{value:'warehouse',label:'Warehouse'}],
+    'food_beverage': [{value:'restaurant',label:'Restaurant'},{value:'cafe',label:'Cafe'},{value:'bakery',label:'Bakery'},{value:'catering',label:'Catering'},{value:'food_cart',label:'Food Cart'}],
+    'retail': [{value:'retail',label:'Retail Store'},{value:'sari_sari',label:'Sari-Sari Store'},{value:'pharmacy',label:'Pharmacy'},{value:'hardware',label:'Hardware'},{value:'bookstore',label:'Bookstore'}],
+    'health_wellness': [{value:'gym',label:'Gym'},{value:'salon',label:'Salon'},{value:'spa',label:'Spa'},{value:'dental',label:'Dental Clinic'},{value:'medical',label:'Medical Clinic'}],
+    'professional_services': [{value:'law_firm',label:'Law Firm'},{value:'accounting_firm',label:'Accounting Firm'},{value:'consultancy',label:'Consultancy'},{value:'architecture',label:'Architecture'},{value:'freelancer',label:'Freelancer'}],
+    'service_based': [{value:'laundry',label:'Laundry'},{value:'repair_shop',label:'Repair Shop'},{value:'tutoring',label:'Tutoring'},{value:'cleaning',label:'Cleaning'},{value:'printing',label:'Printing'}],
+    'construction_realestate': [{value:'construction',label:'Construction'},{value:'real_estate',label:'Real Estate'},{value:'property_mgmt',label:'Property Mgmt'}],
+    'hospitality_travel': [{value:'hotel',label:'Hotel'},{value:'hostel',label:'Hostel'},{value:'event_venue',label:'Event Venue'},{value:'travel_agency',label:'Travel Agency'}],
+    'logistics': [{value:'delivery',label:'Delivery'},{value:'trucking',label:'Trucking'},{value:'warehouse',label:'Warehouse'}],
     'technology': [{value:'computer_shop',label:'Computer Shop'},{value:'it_services',label:'IT Services'},{value:'electronics_repair',label:'Electronics Repair'}],
-    'creative_media': [{value:'photography',label:'Photography Studio'},{value:'graphic_design',label:'Graphic Design'},{value:'video_production',label:'Video Production'}],
-    'other': [{value:'other',label:'Other / Not Listed'}]
+    'creative_media': [{value:'photography',label:'Photography'},{value:'graphic_design',label:'Graphic Design'},{value:'video_production',label:'Video Production'}],
+    'other': [{value:'other',label:'Other'}]
 };
 const subToCategory = {};
 for (const [cat, subs] of Object.entries(profileSubcategories)) { subs.forEach(s => { subToCategory[s.value] = cat; }); }
@@ -616,8 +310,7 @@ function updateProfileSubcategories() {
     } else { subGroup.style.display = 'none'; }
 }
 if (currentIndustry && subToCategory[currentIndustry]) {
-    const cat = subToCategory[currentIndustry];
-    document.getElementById('industryCategoryProfile').value = cat;
+    document.getElementById('industryCategoryProfile').value = subToCategory[currentIndustry];
     updateProfileSubcategories();
     document.getElementById('industrySubcategoryProfile').value = currentIndustry;
 }

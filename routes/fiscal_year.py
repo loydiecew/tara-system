@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date, timedelta
 from models.database import get_db
+from models.access_control import check_module_access
 
 fiscal_bp = Blueprint('fiscal', __name__)
 
@@ -8,7 +9,9 @@ fiscal_bp = Blueprint('fiscal', __name__)
 def fiscal_year():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('fiscal_year'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('role') not in ['admin', 'owner']:
         flash('Only admins can manage fiscal years.', 'error')
         return redirect(url_for('dashboard.dashboard'))

@@ -1,0 +1,240 @@
+{% extends "layout.html" %}
+
+{% block title %}Users & Roles{% endblock %}
+{% block page_title %}Users & Roles{% endblock %}
+{% block page_subtitle %}Manage team members and access permissions{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 24px; background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 16px; padding: 5px; box-shadow: var(--card-shadow); }
+    .tab-btn { flex: 1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; text-align: center; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .tab-btn.active { background: var(--accent); color: white; box-shadow: 0 4px 12px var(--accent-glow); }
+    .tab-btn:hover:not(.active) { color: var(--accent); background: var(--accent-light); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeInUp 0.4s cubic-bezier(0.2,0.9,0.4,1.1); }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .role-card { border: 1px solid var(--border-light); border-radius: 14px; background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); margin-bottom: 8px; overflow: hidden; }
+    .role-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; background: var(--bg-primary); border-bottom: 1px solid var(--border-light); user-select: none; }
+    .role-card.open .role-header i { transform: rotate(180deg); }
+    .role-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; background: var(--bg-secondary); }
+    .role-card.open .role-body { max-height: 400px; display: flex; flex-direction: column; }
+    .role-body-scroll { flex: 1; overflow-y: auto; }
+    .role-body-scroll table { font-size: 11px; width: 100%; border-collapse: collapse; }
+    .role-body-scroll th { background: var(--bg-primary); position: sticky; top: 0; z-index: 2; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-light); color: var(--text-secondary); }
+    .role-body-scroll td { padding: 5px 8px; text-align: center; border-bottom: 1px solid var(--border-light); }
+    .role-body-scroll td:first-child { text-align: left; font-weight: 500; }
+    .role-actions { display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--border-light); background: var(--bg-secondary); flex-shrink: 0; }
+
+    .perm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    .perm-dot.on { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.3); }
+    .perm-dot.off { background: var(--border-light); }
+    .perm-dot.clickable { cursor: pointer; width: 16px; height: 16px; border: 2px solid var(--border-light); background: transparent; border-radius: 4px; transition: all 0.2s; }
+    .perm-dot.clickable.on { background: #10b981; border-color: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.35); }
+
+    .btn-xs { padding: 5px 12px; font-size: 11px; border-radius: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Team Members</div>
+        <div class="stat-value">{{ users|length }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-title">Custom Roles</div>
+        <div class="stat-value">{{ roles|length }}</div>
+    </div>
+</div>
+
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('users')"><i class="fas fa-users"></i> Users</button>
+    <button class="tab-btn" onclick="switchTab('roles')"><i class="fas fa-shield-alt"></i> Roles</button>
+</div>
+
+<!-- USERS TAB -->
+<div id="tab-users" class="tab-panel active">
+    <div class="card">
+        <div class="card-header"><h2><i class="fas fa-user-plus"></i> Add User</h2></div>
+        <form method="POST" action="/admin/add_user">
+            <div class="form-grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="form-group"><label>Full Name</label><input type="text" name="full_name" required placeholder="Juan Dela Cruz"></div>
+                <div class="form-group"><label>Username</label><input type="text" name="username" required placeholder="juan123"></div>
+                <div class="form-group"><label>Password</label><input type="password" name="password" required placeholder="••••••"></div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="cashier">Cashier</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                        {% for role in roles %}
+                        <option value="custom_{{ role.id }}">{{ role.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 16px;"><i class="fas fa-plus"></i> Add User</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2><i class="fas fa-list"></i> Team Members</h2></div>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td><strong>{{ u.full_name or u.username }}</strong></td>
+                        <td>{{ u.username }}</td>
+                        <td><span class="badge badge-info">{{ u.role_name or u.role or 'Admin' }}</span></td>
+                        <td style="font-size: 12px; color: var(--text-secondary);">{{ u.created_at.strftime('%b %d, %Y') if u.created_at else '-' }}</td>
+                        <td>
+                            {% if u.id != session.user_id %}
+                            <a href="/admin/delete_user/{{ u.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete this user?')"><i class="fas fa-trash-alt"></i></a>
+                            {% else %}
+                            <span style="font-size:11px;color:var(--text-secondary);">You</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ROLES TAB -->
+<div id="tab-roles" class="tab-panel">
+    {% if session.plan == 'enterprise' %}
+    <div class="card">
+        <div class="card-header"><h2><i class="fas fa-plus-circle"></i> Create Role</h2></div>
+        <form method="POST" action="/add_role">
+            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Role Name</label>
+                    <input type="text" name="name" placeholder="e.g., Bookkeeper" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="height: 42px;">Create</button>
+            </div>
+        </form>
+    </div>
+
+    {% for role in roles %}
+    <div class="role-card" id="role-{{ role.id }}">
+        <div class="role-header" onclick="this.parentElement.classList.toggle('open')">
+            <span><i class="fas fa-user-tag" style="color: var(--accent); margin-right: 8px;"></i>{{ role.name }}</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <span style="font-size: 10px; color: var(--text-secondary);">{{ role.permissions|length }} modules</span>
+                <i class="fas fa-chevron-down" style="transition: transform 0.3s;"></i>
+            </div>
+        </div>
+        <div class="role-body">
+            <div class="role-body-scroll">
+                <table>
+                    <thead><tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr></thead>
+                    <tbody>
+                        {% for p in role.permissions %}
+                        <tr>
+                            <td>{{ p.module|replace('_', ' ')|title }}</td>
+                            <td><span class="perm-dot {{ 'on' if p.can_view else 'off' }}"></span></td>
+                            <td><span class="perm-dot {{ 'on' if p.can_create else 'off' }}"></span></td>
+                            <td><span class="perm-dot {{ 'on' if p.can_edit else 'off' }}"></span></td>
+                            <td><span class="perm-dot {{ 'on' if p.can_delete else 'off' }}"></span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="role-actions">
+                <button class="btn btn-secondary btn-xs" onclick="event.stopPropagation(); editRole({{ role.id }})"><i class="fas fa-pen"></i> Edit</button>
+                <a href="/delete_role/{{ role.id }}" class="btn btn-xs" style="background: #fee2e2; color: #ef4444; text-decoration: none;" onclick="event.stopPropagation(); return confirm('Delete?')"><i class="fas fa-trash-alt"></i> Delete</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card" style="text-align: center; padding: 40px;">
+        <i class="fas fa-crown" style="font-size: 48px; color: #f59e0b; margin-bottom: 16px; display: block;"></i>
+        <h3>Enterprise Feature</h3>
+        <p style="color: var(--text-secondary); margin-top: 8px;">Custom roles and permissions are available on the Enterprise plan.</p>
+        <a href="/upgrade_to_enterprise" class="btn btn-primary" style="margin-top: 16px;">Upgrade to Enterprise</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Edit Role Modal -->
+<div id="editRoleModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>Edit Role Permissions</h3>
+            <span class="close-modal" onclick="document.getElementById('editRoleModal').style.display='none'">&times;</span>
+        </div>
+        <div id="editRoleBody" style="max-height: 60vh; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => { if(b.textContent.trim().toLowerCase().includes(tab)) b.classList.add('active'); });
+        document.getElementById('tab-' + tab).classList.add('active');
+    }
+
+    function editRole(roleId) {
+        const modal = document.getElementById('editRoleModal');
+        const body = document.getElementById('editRoleBody');
+        body.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>';
+        modal.style.display = 'flex';
+        const roleCard = document.getElementById('role-' + roleId);
+        const rows = roleCard.querySelectorAll('.role-body-scroll tbody tr');
+        let html = '<form method="POST" action="/update_role_permissions" id="editRoleForm">';
+        html += '<input type="hidden" name="role_id" value="' + roleId + '"><div id="editHiddenInputs"></div>';
+        html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+        html += '<thead><tr style="border-bottom:2px solid var(--border-light);"><th style="padding:8px;text-align:left;">Module</th><th style="padding:8px;text-align:center;">View</th><th style="padding:8px;text-align:center;">Create</th><th style="padding:8px;text-align:center;">Edit</th><th style="padding:8px;text-align:center;">Delete</th><th style="padding:8px;"></th></tr></thead><tbody>';
+        rows.forEach(row => {
+            const mn = row.cells[0].textContent.trim().toLowerCase().replace(/ /g, '_');
+            const dots = row.querySelectorAll('.perm-dot');
+            const has = [dots[0].classList.contains('on'), dots[1].classList.contains('on'), dots[2].classList.contains('on'), dots[3].classList.contains('on')];
+            html += '<tr style="border-bottom:1px solid var(--border-light);"><td style="padding:7px 8px;font-weight:500;">'+row.cells[0].textContent+'</td>';
+            ['view','create','edit','delete'].forEach((a,i) => {
+                html += '<td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable '+(has[i]?'on':'off')+'" data-module="'+mn+'" data-action="'+a+'" onclick="toggleEditPerm(this)"></span></td>';
+            });
+            html += '<td style="padding:7px 8px;text-align:center;"><span style="cursor:pointer;color:#ef4444;font-weight:700;" onclick="removeModuleRow(this)">×</span></td></tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="margin-top:12px;padding:10px;border:1px dashed var(--border-light);border-radius:10px;display:flex;gap:8px;align-items:center;"><select id="addModuleSelect" style="padding:6px 10px;border-radius:8px;font-size:12px;"><option value="">Add module...</option>';
+        {% for code, name in modules %}
+        html += '<option value="{{ code }}">{{ name }}</option>';
+        {% endfor %}
+        html += '</select><button type="button" class="btn btn-secondary btn-xs" onclick="addModuleToEdit()"><i class="fas fa-plus"></i> Add</button></div>';
+        html += '<button type="submit" class="btn btn-primary" style="margin-top:12px;width:100%;">Save Changes</button></form>';
+        body.innerHTML = html;
+        updateEditHiddenInputs();
+    }
+
+    function addModuleToEdit() {
+        const s = document.getElementById('addModuleSelect');
+        if(!s.value) return;
+        const tbody = document.querySelector('#editRoleBody tbody');
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid var(--border-light)';
+        row.innerHTML = '<td style="padding:7px 8px;font-weight:500;">'+s.options[s.selectedIndex].text+'</td>'+['view','create','edit','delete'].map(a => '<td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable on" data-module="'+s.value+'" data-action="'+a+'" onclick="toggleEditPerm(this)"></span></td>').join('')+'<td style="padding:7px 8px;text-align:center;"><span style="cursor:pointer;color:#ef4444;font-weight:700;" onclick="removeModuleRow(this)">×</span></td>';
+        tbody.appendChild(row);
+        s.value = '';
+        updateEditHiddenInputs();
+    }
+
+    function removeModuleRow(btn) { btn.closest('tr').remove(); updateEditHiddenInputs(); }
+    function toggleEditPerm(dot) { dot.classList.toggle('on'); dot.classList.toggle('off'); updateEditHiddenInputs(); }
+    function updateEditHiddenInputs() {
+        const c = document.getElementById('editHiddenInputs'); if(!c) return;
+        const dots = document.querySelectorAll('#editRoleBody .perm-dot.clickable.on');
+        const names = new Set(); dots.forEach(d => names.add(d.dataset.module+'_'+d.dataset.action));
+        c.innerHTML = ''; names.forEach(n => { const i = document.createElement('input'); i.type='hidden'; i.name=n; i.value='1'; c.appendChild(i); });
+    }
+</script>
+{% endblock %}

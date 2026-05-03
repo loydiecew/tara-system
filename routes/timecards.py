@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date
 from models.database import get_db
+from models.access_control import check_module_access
 
 timecards_bp = Blueprint('timecards', __name__)
 
@@ -9,6 +10,8 @@ def timecards():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
+    if not check_module_access('timecards'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('plan') not in ['enterprise']:
         flash('Timecards are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))

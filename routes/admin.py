@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import datetime
 from models.database import get_db
 from models.audit import log_audit
+from routes.permissions import ALL_MODULES
 import hashlib
 
 admin_bp = Blueprint('admin', __name__)
@@ -37,6 +38,7 @@ def admin_add_user():
     password = request.form['password']
     full_name = request.form['full_name']
     role = request.form['role']
+    custom_role_id = None
     
     hashed = hashlib.sha256(password.encode()).hexdigest()
     
@@ -44,9 +46,20 @@ def admin_add_user():
     cursor = db.cursor()
     
     try:
-        # Get the admin's business data (NOT generating a new ID)
+        # Handle custom roles from both dropdown formats
+        if role.startswith('custom_'):
+            custom_role_id = int(role.replace('custom_', ''))
+        elif role.isdigit():
+            custom_role_id = int(role)
+        
+        if custom_role_id:
+            cursor.execute("SELECT name FROM custom_roles WHERE id = %s", (custom_role_id,))
+            role_data = cursor.fetchone()
+            role = role_data[0].lower().replace(' ', '_') if role_data else 'auditor'
+        
+        # Get admin's business data
         cursor.execute("""
-            SELECT business_id, business_password, business_name, plan_id 
+            SELECT business_id, business_password, business_name, plan_id, industry 
             FROM users WHERE id = %s
         """, (session['user_id'],))
         admin = cursor.fetchone()
@@ -54,34 +67,23 @@ def admin_add_user():
         if not admin or not admin[0]:
             return "Error: Admin account not properly configured", 400
         
-        # These are the values that MUST be copied, not generated
-        business_id = admin[0]          # ← USE ADMIN'S EXISTING BUSINESS_ID
-        business_password = admin[1]    # ← COPY FROM ADMIN
-        business_name = admin[2]        # ← COPY FROM ADMIN
-        plan_id = admin[3]              # ← COPY FROM ADMIN
-        
-        print(f"Adding user with business_id: {business_id}")
-        
-        # Insert new user with admin's business data (NO new business_id generation)
+        # Insert new user
         cursor.execute("""
             INSERT INTO users (username, password, role, full_name, created_by, 
-                               business_id, business_password, business_name, plan_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                               business_id, business_password, business_name, plan_id, industry, custom_role_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (username, hashed, role, full_name, session['user_id'],
-              business_id, business_password, business_name, plan_id))
+              admin[0], admin[1], admin[2], admin[3], admin[4] if len(admin) > 4 else 'retail', custom_role_id))
         db.commit()
-        
-        print(f"✅ User {username} added successfully!")
         
     except Exception as e:
         db.rollback()
-        print(f"❌ ERROR: {e}")
         return f"Error: {e}", 400
     finally:
         cursor.close()
         db.close()
     
-    return redirect(url_for('admin.admin_users'))
+    return redirect(url_for('admin.users_roles'))
 
 @admin_bp.route('/admin/delete_user/<int:user_id>')
 def admin_delete_user(user_id):
@@ -98,7 +100,7 @@ def admin_delete_user(user_id):
     cursor.close()
     db.close()
     
-    return redirect(url_for('admin.admin_users'))
+    return redirect(url_for('admin.users_roles'))
 
 @admin_bp.route('/admin/restore')
 def admin_restore():
@@ -474,4 +476,38 @@ def help_page():
         return redirect(url_for('auth.login'))
     return render_template('help.html', username=session['username'])
 
+@admin_bp.route('/users-roles')
+def users_roles():
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
+        return redirect(url_for('auth.login'))
     
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id')
+    
+    # Get users
+    cursor.execute("""
+        SELECT u.id, u.username, u.full_name, u.role, u.custom_role_id, cr.name as role_name, u.created_at
+        FROM users u
+        LEFT JOIN custom_roles cr ON u.custom_role_id = cr.id
+        WHERE u.business_id = %s
+        ORDER BY u.created_at ASC
+    """, (business_id,))
+    users = cursor.fetchall()
+    
+    # Get custom roles
+    cursor.execute("SELECT * FROM custom_roles WHERE business_id = %s", (business_id,))
+    roles = cursor.fetchall()
+    
+    for role in roles:
+        cursor.execute("SELECT * FROM role_permissions WHERE role_id = %s", (role['id'],))
+        role['permissions'] = cursor.fetchall()
+    
+    cursor.close()
+    db.close()
+    
+    return render_template('users_roles.html',
+                         username=session['username'],
+                         users=users,
+                         roles=roles,
+                         modules=ALL_MODULES if session.get('plan') == 'enterprise' else [])

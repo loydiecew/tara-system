@@ -703,7 +703,7 @@
                 </button>
             </div>
             
-            <!-- Scrollable Nav Sections -->
+                        <!-- Scrollable Nav Sections -->
             <div class="sidebar-nav-scroll">
                 <div class="nav-section">
                     <div class="nav-label">MAIN</div>
@@ -726,83 +726,112 @@
                     <a href="/sales" class="nav-item {{ is_active('sales') }}">
                         <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                     </a>
+
+                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('recurring') %}
                     <a href="/recurring" class="nav-item {{ is_active('recurring') }}">
                         <i class="fas fa-redo-alt"></i><span>Recurring Transaction</span>
                     </a>
+                    {% endif %}
+                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('bank_reconciliation') %}
                     <a href="/bank-reconciliation" class="nav-item {{ is_active('bank_reconciliation') }}">
                         <i class="fas fa-university"></i><span>Bank Reconciliation</span>
                     </a>
-                    {% if session.role in ['admin', 'owner'] %}
-                    <a href="/fiscal-year" class="nav-item {{ is_active('fiscal') }}">
-                        <i class="fas fa-calendar-check"></i><span>Fiscal Year</span>
-                    </a>
+                    {% endif %}
+                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('tax') %}
                     <a href="/tax" class="nav-item {{ is_active('tax') }}">
                         <i class="fas fa-file-invoice"></i><span>Tax Reports</span>
                     </a>
+                    {% endif %}
+                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('currencies') %}
                     <a href="/currencies" class="nav-item {{ is_active('currencies') }}">
                         <i class="fas fa-dollar-sign"></i><span>Currencies</span>
                     </a>
                     {% endif %}
+                    {% if session.plan == 'enterprise' and user_can_view('fiscal_year') %}
+                    <a href="/fiscal-year" class="nav-item {{ is_active('fiscal') }}">
+                        <i class="fas fa-calendar-check"></i><span>Fiscal Year</span>
+                    </a>
+                    {% endif %}
                 </div>
 
-                <!-- RECEIVABLES & PAYABLES: Admin/Owner only, Pro/Enterprise only -->
-                {% if session.role in ['admin', 'owner'] and session.plan in ['pro', 'enterprise'] %}
+                {% if session.plan in ['pro', 'enterprise'] and (user_can_view('ar') or user_can_view('ap')) %}
                 <div class="nav-section">
                     <div class="nav-label">RECEIVABLES & PAYABLES</div>
+                    {% if user_can_view('ar') %}
                     <a href="/ar" class="nav-item {{ is_active('ar') }}">
                         <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('ap') %}
                     <a href="/ap" class="nav-item {{ is_active('ap') }}">
                         <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
                     </a>
+                    {% endif %}
                 </div>
                 {% endif %}
 
-                <!-- OPERATIONS: Admin/Owner/Manager, Pro/Enterprise only -->
-                {% if session.role in ['admin', 'owner', 'manager'] and session.plan in ['pro', 'enterprise'] %}
+                {% if session.plan in ['pro', 'enterprise'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
                 <div class="nav-section">
                     <div class="nav-label">OPERATIONS</div>
+                    {% if user_can_view('inventory') %}
                     <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
                         <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('purchase_orders') %}
                     <a href="/purchase-orders" class="nav-item {{ is_active('purchase_orders') }}">
                         <i class="fas fa-truck-loading"></i><span>Purchase Orders</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('sales_orders') %}
                     <a href="/sales-orders" class="nav-item {{ is_active('sales_orders') }}">
                         <i class="fas fa-clipboard-list"></i><span>Sales Orders</span>
                     </a>
+                    {% endif %}
+                    {% if session.role in ['admin', 'owner'] %}
+                    <a href="/users-roles" class="nav-item {{ is_active('users_roles') }}">
+                        <i class="fas fa-users-gear"></i><span>Users & Roles</span>
+                    </a>
+                    {% endif %}
+
+                    {% if session.plan == 'enterprise' %}
+                    {% if user_can_view('quotations') %}
                     <a href="/quotations" class="nav-item {{ is_active('quotations') }}">
                         <i class="fas fa-file-contract"></i><span>Quotations</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('budgets') %}
                     <a href="/budgets" class="nav-item {{ is_active('budgets') }}">
                         <i class="fas fa-chart-pie"></i><span>Budgeting</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('projects') %}
                     <a href="/projects" class="nav-item {{ is_active('projects') }}">
                         <i class="fas fa-folder-tree"></i><span>Projects</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('timecards') %}
                     <a href="/timecards" class="nav-item {{ is_active('timecards') }}">
                         <i class="fas fa-clock"></i><span>Timecards</span>
                     </a>
+                    {% endif %}
+                    {% if user_can_view('assets') %}
                     <a href="/assets" class="nav-item {{ is_active('assets') }}">
                         <i class="fas fa-building"></i><span>Fixed Assets</span>
                     </a>
-                    {% if session.plan == 'enterprise' %}
+                    {% endif %}
+                    {% if user_can_view('branches') %}
                     <a href="/branches" class="nav-item {{ is_active('branches') }}">
                         <i class="fas fa-store-alt"></i><span>Branches</span>
                     </a>
                     {% endif %}
-                    {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
-                    <a href="/permissions" class="nav-item {{ is_active('permissions') }}">
-                        <i class="fas fa-shield-alt"></i><span>Permissions</span>
-                    </a>
                     {% endif %}
                 </div>
                 {% endif %}
 
-                <!-- HISTORY: All users see All Transactions, only Admin/Owner see Journal/Ledger -->
                 <div class="nav-section">
                     <div class="nav-label">HISTORY</div>
-                    {% if session.role in ['admin', 'owner'] %}
+                    {% if user_can_view('all_transactions') %}
                     <a href="/all-transactions" class="nav-item {{ is_active('all_transactions') }}">
                         <i class="fas fa-list-ul"></i><span>All Transactions</span>
                     </a>
@@ -810,12 +839,12 @@
                     <a href="/journal" class="nav-item {{ is_active('journal') }}">
                         <i class="fas fa-book-open"></i><span>General Journal</span>
                     </a>
-                    {% if session.role in ['admin', 'owner'] and session.plan in ['pro', 'enterprise'] %}
+                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('ledger') %}
                     <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
                         <i class="fas fa-balance-scale"></i><span>General Ledger</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['pro', 'enterprise'] %}
+                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('trial_balance') %}
                     <a href="/trial-balance" class="nav-item {{ is_active('trial_balance') }}">
                         <i class="fas fa-balance-scale-right"></i><span>Trial Balance</span>
                     </a>
@@ -898,30 +927,35 @@
             <!-- Enterprise Navigation Bar -->
             {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
             <div id="enterpriseNav" style="margin-bottom: 24px; display: none;">
-                <!-- Layer 1: Category Tabs -->
                 <div style="display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap;">
                     <a href="/dashboard" id="enCat-home" class="en-cat-tab" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
                        onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
                         <i class="fas fa-home" style="margin-right: 6px;"></i>Home
                     </a>
+                    {% if user_can_view('cash') or user_can_view('sales') or user_can_view('recurring') or user_can_view('bank_reconciliation') or user_can_view('tax') or user_can_view('currencies') or user_can_view('fiscal_year') %}
                     <a href="#" id="enCat-finance" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
                        onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
                         <i class="fas fa-coins" style="margin-right: 6px;"></i>Finance
                     </a>
+                    {% endif %}
+                    {% if user_can_view('ar') or user_can_view('ap') %}
                     <a href="#" id="enCat-receivables" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
                        onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
                         <i class="fas fa-hand-holding-usd" style="margin-right: 6px;"></i>Receivables
                     </a>
-                    <a href="#" id="enCat-operations" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
+                    {% endif %}
+                    {% if user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders') or user_can_view('quotations') or user_can_view('budgets') or user_can_view('projects') or user_can_view('timecards') or user_can_view('assets') or user_can_view('branches') or user_can_view('users_roles') %}                    <a href="#" id="enCat-operations" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
                        onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
                         <i class="fas fa-boxes-stacked" style="margin-right: 6px;"></i>Operations
                     </a>
+                    {% endif %}
+                    {% if user_can_view('insights') or user_can_view('reports') or user_can_view('all_transactions') or user_can_view('journal') or user_can_view('ledger') or user_can_view('trial_balance') or user_can_view('income_statement') or user_can_view('balance_sheet') %}
                     <a href="#" id="enCat-accounting" class="en-cat-tab" onclick="return false;" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
                        onmouseover="this.style.borderColor='var(--accent)'; this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--glass-border)'; this.style.color='var(--text-secondary)';">
                         <i class="fas fa-chart-line" style="margin-right: 6px;"></i>Reports
                     </a>
+                    {% endif %}
                 </div>
-                <!-- Layer 2: Module Pills -->
                 <div id="enModulePills" style="display: flex; gap: 6px; flex-wrap: wrap;"></div>
             </div>
             {% endif %}
@@ -1114,7 +1148,7 @@
                 '/sales-orders': 'operations', '/quotations': 'operations',
                 '/budgets': 'operations', '/projects': 'operations',
                 '/timecards': 'operations', '/assets': 'operations',
-                '/branches': 'operations', '/permissions': 'operations',
+                '/branches': 'operations', '/users-roles': 'operations',
                 '/all-transactions': 'accounting', '/journal': 'accounting',
                 '/ledger': 'accounting', '/trial-balance': 'accounting',
                 '/income-statement': 'accounting', '/balance-sheet': 'accounting',
@@ -1123,31 +1157,40 @@
             
             const CATEGORY_MODULES = {
                 'finance': [
-                    {name:'Cash Management',url:'/cash',icon:'fa-coins'},{name:'Sales',url:'/sales',icon:'fa-chart-simple'},
-                    {name:'Recurring',url:'/recurring',icon:'fa-redo-alt'},{name:'Bank Reconciliation',url:'/bank-reconciliation',icon:'fa-university'},
-                    {name:'Fiscal Year',url:'/fiscal-year',icon:'fa-calendar-check'},{name:'Tax Reports',url:'/tax',icon:'fa-file-invoice'},
-                    {name:'Currencies',url:'/currencies',icon:'fa-dollar-sign'}
-                ],
+                    {% if user_can_view('cash') %}{name:'Cash Management',url:'/cash',icon:'fa-coins'},{% endif %}
+                    {% if user_can_view('sales') %}{name:'Sales',url:'/sales',icon:'fa-chart-simple'},{% endif %}
+                    {% if user_can_view('recurring') %}{name:'Recurring',url:'/recurring',icon:'fa-redo-alt'},{% endif %}
+                    {% if user_can_view('bank_reconciliation') %}{name:'Bank Reconciliation',url:'/bank-reconciliation',icon:'fa-university'},{% endif %}
+                    {% if user_can_view('tax') %}{name:'Tax Reports',url:'/tax',icon:'fa-file-invoice'},{% endif %}
+                    {% if user_can_view('currencies') %}{name:'Currencies',url:'/currencies',icon:'fa-dollar-sign'},{% endif %}
+                    {% if user_can_view('fiscal_year') %}{name:'Fiscal Year',url:'/fiscal-year',icon:'fa-calendar-check'},{% endif %}
+                ].filter(Boolean),
                 'receivables': [
-                    {name:'Accounts Receivable',url:'/ar',icon:'fa-hand-holding-usd'},{name:'Accounts Payable',url:'/ap',icon:'fa-truck-fast'}
-                ],
+                    {% if user_can_view('ar') %}{name:'Accounts Receivable',url:'/ar',icon:'fa-hand-holding-usd'},{% endif %}
+                    {% if user_can_view('ap') %}{name:'Accounts Payable',url:'/ap',icon:'fa-truck-fast'},{% endif %}
+                ].filter(Boolean),
                 'operations': [
-                    {name:'Inventory',url:'/inventory',icon:'fa-boxes-stacked'},{name:'Purchase Orders',url:'/purchase-orders',icon:'fa-truck-loading'},
-                    {name:'Sales Orders',url:'/sales-orders',icon:'fa-clipboard-list'},{name:'Quotations',url:'/quotations',icon:'fa-file-contract'},
-                    {name:'Budgeting',url:'/budgets',icon:'fa-chart-pie'},{name:'Projects',url:'/projects',icon:'fa-folder-tree'},
-                    {name:'Timecards',url:'/timecards',icon:'fa-clock'},{name:'Fixed Assets',url:'/assets',icon:'fa-building'},
-                    {name:'Branches',url:'/branches',icon:'fa-store-alt'},{name:'Permissions',url:'/permissions',icon:'fa-shield-alt'}
-                ],
+                    {% if user_can_view('inventory') %}{name:'Inventory',url:'/inventory',icon:'fa-boxes-stacked'},{% endif %}
+                    {% if user_can_view('purchase_orders') %}{name:'Purchase Orders',url:'/purchase-orders',icon:'fa-truck-loading'},{% endif %}
+                    {% if user_can_view('sales_orders') %}{name:'Sales Orders',url:'/sales-orders',icon:'fa-clipboard-list'},{% endif %}
+                    {% if user_can_view('quotations') %}{name:'Quotations',url:'/quotations',icon:'fa-file-contract'},{% endif %}
+                    {% if user_can_view('budgets') %}{name:'Budgeting',url:'/budgets',icon:'fa-chart-pie'},{% endif %}
+                    {% if user_can_view('projects') %}{name:'Projects',url:'/projects',icon:'fa-folder-tree'},{% endif %}
+                    {% if user_can_view('timecards') %}{name:'Timecards',url:'/timecards',icon:'fa-clock'},{% endif %}
+                    {% if user_can_view('assets') %}{name:'Fixed Assets',url:'/assets',icon:'fa-building'},{% endif %}
+                    {% if user_can_view('branches') %}{name:'Branches',url:'/branches',icon:'fa-store-alt'},{% endif %}
+                    {% if user_can_view('users_roles') %}{name:'Users & Roles',url:'/users-roles',icon:'fa-users-gear'},{% endif %}
+                ].filter(Boolean),
                 'accounting': [
-                    {name:'Business Insights',url:'/insights',icon:'fa-chart-line'},
-                    {name:'Reports',url:'/reports',icon:'fa-file-pdf'},
-                    {name:'All Transactions',url:'/all-transactions',icon:'fa-list-ul'},
-                    {name:'General Journal',url:'/journal',icon:'fa-book-open'},
-                    {name:'General Ledger',url:'/ledger',icon:'fa-balance-scale'},
-                    {name:'Trial Balance',url:'/trial-balance',icon:'fa-balance-scale-right'},
-                    {name:'Income Statement',url:'/income-statement',icon:'fa-file-invoice-dollar'},
-                    {name:'Balance Sheet',url:'/balance-sheet',icon:'fa-file-invoice'}
-                ]
+                    {% if user_can_view('insights') %}{name:'Business Insights',url:'/insights',icon:'fa-chart-line'},{% endif %}
+                    {% if user_can_view('reports') %}{name:'Reports',url:'/reports',icon:'fa-file-pdf'},{% endif %}
+                    {% if user_can_view('all_transactions') %}{name:'All Transactions',url:'/all-transactions',icon:'fa-list-ul'},{% endif %}
+                    {% if user_can_view('journal') %}{name:'General Journal',url:'/journal',icon:'fa-book-open'},{% endif %}
+                    {% if user_can_view('ledger') %}{name:'General Ledger',url:'/ledger',icon:'fa-balance-scale'},{% endif %}
+                    {% if user_can_view('trial_balance') %}{name:'Trial Balance',url:'/trial-balance',icon:'fa-balance-scale-right'},{% endif %}
+                    {% if user_can_view('income_statement') %}{name:'Income Statement',url:'/income-statement',icon:'fa-file-invoice-dollar'},{% endif %}
+                    {% if user_can_view('balance_sheet') %}{name:'Balance Sheet',url:'/balance-sheet',icon:'fa-file-invoice'},{% endif %}
+                ].filter(Boolean)
             };
             
             // Make category tabs clickable to show their modules

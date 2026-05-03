@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from models.database import get_db
+from models.access_control import check_module_access
 
 currencies_bp = Blueprint('currencies', __name__)
 
@@ -7,7 +8,9 @@ currencies_bp = Blueprint('currencies', __name__)
 def currencies():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('currencies'): return redirect(url_for('dashboard.dashboard'))
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     

@@ -29,51 +29,16 @@
     </div>
     <form method="POST" action="/add_supplier">
         <div class="form-grid">
-            <div class="form-group">
-                <label>Supplier Name *</label>
-                <input type="text" name="name" required>
-            </div>
-            <div class="form-group">
-                <label>Contact Person</label>
-                <input type="text" name="contact_person" placeholder="Who to contact">
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email">
-            </div>
-            <div class="form-group">
-                <label>Phone</label>
-                <input type="text" name="phone">
-            </div>
-            <div class="form-group">
-                <label>TIN</label>
-                <input type="text" name="tin" placeholder="For withholding tax">
-            </div>
-            <div class="form-group">
-                <label>Payment Terms</label>
-                <select name="payment_terms">
-                    <option value="net_15">Net 15</option>
-                    <option value="net_30">Net 30</option>
-                    <option value="net_60">Net 60</option>
-                    <option value="cod">Cash on Delivery</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Bank Name</label>
-                <input type="text" name="bank_name" placeholder="For bank transfers">
-            </div>
-            <div class="form-group">
-                <label>Bank Account #</label>
-                <input type="text" name="bank_account" placeholder="Account number">
-            </div>
-            <div class="form-group">
-                <label>Address</label>
-                <input type="text" name="address">
-            </div>
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary">Add Supplier</button>
-            </div>
+            <div class="form-group"><label>Supplier Name *</label><input type="text" name="name" required></div>
+            <div class="form-group"><label>Contact Person</label><input type="text" name="contact_person" placeholder="Who to contact"></div>
+            <div class="form-group"><label>Email</label><input type="email" name="email"></div>
+            <div class="form-group"><label>Phone</label><input type="text" name="phone"></div>
+            <div class="form-group"><label>TIN</label><input type="text" name="tin" placeholder="For withholding tax"></div>
+            <div class="form-group"><label>Payment Terms</label><select name="payment_terms"><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_60">Net 60</option><option value="cod">Cash on Delivery</option></select></div>
+            <div class="form-group"><label>Bank Name</label><input type="text" name="bank_name" placeholder="For bank transfers"></div>
+            <div class="form-group"><label>Bank Account #</label><input type="text" name="bank_account" placeholder="Account number"></div>
+            <div class="form-group"><label>Address</label><input type="text" name="address"></div>
+            <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-primary">Add Supplier</button></div>
         </div>
     </form>
 </div>
@@ -84,39 +49,13 @@
     </div>
     <form method="POST" action="/add_bill">
         <div class="form-grid">
-            <div class="form-group">
-                <label>Supplier *</label>
-                <select name="supplier_id" required>
-                    <option value="">Select supplier</option>
-                    {% for s in suppliers %}
-                    <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Amount (₱) *</label>
-                <input type="number" name="amount" step="0.01" required>
-            </div>
-            <div class="form-group">
-                <label>Due Date *</label>
-                <input type="date" name="due_date" required>
-            </div>
-            <div class="form-group">
-                <label>Bill Number</label>
-                <input type="text" name="bill_number" placeholder="Auto-generated if blank">
-            </div>
-            <div class="form-group">
-                <label>Reference PO #</label>
-                <input type="text" name="reference_po" placeholder="Link to purchase order">
-            </div>
-            <div class="form-group">
-                <label>BIR 2307</label>
-                <input type="text" name="bir_2307" placeholder="Withholding tax certificate">
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="description" rows="2" placeholder="What is this bill for?"></textarea>
-            </div>
+            <div class="form-group"><label>Supplier *</label><select name="supplier_id" required><option value="">Select supplier</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label>Amount (₱) *</label><input type="number" name="amount" step="0.01" required></div>
+            <div class="form-group"><label>Due Date *</label><input type="date" name="due_date" required></div>
+            <div class="form-group"><label>Bill Number</label><input type="text" name="bill_number" placeholder="Auto-generated if blank"></div>
+            <div class="form-group"><label>Reference PO #</label><input type="text" name="reference_po" placeholder="Link to purchase order"></div>
+            <div class="form-group"><label>BIR 2307</label><input type="text" name="bir_2307" placeholder="Withholding tax certificate"></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="What is this bill for?"></textarea></div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Create Bill</button>
     </form>
@@ -125,102 +64,57 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-file-invoice"></i> Bills</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('apTable', 'TARA_AP_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=suppliers" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-upload"></i> Import
+            </a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('apTable', 'TARA_AP_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
     </div>
     
-    <!-- UNIVERSAL FILTER BAR -->
     {% if session.role in ['admin', 'owner', 'manager'] %}
     <div class="filter-bar">
-        <div class="filter-group">
-            <label>Date From</label>
-            <input type="date" id="apBody_date_from" onchange="filterTable('apBody','apNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Date To</label>
-            <input type="date" id="apBody_date_to" onchange="filterTable('apBody','apNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Status</label>
-            <select id="apBody_status" onchange="filterTable('apBody','apNoData')">
-                <option value="all">All</option>
-                <option value="paid">Paid</option>
-                <option value="partially_paid">Partial</option>
-                <option value="unpaid">Unpaid</option>
-            </select>
-        </div>
-        <div class="filter-group" style="flex:1; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="apBody_search" placeholder="Supplier or bill #..." oninput="filterTable('apBody','apNoData')">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('apBody')" style="padding:8px 12px; font-size:11px;">
-            <i class="fas fa-times"></i> Clear
-        </button>
+        <div class="filter-group"><label>Date From</label><input type="date" id="apBody_date_from" onchange="filterTable('apBody','apNoData')"></div>
+        <div class="filter-group"><label>Date To</label><input type="date" id="apBody_date_to" onchange="filterTable('apBody','apNoData')"></div>
+        <div class="filter-group"><label>Status</label><select id="apBody_status" onchange="filterTable('apBody','apNoData')"><option value="all">All</option><option value="paid">Paid</option><option value="partially_paid">Partial</option><option value="unpaid">Unpaid</option></select></div>
+        <div class="filter-group" style="flex:1; min-width:150px;"><label>Search</label><input type="text" id="apBody_search" placeholder="Supplier or bill #..." oninput="filterTable('apBody','apNoData')"></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('apBody')" style="padding:8px 12px; font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
     {% endif %}
     
     <div class="table-wrapper">
         <table class="data-table" id="apTable">
             <thead>
-                <tr>
-                    <th>Bill #</th>
-                    <th>Supplier</th>
-                    <th>Total</th>
-                    <th>Paid</th>
-                    <th>Remaining</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Due</th>
-                    <th>Actions</th>
-                </tr>
+                <tr><th>Bill #</th><th>Supplier</th><th>Total</th><th>Paid</th><th>Remaining</th><th>Due Date</th><th>Status</th><th>Due</th><th>Actions</th></tr>
             </thead>
             <tbody id="apBody">
                 {% for bill in bills %}
-                <tr class="bill-row" onclick="toggleBillPaymentHistory({{ bill.id }}, this)" data-filter='{"date":"{{ bill.due_date }}","status":"{{ bill.status }}","search":"{{ bill.supplier_name|lower }} {{ bill.bill_number|lower }}"}'}>
+                <tr class="bill-row" onclick="toggleBillPaymentHistory({{ bill.id }}, this)" data-filter='{"date":"{{ bill.due_date }}","status":"{{ bill.status }}","search":"{{ bill.supplier_name|lower }} {{ bill.bill_number|lower }}"}'>
                     <td><strong>{{ bill.bill_number or 'BILL-' + bill.id|string }}</strong></td>
                     <td>{{ bill.supplier_name }}</td>
                     <td>₱ {{ "{:,.2f}".format(bill.amount) }}</td>
                     <td>₱ {{ "{:,.2f}".format(bill.paid_amount) }}</td>
-                    <td class="{% if bill.remaining <= 0 %}remaining-zero{% else %}remaining-positive{% endif %}">
-                        ₱ {{ "{:,.2f}".format(bill.remaining) }}
-                    </td>
+                    <td class="{% if bill.remaining <= 0 %}remaining-zero{% else %}remaining-positive{% endif %}">₱ {{ "{:,.2f}".format(bill.remaining) }}</td>
                     <td>{{ bill.due_date }}</td>
-                    <td>
-                        {% if bill.status == 'paid' %}
-                        <span class="badge badge-success">Paid</span>
-                        {% elif bill.status == 'partially_paid' %}
-                        <span class="badge badge-info">Partial</span>
-                        {% else %}
-                        <span class="badge badge-danger">Unpaid</span>
-                        {% endif %}
-                    </td>
+                    <td>{% if bill.status == 'paid' %}<span class="badge badge-success">Paid</span>{% elif bill.status == 'partially_paid' %}<span class="badge badge-info">Partial</span>{% else %}<span class="badge badge-danger">Unpaid</span>{% endif %}</td>
                     <td><span class="badge {{ bill.due_class }}">{{ bill.due_label }}</span></td>
                     <td style="white-space: nowrap;">
                         {% if bill.remaining > 0 %}
-                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); showBillPaymentModal({{ bill.id }}, '{{ bill.supplier_name }}', {{ bill.remaining }})" style="padding: 5px 12px; font-size: 12px;">
-                            <i class="fas fa-coins"></i> Pay
-                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); showBillPaymentModal({{ bill.id }}, '{{ bill.supplier_name }}', {{ bill.remaining }})" style="padding: 5px 12px; font-size: 12px;"><i class="fas fa-coins"></i> Pay</button>
                         {% endif %}
                         <a href="/edit_bill/{{ bill.id }}" class="btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
                         <a href="/delete_bill/{{ bill.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="event.stopPropagation(); return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a>
                     </td>
                 </tr>
                 <tr id="bill-payments-{{ bill.id }}" class="payment-history-row" style="display: none;">
-                    <td colspan="9" style="padding: 0;">
-                        <div id="bill-payments-content-{{ bill.id }}" style="padding: 12px 20px; color: var(--text-secondary);">
-                            Loading payments...
-                        </div>
-                    </td>
+                    <td colspan="9" style="padding: 0;"><div id="bill-payments-content-{{ bill.id }}" style="padding: 12px 20px; color: var(--text-secondary);">Loading payments...</div></td>
                 </tr>
                 {% else %}
-                <tr id="apNoData"><td colspan="9" style="text-align: center; padding: 30px;">
-                    <div class="empty-state">
-                        <i class="fas fa-receipt"></i>
-                        <h3>No bills yet</h3>
-                        <p>Add a supplier and create your first bill</p>
-                    </div>
-                </td></tr>
+                <tr id="apNoData"><td colspan="9" style="text-align: center; padding: 30px;"><div class="empty-state"><i class="fas fa-receipt"></i><h3>No bills yet</h3><p>Add a supplier and create your first bill</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -230,47 +124,17 @@
 <!-- BILL PAYMENT MODAL -->
 <div id="billPaymentModal" class="modal">
     <div class="modal-content" style="max-width: 450px;">
-        <div class="modal-header">
-            <h3><i class="fas fa-coins"></i> Pay Bill</h3>
-            <span class="close-modal" onclick="closeBillPaymentModal()">&times;</span>
-        </div>
+        <div class="modal-header"><h3><i class="fas fa-coins"></i> Pay Bill</h3><span class="close-modal" onclick="closeBillPaymentModal()">&times;</span></div>
         <form method="POST" id="billPaymentForm">
             <input type="hidden" id="billPaymentBillId" name="bill_id">
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Supplier</label>
-                <input type="text" id="billPaymentSupplierName" readonly style="background: var(--bg-primary);">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Remaining Balance</label>
-                <input type="text" id="billPaymentRemaining" readonly style="background: var(--bg-primary); font-weight: 700; color: #ef4444;">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Payment Amount (₱)</label>
-                <input type="number" name="amount" id="billPaymentAmount" step="0.01" required autofocus>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Payment Date</label>
-                <input type="date" name="payment_date" id="billPaymentDate" value="{{ today }}" required>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Payment Method</label>
-                <select name="payment_method" id="billPaymentMethod">
-                    <option value="cash">Cash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="gcash">GCash</option>
-                    <option value="maya">Maya</option>
-                    <option value="check">Check</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Reference Number</label>
-                <input type="text" name="reference_number" placeholder="Check #, transaction ID...">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label>Notes</label>
-                <input type="text" name="notes" placeholder="Optional">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Record Payment</button>
+            <div class="form-group" style="margin-bottom:12px;"><label>Supplier</label><input type="text" id="billPaymentSupplierName" readonly style="background:var(--bg-primary);"></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Remaining Balance</label><input type="text" id="billPaymentRemaining" readonly style="background:var(--bg-primary);font-weight:700;color:#ef4444;"></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Payment Amount (₱)</label><input type="number" name="amount" id="billPaymentAmount" step="0.01" required autofocus></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Payment Date</label><input type="date" name="payment_date" id="billPaymentDate" value="{{ today }}" required></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Payment Method</label><select name="payment_method" id="billPaymentMethod"><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="gcash">GCash</option><option value="maya">Maya</option><option value="check">Check</option></select></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Reference Number</label><input type="text" name="reference_number" placeholder="Check #, transaction ID..."></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Notes</label><input type="text" name="notes" placeholder="Optional"></div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Record Payment</button>
         </form>
     </div>
 </div>
@@ -285,15 +149,10 @@
         document.getElementById('billPaymentForm').action = '/record_bill_payment/' + billId;
         document.getElementById('billPaymentModal').style.display = 'flex';
     }
-    
-    function closeBillPaymentModal() {
-        document.getElementById('billPaymentModal').style.display = 'none';
-    }
-    
+    function closeBillPaymentModal() { document.getElementById('billPaymentModal').style.display = 'none'; }
     function toggleBillPaymentHistory(billId, row) {
         const historyRow = document.getElementById('bill-payments-' + billId);
         const contentDiv = document.getElementById('bill-payments-content-' + billId);
-        
         if (historyRow.style.display === 'none' || !historyRow.style.display) {
             fetch('/bill_payments/' + billId)
                 .then(res => res.json())
@@ -301,28 +160,15 @@
                     if (data.payments && data.payments.length > 0) {
                         let html = '<table style="width:100%; font-size:12px;"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Notes</th></tr></thead><tbody>';
                         data.payments.forEach(p => {
-                            html += `<tr>
-                                <td>${p.payment_date}</td>
-                                <td style="color:#ef4444; font-weight:600;">₱${parseFloat(p.amount).toFixed(2)}</td>
-                                <td>${p.payment_method.replace('_', ' ')}</td>
-                                <td>${p.reference_number || '-'}</td>
-                                <td>${p.notes || '-'}</td>
-                            </tr>`;
+                            html += `<tr><td>${p.payment_date}</td><td style="color:#ef4444;font-weight:600;">₱${parseFloat(p.amount).toFixed(2)}</td><td>${p.payment_method.replace('_', ' ')}</td><td>${p.reference_number || '-'}</td><td>${p.notes || '-'}</td></tr>`;
                         });
                         html += '</tbody></table>';
                         contentDiv.innerHTML = html;
-                    } else {
-                        contentDiv.innerHTML = '<p style="text-align:center; padding:10px;">No payments recorded yet</p>';
-                    }
+                    } else { contentDiv.innerHTML = '<p style="text-align:center;padding:10px;">No payments recorded yet</p>'; }
                 });
             historyRow.style.display = 'table-row';
-        } else {
-            historyRow.style.display = 'none';
-        }
+        } else { historyRow.style.display = 'none'; }
     }
-    
-    window.onclick = function(event) {
-        if (event.target === document.getElementById('billPaymentModal')) closeBillPaymentModal();
-    };
+    window.onclick = function(event) { if (event.target === document.getElementById('billPaymentModal')) closeBillPaymentModal(); };
 </script>
 {% endblock %}

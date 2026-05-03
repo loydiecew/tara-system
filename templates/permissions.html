@@ -1,142 +1,309 @@
 {% extends "layout.html" %}
 
 {% block title %}User Permissions{% endblock %}
-{% block page_title %}Advanced User Permissions{% endblock %}
-{% block page_subtitle %}Create custom roles with specific access{% endblock %}
+{% block page_title %}User Permissions{% endblock %}
+{% block page_subtitle %}Manage custom roles and access control{% endblock %}
 
 {% block extra_css %}
 <style>
-    .perm-grid { display: grid; grid-template-columns: 180px repeat(4, 60px); gap: 2px; align-items: center; font-size: 12px; }
-    .perm-header { font-weight: 700; color: var(--text-secondary); font-size: 10px; text-transform: uppercase; text-align: center; padding: 6px 0; }
-    .perm-module { padding: 6px 8px; font-weight: 500; }
-    .perm-check { text-align: center; }
-    .perm-check input { width: 16px; height: 16px; cursor: pointer; }
-    .perm-row:nth-child(even) { background: var(--bg-primary); }
-    .perm-table-wrapper thead th {
-        position: sticky;
-        top: 0;
-        background: #1e293b;
-        z-index: 2;
-        box-shadow: 0 1px 0 var(--border-light);
-        padding: 10px 8px;
-    }
-    body.dark .perm-table-wrapper thead th {
-        background: #0f172a;
-    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    
+    .role-card { border: 1px solid var(--border-light); border-radius: 14px; background: var(--bg-secondary); margin-bottom: 8px; overflow: hidden; }
+    .role-card-inner { display: flex; flex-direction: column; }
+    
+    .role-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; background: var(--bg-primary); border-bottom: 1px solid var(--border-light); user-select: none; }
+    .role-card.open .role-header { border-bottom: 1px solid var(--border-light); }
+    .role-header i { transition: transform 0.3s; font-size: 11px; color: var(--text-secondary); }
+    .role-card.open .role-header i { transform: rotate(180deg); }
+    
+    .role-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; background: var(--bg-secondary); }
+    .role-card.open .role-body { max-height: 400px; display: flex; flex-direction: column; }
+    
+    .role-body-scroll { flex: 1; overflow-y: auto; }
+    .role-body-scroll table { font-size: 11px; width: 100%; border-collapse: collapse; }
+    .role-body-scroll th { background: var(--bg-primary); position: sticky; top: 0; z-index: 2; padding: 8px 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-light); color: var(--text-secondary); }
+    .role-body-scroll td { padding: 5px 8px; text-align: center; border-bottom: 1px solid var(--border-light); }
+    .role-body-scroll td:first-child { text-align: left; font-weight: 500; }
+    .role-body-scroll tr:hover { background: var(--bg-primary); }
+    
+    .perm-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; transition: all 0.2s; }
+    .perm-dot.on { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.3); }
+    .perm-dot.off { background: var(--border-light); }
+    .perm-dot.clickable { cursor: pointer; width: 16px; height: 16px; border: 2px solid var(--border-light); background: transparent; border-radius: 4px; transition: all 0.2s; }
+    .perm-dot.clickable.on { background: #10b981; border-color: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.35); border-radius: 4px; }
+    
+    .role-actions { display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--border-light); background: var(--bg-secondary); flex-shrink: 0; }
+    .btn-xs { padding: 5px 12px; font-size: 11px; border-radius: 8px; }
+    
+    .create-perm-header { padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 12px; background: var(--bg-primary); border-bottom: 1px solid var(--border-light); user-select: none; }
+    .create-perm-header i { transition: transform 0.3s; font-size: 11px; color: var(--text-secondary); }
+    .create-perm-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; background: var(--bg-secondary); }
+    .create-perm-body.open { max-height: 300px; overflow-y: auto; }
+    .create-perm-body table { font-size: 11px; width: 100%; border-collapse: collapse; }
+    .create-perm-body th { background: var(--bg-primary); position: sticky; top: 0; z-index: 2; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--border-light); color: var(--text-secondary); }
+    .create-perm-body td { padding: 5px 8px; text-align: center; border-bottom: 1px solid var(--border-light); }
+    .create-perm-body td:first-child { text-align: left; font-weight: 500; }
+    
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
 
-<!-- LEFT: Create Role + Existing Roles -->
-<div style="display: flex; flex-direction: column; gap: 20px;">
+<div class="two-col">
+    <!-- LEFT COLUMN -->
+    <div style="display: flex; flex-direction: column; gap: 12px;">
 
-<!-- Create Role -->
-<div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-plus-circle"></i> Create Role</h2>
-    </div>
-    <form method="POST" action="/add_role">
-        <div class="form-group" style="margin-bottom: 12px;">
-            <label>Role Name</label>
-            <input type="text" name="name" placeholder="e.g., Bookkeeper, Auditor" required>
+        <!-- Create Role -->
+        <div class="card" style="padding: 18px;">
+            <div class="card-header" style="margin-bottom: 12px;">
+                <h2 style="font-size: 15px;"><i class="fas fa-plus-circle"></i> Create Role</h2>
+            </div>
+            <form method="POST" action="/add_role" id="createRoleForm">
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label>Role Name</label>
+                    <input type="text" name="name" placeholder="e.g., Bookkeeper" required>
+                </div>
+                
+                <div class="role-card" style="margin-bottom: 10px;">
+                    <div class="create-perm-header" onclick="toggleCreatePermSection()">
+                        <span>Permissions</span>
+                        <i class="fas fa-chevron-down" id="createPermChevron"></i>
+                    </div>
+                    <div class="create-perm-body" id="createPermBody">
+                        <table>
+                            <thead>
+                                <tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for code, name in modules %}
+                                <tr>
+                                    <td>{{ name }}</td>
+                                    <td><span class="perm-dot clickable off" data-module="{{ code }}" data-action="view" onclick="toggleCreatePerm(this)"></span></td>
+                                    <td><span class="perm-dot clickable off" data-module="{{ code }}" data-action="create" onclick="toggleCreatePerm(this)"></span></td>
+                                    <td><span class="perm-dot clickable off" data-module="{{ code }}" data-action="edit" onclick="toggleCreatePerm(this)"></span></td>
+                                    <td><span class="perm-dot clickable off" data-module="{{ code }}" data-action="delete" onclick="toggleCreatePerm(this)"></span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="createHiddenInputs"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Create Role</button>
+            </form>
         </div>
-        
-        <h3 style="font-size: 13px; margin-bottom: 8px;">Permissions</h3>
-        <div style="max-height: 400px; overflow-y: auto;">
-            <div class="perm-table-wrapper">
-            <table style="font-size: 12px;">
-                <thead>
-                    <tr>
-                        <th>Module</th>
-                        <th style="text-align:center;">View</th>
-                        <th style="text-align:center;">Create</th>
-                        <th style="text-align:center;">Edit</th>
-                        <th style="text-align:center;">Delete</th>
-                    </tr>
-                </thead>
+
+        <!-- Preset Roles -->
+        {% for role in roles %}
+        <div class="role-card" id="role-{{ role.id }}">
+            <div class="role-header" onclick="toggleRole(this)">
+                <span><i class="fas fa-user-tag" style="color: var(--accent); margin-right: 8px;"></i>{{ role.name }}</span>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <span style="font-size: 10px; color: var(--text-secondary);">{{ role.permissions|length }} modules</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="role-body">
+                <div class="role-body-scroll">
+                    <table>
+                        <thead>
+                            <tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for p in role.permissions %}
+                            <tr>
+                                <td>{{ p.module|replace('_', ' ')|title }}</td>
+                                <td><span class="perm-dot {{ 'on' if p.can_view else 'off' }}"></span></td>
+                                <td><span class="perm-dot {{ 'on' if p.can_create else 'off' }}"></span></td>
+                                <td><span class="perm-dot {{ 'on' if p.can_edit else 'off' }}"></span></td>
+                                <td><span class="perm-dot {{ 'on' if p.can_delete else 'off' }}"></span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="role-actions">
+                    <button class="btn btn-secondary btn-xs" onclick="event.stopPropagation(); editRole({{ role.id }})">
+                        <i class="fas fa-pen"></i> Edit
+                    </button>
+                    <a href="/delete_role/{{ role.id }}" class="btn btn-xs" style="background: #fee2e2; color: #ef4444; text-decoration: none;" onclick="event.stopPropagation(); return confirm('Delete this role?')">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="card" style="height: fit-content;">
+        <div class="card-header">
+            <h2><i class="fas fa-users"></i> Assign Roles</h2>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr><th>User</th><th>Role</th><th></th></tr></thead>
                 <tbody>
-                    {% for code, name in modules %}
+                    {% for u in users %}
                     <tr>
-                        <td>{{ name }}</td>
-                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_view"></td>
-                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_create"></td>
-                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_edit"></td>
-                        <td style="text-align:center;"><input type="checkbox" name="{{ code }}_delete"></td>
+                        <td><strong>{{ u.username }}</strong></td>
+                        <td>
+                            <form method="POST" action="/assign_role" style="display: flex; gap: 8px; align-items: center;">
+                                <input type="hidden" name="user_id" value="{{ u.id }}">
+                                <select name="role_id" style="padding: 6px 10px; border-radius: 8px; font-size: 12px;">
+                                    <option value="">Default</option>
+                                    {% for role in roles %}
+                                    <option value="{{ role.id }}" {% if u.custom_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm" style="padding:5px 12px; font-size:11px;">Save</button>
+                            </form>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-            </div>
         </div>
+    </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div id="editRoleModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>Edit Role Permissions</h3>
+            <span class="close-modal" onclick="document.getElementById('editRoleModal').style.display='none'">&times;</span>
+        </div>
+        <div id="editRoleBody" style="max-height: 60vh; overflow-y: auto;"></div>
+    </div>
+</div>
+
+<script>
+    function toggleRole(header) {
+        header.parentElement.classList.toggle('open');
+    }
+
+    function toggleCreatePermSection() {
+        const body = document.getElementById('createPermBody');
+        const chevron = document.getElementById('createPermChevron');
+        body.classList.toggle('open');
+        chevron.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
+    }
+
+    function toggleCreatePerm(dot) {
+        dot.classList.toggle('on');
+        dot.classList.toggle('off');
+        updateCreateHiddenInputs();
+    }
+
+    function updateCreateHiddenInputs() {
+        const container = document.getElementById('createHiddenInputs');
+        const dots = document.querySelectorAll('#createPermBody .perm-dot.clickable.on');
+        const names = new Set();
+        dots.forEach(d => names.add(d.dataset.module + '_' + d.dataset.action));
+        container.innerHTML = '';
+        names.forEach(n => {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = n; input.value = '1';
+            container.appendChild(input);
+        });
+    }
+
+    function editRole(roleId) {
+        const modal = document.getElementById('editRoleModal');
+        const body = document.getElementById('editRoleBody');
+        body.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>';
+        modal.style.display = 'flex';
         
-        <button type="submit" class="btn btn-primary" style="margin-top: 12px; width: 100%;">
-            <i class="fas fa-save"></i> Create Role
-        </button>
-    </form>
-</div>
+        const roleCard = document.getElementById('role-' + roleId);
+        const rows = roleCard.querySelectorAll('.role-body-scroll tbody tr');
+        let html = '<form method="POST" action="/update_role_permissions" id="editRoleForm">';
+        html += '<input type="hidden" name="role_id" value="' + roleId + '">';
+        html += '<div id="editHiddenInputs"></div>';
+        html += '<table style="width:100%;font-size:12px;border-collapse:collapse;">';
+        html += '<thead><tr style="border-bottom:2px solid var(--border-light);"><th style="padding:8px;text-align:left;">Module</th><th style="padding:8px;text-align:center;">View</th><th style="padding:8px;text-align:center;">Create</th><th style="padding:8px;text-align:center;">Edit</th><th style="padding:8px;text-align:center;">Delete</th><th style="padding:8px;"></th></tr></thead><tbody>';
+        
+        rows.forEach(row => {
+            const moduleName = row.cells[0].textContent.trim().toLowerCase().replace(/ /g, '_');
+            const dots = row.querySelectorAll('.perm-dot');
+            const has = [dots[0].classList.contains('on'), dots[1].classList.contains('on'), dots[2].classList.contains('on'), dots[3].classList.contains('on')];
+            
+            html += '<tr style="border-bottom:1px solid var(--border-light);">';
+            html += '<td style="padding:7px 8px;font-weight:500;">' + row.cells[0].textContent + '</td>';
+            ['view','create','edit','delete'].forEach((action, i) => {
+                html += '<td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable ' + (has[i] ? 'on' : 'off') + '" data-module="' + moduleName + '" data-action="' + action + '" onclick="toggleEditPerm(this)"></span></td>';
+            });
+            html += '<td style="padding:7px 8px;text-align:center;"><span style="cursor:pointer;color:#ef4444;font-weight:700;font-size:14px;" onclick="removeModuleRow(this)" title="Remove module access">&times;</span></td>';
+            html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        html += '<div style="margin-top:12px;padding:10px;border:1px dashed var(--border-light);border-radius:10px;">';
+        html += '<select id="addModuleSelect" style="padding:6px 10px;border-radius:8px;font-size:12px;margin-right:8px;">';
+        html += '<option value="">Add module...</option>';
+        {% for code, name in modules %}
+        html += '<option value="{{ code }}">{{ name }}</option>';
+        {% endfor %}
+        html += '</select>';
+        html += '<button type="button" class="btn btn-secondary btn-xs" onclick="addModuleToEdit()"><i class="fas fa-plus"></i> Add</button>';
+        html += '</div>';
+        html += '<button type="submit" class="btn btn-primary" style="margin-top:12px;width:100%;">Save Changes</button>';
+        html += '</form>';
+        body.innerHTML = html;
+        updateEditHiddenInputs();
+    }
 
-<!-- Existing Roles -->
-{% for role in roles %}
-<div class="card">
-    <div class="card-header">
-        <h2><i class="fas fa-user-tag"></i> {{ role.name }}</h2>
-        <a href="/delete_role/{{ role.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Delete this role?')">
-            <i class="fas fa-trash-alt"></i>
-        </a>
-    </div>
-    <table style="font-size: 11px;">
-        <thead>
-            <tr><th>Module</th><th style="text-align:center;">View</th><th style="text-align:center;">Create</th><th style="text-align:center;">Edit</th><th style="text-align:center;">Delete</th></tr>
-        </thead>
-        <tbody>
-            {% for p in role.permissions %}
-            <tr>
-                <td>{{ p.module|replace('_', ' ')|title }}</td>
-                <td style="text-align:center;">{{ '✅' if p.can_view else '—' }}</td>
-                <td style="text-align:center;">{{ '✅' if p.can_create else '—' }}</td>
-                <td style="text-align:center;">{{ '✅' if p.can_edit else '—' }}</td>
-                <td style="text-align:center;">{{ '✅' if p.can_delete else '—' }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% endfor %}
+    function addModuleToEdit() {
+        const select = document.getElementById('addModuleSelect');
+        const moduleCode = select.value;
+        const moduleName = select.options[select.selectedIndex].text;
+        if (!moduleCode) return;
+        
+        const tbody = document.querySelector('#editRoleBody tbody');
+        const existing = tbody.querySelector(`[data-module="${moduleCode}"]`);
+        if (existing) { alert('Module already in list.'); return; }
+        
+        const row = document.createElement('tr');
+        row.style.borderBottom = '1px solid var(--border-light)';
+        row.innerHTML = `
+            <td style="padding:7px 8px;font-weight:500;">${moduleName}</td>
+            <td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable on" data-module="${moduleCode}" data-action="view" onclick="toggleEditPerm(this)"></span></td>
+            <td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable on" data-module="${moduleCode}" data-action="create" onclick="toggleEditPerm(this)"></span></td>
+            <td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable on" data-module="${moduleCode}" data-action="edit" onclick="toggleEditPerm(this)"></span></td>
+            <td style="padding:7px 8px;text-align:center;"><span class="perm-dot clickable on" data-module="${moduleCode}" data-action="delete" onclick="toggleEditPerm(this)"></span></td>
+            <td style="padding:7px 8px;text-align:center;"><span style="cursor:pointer;color:#ef4444;font-weight:700;font-size:14px;" onclick="removeModuleRow(this)">×</span></td>
+        `;
+        tbody.appendChild(row);
+        select.value = '';
+        updateEditHiddenInputs();
+    }
 
-</div>
+    function removeModuleRow(btn) {
+        btn.closest('tr').remove();
+        updateEditHiddenInputs();
+    }
 
-<!-- RIGHT: Assign Users -->
-<div class="card" style="height: fit-content;">
-    <div class="card-header">
-        <h2><i class="fas fa-users"></i> Assign Roles</h2>
-    </div>
-    <div class="table-wrapper">
-        <table>
-            <thead><tr><th>User</th><th>Role</th><th></th></tr></thead>
-            <tbody>
-                {% for u in users %}
-                <tr>
-                    <td><strong>{{ u.username }}</strong></td>
-                    <td>
-                        <form method="POST" action="/assign_role" style="display: flex; gap: 6px; align-items: center;">
-                            <input type="hidden" name="user_id" value="{{ u.id }}">
-                            <select name="role_id" style="padding: 4px 8px; border-radius: 6px; font-size: 11px;">
-                                <option value="">Default</option>
-                                {% for role in roles %}
-                                <option value="{{ role.id }}" {% if u.custom_role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-primary btn-sm" style="padding:3px 8px; font-size:10px;">Save</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+    function toggleEditPerm(dot) {
+        dot.classList.toggle('on');
+        dot.classList.toggle('off');
+        updateEditHiddenInputs();
+    }
 
-</div>
+    function updateEditHiddenInputs() {
+        const container = document.getElementById('editHiddenInputs');
+        if (!container) return;
+        const dots = document.querySelectorAll('#editRoleBody .perm-dot.clickable.on');
+        const names = new Set();
+        dots.forEach(d => names.add(d.dataset.module + '_' + d.dataset.action));
+        container.innerHTML = '';
+        names.forEach(n => {
+            const input = document.createElement('input');
+            input.type = 'hidden'; input.name = n; input.value = '1';
+            container.appendChild(input);
+        });
+    }
+</script>
 {% endblock %}

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from models.database import get_db
+from models.access_control import check_module_access
 
 branches_bp = Blueprint('branches', __name__)
 
@@ -7,7 +8,9 @@ branches_bp = Blueprint('branches', __name__)
 def branches():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('branches'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('plan') not in ['enterprise']:
         flash('Multi-branch is available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))

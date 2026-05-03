@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import date, timedelta
 from calendar import monthrange
 from models.database import get_db
+from models.access_control import check_module_access
 
 budgets_bp = Blueprint('budgets', __name__)
 
@@ -9,7 +10,9 @@ budgets_bp = Blueprint('budgets', __name__)
 def budgets():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('budgets'): return redirect(url_for('dashboard.dashboard'))
+
     if session.get('plan') not in ['enterprise']:
         flash('Budgeting is available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))

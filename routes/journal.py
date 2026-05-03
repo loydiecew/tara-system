@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request
+from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from datetime import date
 from models.database import get_db
 
@@ -253,10 +253,6 @@ def income_statement():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['pro', 'enterprise']:
-        flash('Financial statements are available on Pro and Enterprise plans.', 'error')
-        return redirect(url_for('dashboard.dashboard'))
-    
     period = request.args.get('period', 'month')
     today = date.today()
     
@@ -321,10 +317,6 @@ def income_statement():
 def balance_sheet():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
-    if session.get('plan') not in ['pro', 'enterprise']:
-        flash('Financial statements are available on Pro and Enterprise plans.', 'error')
-        return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
     cursor = db.cursor(dictionary=True)

@@ -77,6 +77,24 @@ def sales():
         WHERE u.business_id = %s AND p.deleted_at IS NULL
     """, (business_id,))
     products = cursor.fetchall()
+
+    # Get projects for dropdown
+    projects = []
+    if session.get('plan') in ['pro', 'enterprise']:
+        cursor.execute("""
+            SELECT p.id, p.name FROM projects p
+            JOIN users u ON p.user_id = u.id
+            WHERE u.business_id = %s AND p.status = 'active'
+        """, (business_id,))
+        projects = cursor.fetchall()
+
+    # Get products for dropdown for this business (excluding soft-deleted)
+    cursor.execute("""
+        SELECT p.id, p.name, p.price, p.quantity FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.deleted_at IS NULL
+    """, (business_id,))
+    products = cursor.fetchall()
     
     cursor.close()
     db.close()
@@ -87,6 +105,7 @@ def sales():
                          total_sales=total_sales,
                          monthly_sales=monthly_sales,
                          products=products,
+                         projects=projects,
                          today=today.isoformat())
 
 @sales_bp.route('/add_sale', methods=['POST'])
@@ -173,11 +192,12 @@ def add_sale():
         
         db = get_db()
         cursor = db.cursor()
+        project_id = request.form.get('project_id') or None
+        
         cursor.execute("""
-            INSERT INTO sales (user_id, customer_name, amount, sale_date, description, reference_number, payment_method, served_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (session['user_id'], customer_name, amount, sale_date, description, reference_number, payment_method, served_by))
-
+            INSERT INTO sales (user_id, customer_name, amount, sale_date, description, reference_number, payment_method, served_by, project_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (session['user_id'], customer_name, amount, sale_date, description, reference_number, payment_method, served_by, project_id))
         db.commit()
         
         # Create journal entry for Pro users
@@ -323,7 +343,7 @@ def receipt(sale_id):
     
     # Get business owner details
     cursor.execute("""
-        SELECT username, business_name, business_id FROM users
+        SELECT username, business_name, business_id, vat_registered FROM users
         WHERE business_id = %s AND role IN ('admin', 'owner')
         LIMIT 1
     """, (business_id,))
@@ -334,17 +354,71 @@ def receipt(sale_id):
     
     business_name = owner['business_name'] if owner and owner.get('business_name') else session.get('business_name', 'My Business')
     business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
+    vat_registered = bool(owner['vat_registered']) if owner else False
     
     receipt_number = f"TARA-{sale_id:06d}"
     today = date.today()
     
     return render_template('receipt.html',
                          sale=sale,
+                         amount=float(sale['amount']),  
                          business_name=business_name,
                          business_id=business_id_num,
                          receipt_number=receipt_number,
+                         receipt_title='Sales Receipt',
+                         receipt_date=str(sale['sale_date']),
+                         customer_label='Bill To',
+                         customer_name=sale['customer_name'],
+                         description=sale.get('description', 'Sale of goods/services'),
                          today=today,
-                         username=session['username'])
+                         back_url='sales',
+                         username=session['username'],
+                         vat_registered=vat_registered)
+@sales_bp.route('/convert_sale_to_invoice/<int:sale_id>')
+def convert_sale_to_invoice(sale_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    if session.get('plan') not in ['pro', 'enterprise']:
+        flash('AR is available on Pro and Enterprise plans.', 'error')
+        return redirect(url_for('sales.sales'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("SELECT * FROM sales WHERE id = %s AND user_id = %s", (sale_id, session['user_id']))
+    sale = cursor.fetchone()
+    
+    if not sale:
+        cursor.close()
+        db.close()
+        flash('Sale not found.', 'error')
+        return redirect(url_for('sales.sales'))
+    
+    # Get or create customer
+    cursor.execute("SELECT id FROM customers WHERE name = %s AND user_id = %s", (sale['customer_name'], session['user_id']))
+    customer = cursor.fetchone()
+    
+    if not customer:
+        cursor.execute("INSERT INTO customers (user_id, name) VALUES (%s, %s)", (session['user_id'], sale['customer_name']))
+        customer_id = cursor.lastrowid
+    else:
+        customer_id = customer['id']
+    
+    # Create invoice
+    invoice_number = f"INV-{date.today().strftime('%Y%m%d')}-{sale_id}"
+    cursor.execute("""
+        INSERT INTO invoices (user_id, customer_id, invoice_number, amount, description, due_date, status)
+        VALUES (%s, %s, %s, %s, %s, %s, 'unpaid')
+    """, (session['user_id'], customer_id, invoice_number, sale['amount'], 
+          sale['description'] or f"Sale to {sale['customer_name']}", date.today()))
+    
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    flash(f'Invoice #{invoice_number} created from sale!', 'success')
+    return redirect(url_for('ar.ar'))
 
 @sales_bp.route('/receipt/payment/<int:payment_id>')
 def receipt_payment(payment_id):
@@ -382,9 +456,9 @@ def receipt_payment(payment_id):
         flash('Payment not found', 'error')
         return redirect(url_for('sales.sales'))
     
-    # Get business owner details
+    # Get business owner details (including VAT)
     cursor.execute("""
-        SELECT username, business_name, business_id FROM users
+        SELECT username, business_name, business_id, vat_registered FROM users
         WHERE business_id = %s AND role IN ('admin', 'owner')
         LIMIT 1
     """, (business_id,))
@@ -395,6 +469,7 @@ def receipt_payment(payment_id):
     
     business_name = owner['business_name'] if owner and owner.get('business_name') else 'My Business'
     business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
+    vat_registered = bool(owner['vat_registered']) if owner else False
     
     receipt_number = f"RCPT-{payment_id:06d}"
     today = date.today()
@@ -420,4 +495,5 @@ def receipt_payment(payment_id):
                          invoice_number=payment['doc_number'] if payment.get('invoice_id') else '',
                          today=today,
                          back_url=back_url,
-                         username=session['username'])
+                         username=session['username'],
+                         vat_registered=vat_registered)

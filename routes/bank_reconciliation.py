@@ -3,6 +3,7 @@ from datetime import date, timedelta
 import csv
 import io
 from models.database import get_db
+from models.access_control import check_module_access
 
 bank_rec_bp = Blueprint('bank_rec', __name__)
 
@@ -10,7 +11,9 @@ bank_rec_bp = Blueprint('bank_rec', __name__)
 def bank_reconciliation():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
+
+    if not check_module_access('bank_reconciliation'): return redirect(url_for('dashboard.dashboard'))
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])
