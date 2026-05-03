@@ -48,7 +48,6 @@
             </div>
         </div>
         
-        <!-- Items Table -->
         <div style="margin-top: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <h3 style="font-size: 14px;">Items</h3>
@@ -93,51 +92,30 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Purchase Orders</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('poTable', 'TARA_Purchase_Orders_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=suppliers" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-upload"></i> Import
+            </a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('poTable', 'TARA_Purchase_Orders_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
     </div>
     
-    <!-- Filter Bar -->
     <div class="filter-bar">
-        <div class="filter-group">
-            <label>Date From</label>
-            <input type="date" id="poBody_date_from" onchange="filterTable('poBody','poNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Date To</label>
-            <input type="date" id="poBody_date_to" onchange="filterTable('poBody','poNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Status</label>
-            <select id="poBody_status" onchange="filterTable('poBody','poNoData')">
-                <option value="all">All</option>
-                <option value="draft">Draft</option>
-                <option value="ordered">Ordered</option>
-                <option value="received">Received</option>
-            </select>
-        </div>
-        <div class="filter-group" style="flex:1; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="poBody_search" placeholder="Supplier or PO #..." oninput="filterTable('poBody','poNoData')">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('poBody')" style="padding:8px 12px; font-size:11px;">
-            <i class="fas fa-times"></i> Clear
-        </button>
+        <div class="filter-group"><label>Date From</label><input type="date" id="poBody_date_from" onchange="filterTable('poBody','poNoData')"></div>
+        <div class="filter-group"><label>Date To</label><input type="date" id="poBody_date_to" onchange="filterTable('poBody','poNoData')"></div>
+        <div class="filter-group"><label>Status</label><select id="poBody_status" onchange="filterTable('poBody','poNoData')"><option value="all">All</option><option value="draft">Draft</option><option value="ordered">Ordered</option><option value="received">Received</option></select></div>
+        <div class="filter-group" style="flex:1; min-width:150px;"><label>Search</label><input type="text" id="poBody_search" placeholder="Supplier or PO #..." oninput="filterTable('poBody','poNoData')"></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('poBody')" style="padding:8px 12px; font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
     
     <div class="table-wrapper">
         <table id="poTable">
             <thead>
-                <tr>
-                    <th>PO #</th>
-                    <th>Supplier</th>
-                    <th>Order Date</th>
-                    <th>Expected</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
+                <tr><th>PO #</th><th>Supplier</th><th>Order Date</th><th>Expected</th><th>Total</th><th>Status</th><th>Actions</th></tr>
             </thead>
             <tbody id="poBody">
                 {% for po in orders %}
@@ -148,21 +126,17 @@
                     <td>{{ po.expected_date or '-' }}</td>
                     <td>₱ {{ "{:,.2f}".format(po.total_amount) }}</td>
                     <td>
-                        {% if po.status == 'draft' %}
-                        <span class="badge badge-info">Draft</span>
-                        {% elif po.status == 'ordered' %}
-                        <span class="badge badge-warning">Ordered</span>
-                        {% elif po.status == 'received' %}
-                        <span class="badge badge-success">Received</span>
-                        {% else %}
-                        <span class="badge badge-danger">{{ po.status }}</span>
-                        {% endif %}
+                        {% if po.status == 'draft' %}<span class="badge badge-info">Draft</span>
+                        {% elif po.status == 'ordered' %}<span class="badge badge-warning">Ordered</span>
+                        {% elif po.status == 'received' %}<span class="badge badge-success">Received</span>
+                        {% else %}<span class="badge badge-danger">{{ po.status }}</span>{% endif %}
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                         {% if po.status == 'ordered' %}
-                        <a href="/receive_po/{{ po.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Receive this order? Inventory will be updated and a bill will be created.')" style="padding:5px 12px; font-size:12px;">
-                            <i class="fas fa-check"></i> Receive
-                        </a>
+                        <a href="/receive_po/{{ po.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Receive this order? Inventory will be updated and a bill will be created.')" style="padding:5px 12px; font-size:12px;"><i class="fas fa-check"></i> Receive</a>
+                        {% endif %}
+                        {% if po.supplier_email %}
+                        <a href="/email_po/{{ po.id }}" class="btn-icon" title="Email PO to Supplier"><i class="fas fa-envelope"></i></a>
                         {% endif %}
                     </td>
                 </tr>
@@ -179,16 +153,9 @@
         const tbody = document.getElementById('poItemsBody');
         const row = document.createElement('tr');
         row.className = 'po-item-row';
-        row.innerHTML = `
-            <td><input type="text" name="product_name[]" placeholder="e.g., Coffee beans" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updatePOTotal()" style="width:80px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updatePOTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-            <td class="po-subtotal" style="font-weight:600;">₱0.00</td>
-            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updatePOTotal();"><i class="fas fa-times"></i></button></td>
-        `;
+        row.innerHTML = `<td><input type="text" name="product_name[]" placeholder="e.g., Coffee beans" required style="width:100%;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td><input type="number" name="quantity[]" value="1" min="1" required onchange="updatePOTotal()" style="width:80px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updatePOTotal()" style="width:120px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td class="po-subtotal" style="font-weight:600;">₱0.00</td><td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updatePOTotal();"><i class="fas fa-times"></i></button></td>`;
         tbody.appendChild(row);
     }
-    
     function updatePOTotal() {
         const rows = document.querySelectorAll('.po-item-row');
         let grandTotal = 0;

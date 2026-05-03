@@ -64,9 +64,12 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Projects</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('projectsTable', 'TARA_Projects_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+        <div style="display: flex; gap: 8px;">
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=cash" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-upload"></i> Import</a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('projectsTable', 'TARA_Projects_{{ today }}')" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-download"></i> Export CSV</button>
+        </div>
     </div>
     
     <div class="filter-bar">

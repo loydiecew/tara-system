@@ -31,6 +31,7 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
+            session['business_id'] = user['business_id']
             session['custom_role_id'] = user.get('custom_role_id')
             # Get user's plan
             plan_id = user.get('plan_id', 1)

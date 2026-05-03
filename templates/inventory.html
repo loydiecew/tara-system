@@ -23,69 +23,20 @@
     </div>
     <form method="POST" action="/add_product">
         <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-            <div class="form-group">
-                <label>Product Name *</label>
-                <input type="text" name="name" required>
-            </div>
-            <div class="form-group">
-                <label>SKU</label>
-                <input type="text" name="sku" placeholder="Stock keeping unit">
-            </div>
-            <div class="form-group">
-                <label>Barcode</label>
-                <input type="text" name="barcode" placeholder="Scanner barcode">
-            </div>
-            <div class="form-group">
-                <label>Selling Price (₱) *</label>
-                <input type="number" name="price" step="0.01" required>
-            </div>
-            <div class="form-group">
-                <label>Cost per Unit / COGS (₱)</label>
-                <input type="number" name="cogs" step="0.01" value="0" placeholder="How much you paid per unit">
-            </div>
-            <div class="form-group">
-                <label>Initial Stock</label>
-                <input type="number" name="quantity" value="0">
-            </div>
-            <div class="form-group">
-                <label>Unit of Measure</label>
-                <select name="unit_of_measure">
-                    <option value="pcs">Pieces (pcs)</option>
-                    <option value="kg">Kilogram (kg)</option>
-                    <option value="g">Gram (g)</option>
-                    <option value="L">Liter (L)</option>
-                    <option value="box">Box</option>
-                    <option value="pack">Pack</option>
-                    <option value="meter">Meter</option>
-                    <option value="hour">Hour</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Category</label>
-                <input type="text" name="category" placeholder="e.g., Beverages, Food">
-            </div>
-            <div class="form-group">
-                <label>Supplier</label>
-                <select name="supplier_id">
-                    <option value="">No supplier</option>
-                    {% for s in suppliers %}
-                    <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <div class="form-group"><label>Product Name *</label><input type="text" name="name" required></div>
+            <div class="form-group"><label>SKU</label><input type="text" name="sku" placeholder="Stock keeping unit"></div>
+            <div class="form-group"><label>Barcode</label><input type="text" name="barcode" placeholder="Scanner barcode"></div>
+            <div class="form-group"><label>Selling Price (₱) *</label><input type="number" name="price" step="0.01" required></div>
+            <div class="form-group"><label>Cost per Unit / COGS (₱)</label><input type="number" name="cogs" step="0.01" value="0" placeholder="How much you paid per unit"></div>
+            <div class="form-group"><label>Initial Stock</label><input type="number" name="quantity" value="0"></div>
+            <div class="form-group"><label>Unit of Measure</label><select name="unit_of_measure"><option value="pcs">Pieces (pcs)</option><option value="kg">Kilogram (kg)</option><option value="g">Gram (g)</option><option value="L">Liter (L)</option><option value="box">Box</option><option value="pack">Pack</option><option value="meter">Meter</option><option value="hour">Hour</option></select></div>
+            <div class="form-group"><label>Category</label><input type="text" name="category" placeholder="e.g., Beverages, Food"></div>
+            <div class="form-group"><label>Supplier</label><select name="supplier_id"><option value="">No supplier</option>{% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}</select></div>
         </div>
-        <div style="margin-top: 16px; display: flex; gap: 16px; flex-wrap: wrap;">
-            <div style="flex: 1;">
-                <label>Reorder Level</label>
-                <input type="number" name="reorder_level" value="5" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
-            </div>
-            <div style="flex: 2;">
-                <label>Description</label>
-                <input type="text" name="description" placeholder="Optional product description" style="width: 100%; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 12px; background: var(--bg-secondary); color: var(--text-primary);">
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-                <button type="submit" class="btn btn-primary">Add Product</button>
-            </div>
+        <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;">
+            <div style="flex:1;"><label>Reorder Level</label><input type="number" name="reorder_level" value="5" style="width:100%;padding:12px 14px;border:1px solid var(--border-light);border-radius:12px;background:var(--bg-secondary);color:var(--text-primary);"></div>
+            <div style="flex:2;"><label>Description</label><input type="text" name="description" placeholder="Optional product description" style="width:100%;padding:12px 14px;border:1px solid var(--border-light);border-radius:12px;background:var(--bg-secondary);color:var(--text-primary);"></div>
+            <div style="display:flex;align-items:flex-end;"><button type="submit" class="btn btn-primary">Add Product</button></div>
         </div>
     </form>
 </div>
@@ -93,102 +44,56 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-cubes"></i> Products</h2>
-        <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <span style="font-size: 11px; color: var(--text-secondary);">{{ products|length }} products</span>
-            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('inventoryTable', 'TARA_Inventory_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-                <i class="fas fa-download"></i> Export CSV
-            </button>
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=inventory" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-upload"></i> Import</a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('inventoryTable', 'TARA_Inventory_{{ today }}')" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-download"></i> Export CSV</button>
+            <a href="/export/pdf/inventory" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-file-pdf"></i> Export PDF</a>
         </div>
     </div>
     
-    <!-- UNIVERSAL FILTER BAR -->
     {% if session.role in ['admin', 'owner', 'manager'] %}
     <div class="filter-bar">
-        <div class="filter-group">
-            <label>Status</label>
-            <select id="invBody_status" onchange="filterTable('invBody','invNoData')">
-                <option value="all">All</option>
-                <option value="ok">In Stock</option>
-                <option value="low">Low Stock</option>
-            </select>
-        </div>
-        <div class="filter-group" style="flex:1; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="invBody_search" placeholder="Product name or category..." oninput="filterTable('invBody','invNoData')">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('invBody')" style="padding:8px 12px; font-size:11px;">
-            <i class="fas fa-times"></i> Clear
-        </button>
+        <div class="filter-group"><label>Status</label><select id="invBody_status" onchange="filterTable('invBody','invNoData')"><option value="all">All</option><option value="ok">In Stock</option><option value="low">Low Stock</option></select></div>
+        <div class="filter-group" style="flex:1;min-width:150px;"><label>Search</label><input type="text" id="invBody_search" placeholder="Product name or category..." oninput="filterTable('invBody','invNoData')"></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('invBody')" style="padding:8px 12px;font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
     {% endif %}
     
     <div class="table-wrapper">
         <table id="inventoryTable">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>COGS</th>
-                    <th>Quantity</th>
-                    <th>Adjust Stock</th>
-                    <th>Stock Value</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>COGS</th><th>Quantity</th><th>Adjust Stock</th><th>Stock Value</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="invBody">
                 {% for p in products %}
-                <tr {% if p.quantity < p.reorder_level %}class="low-stock-row"{% endif %} data-filter='{"status":"{{ 'low' if p.quantity < p.reorder_level else 'ok' }}","search":"{{ p.name|lower }} {{ p.category|lower }}"}'}>
+                <tr {% if p.quantity < p.reorder_level %}class="low-stock-row"{% endif %} data-filter='{"status":"{{ 'low' if p.quantity < p.reorder_level else 'ok' }}","search":"{{ p.name|lower }} {{ p.category|lower }}"}'>
                     <td><strong>{{ p.name }}</strong></td>
                     <td>{{ p.category or '-' }}</td>
                     <td>₱ {{ "{:,.2f}".format(p.price) }}</td>
                     <td>₱ {{ "{:,.2f}".format(p.cogs or 0) }}</td>
                     <td><strong>{{ p.quantity }}</strong></td>
                     <td>
-                        <form method="POST" action="/adjust_stock/{{ p.id }}" style="display: flex; gap: 5px; flex-wrap: wrap;">
-                            <input type="number" name="quantity" value="1" min="1" style="width: 70px; padding: 6px; border: 1px solid var(--border-light); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary);">
-                            <select name="action" style="padding: 6px; border: 1px solid var(--border-light); border-radius: 6px; background: var(--bg-secondary); color: var(--text-primary);">
-                                <option value="add">+ Add</option>
-                                <option value="remove">- Remove</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary" style="padding: 6px 12px; margin: 0;">Apply</button>
+                        <form method="POST" action="/adjust_stock/{{ p.id }}" style="display:flex;gap:5px;flex-wrap:wrap;">
+                            <input type="number" name="quantity" value="1" min="1" style="width:70px;padding:6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);">
+                            <select name="action" style="padding:6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);"><option value="add">+ Add</option><option value="remove">- Remove</option></select>
+                            <button type="submit" class="btn btn-primary" style="padding:6px 12px;margin:0;">Apply</button>
                         </form>
                     </td>
                     <td>₱ {{ "{:,.2f}".format(p.quantity * p.price) }}</td>
-                    <td>
-                        {% if p.quantity < p.reorder_level %}
-                        <span class="badge badge-warning">Low Stock</span>
-                        {% else %}
-                        <span class="badge badge-success">OK</span>
-                        {% endif %}
-                    </td>
-                    <td style="white-space: nowrap;">
-                        <a href="/edit_product/{{ p.id }}" class="btn-icon" title="Edit">
-                            <i class="fas fa-pen"></i>
-                        </a>
-                        <a href="/delete_product/{{ p.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete this product?')">
-                            <i class="fas fa-trash-alt"></i>
-                        </a>
+                    <td>{% if p.quantity < p.reorder_level %}<span class="badge badge-warning">Low Stock</span>{% else %}<span class="badge badge-success">OK</span>{% endif %}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="/edit_product/{{ p.id }}" class="btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
+                        <a href="/delete_product/{{ p.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete this product?')"><i class="fas fa-trash-alt"></i></a>
                     </td>
                 </tr>
                 {% else %}
-                <tr id="invNoData"><td colspan="9" style="text-align: center; padding: 30px;">
-                    <div class="empty-state">
-                        <i class="fas fa-boxes-stacked"></i>
-                        <h3>No products yet</h3>
-                        <p>Add your first product to get started</p>
-                    </div>
-                </td></tr>
+                <tr id="invNoData"><td colspan="9" style="text-align:center;padding:30px;"><div class="empty-state"><i class="fas fa-boxes-stacked"></i><h3>No products yet</h3><p>Add your first product to get started</p></div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
 
-<style>
-    .low-stock-row {
-        background: var(--accent-light);
-    }
-</style>
+<style>.low-stock-row { background: var(--accent-light); }</style>
 {% endblock %}

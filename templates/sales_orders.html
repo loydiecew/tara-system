@@ -25,67 +25,26 @@
     </div>
     <form method="POST" action="/add_so" id="soForm">
         <div class="form-grid">
-            <div class="form-group">
-                <label>Customer</label>
-                <select name="customer_id">
-                    <option value="">Select customer</option>
-                    {% for c in customers %}
-                    <option value="{{ c.id }}">{{ c.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Order Date</label>
-                <input type="date" name="order_date" value="{{ today }}" required>
-            </div>
-            <div class="form-group">
-                <label>Delivery Date</label>
-                <input type="date" name="delivery_date">
-            </div>
-            <div class="form-group">
-                <label>Notes</label>
-                <input type="text" name="notes" placeholder="Optional">
-            </div>
+            <div class="form-group"><label>Customer</label><select name="customer_id"><option value="">Select customer</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+            <div class="form-group"><label>Order Date</label><input type="date" name="order_date" value="{{ today }}" required></div>
+            <div class="form-group"><label>Delivery Date</label><input type="date" name="delivery_date"></div>
+            <div class="form-group"><label>Notes</label><input type="text" name="notes" placeholder="Optional"></div>
         </div>
-        
-        <!-- Items Table -->
-        <div style="margin-top: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="font-size: 14px;">Items</h3>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="addSOItem()">
-                    <i class="fas fa-plus"></i> Add Item
-                </button>
-            </div>
-            <div class="table-wrapper">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Product Name</th>
-                            <th>Quantity</th>
-                            <th>Unit Price (₱)</th>
-                            <th>Subtotal</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="soItemsBody">
-                        <tr class="so-item-row">
-                            <td><input type="text" name="product_name[]" placeholder="e.g., Packed meal" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-                            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updateSOTotal()" style="width:80px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-                            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updateSOTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-                            <td class="so-subtotal" style="font-weight:600;">₱0.00</td>
-                            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updateSOTotal();"><i class="fas fa-times"></i></button></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div style="text-align: right; margin-top: 12px; font-size: 16px; font-weight: 700;">
-                Total: <span id="soGrandTotal" style="color: #10b981;">₱0.00</span>
-            </div>
+        <div style="margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="font-size:14px;">Items</h3><button type="button" class="btn btn-secondary btn-sm" onclick="addSOItem()"><i class="fas fa-plus"></i> Add Item</button></div>
+            <div class="table-wrapper"><table><thead><tr><th>Product Name</th><th>Quantity</th><th>Unit Price (₱)</th><th>Subtotal</th><th></th></tr></thead>
+            <tbody id="soItemsBody">
+                <tr class="so-item-row">
+                    <td><input type="text" name="product_name[]" placeholder="e.g., Packed meal" required style="width:100%;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td>
+                    <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updateSOTotal()" style="width:80px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td>
+                    <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updateSOTotal()" style="width:120px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td>
+                    <td class="so-subtotal" style="font-weight:600;">₱0.00</td>
+                    <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updateSOTotal();"><i class="fas fa-times"></i></button></td>
+                </tr>
+            </tbody></table></div>
+            <div style="text-align:right;margin-top:12px;font-size:16px;font-weight:700;">Total: <span id="soGrandTotal" style="color:#10b981;">₱0.00</span></div>
         </div>
-        
-        <button type="submit" class="btn btn-primary" style="margin-top: 16px;">
-            <i class="fas fa-save"></i> Create Sales Order
-        </button>
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;"><i class="fas fa-save"></i> Create Sales Order</button>
     </form>
 </div>
 
@@ -93,88 +52,49 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Sales Orders</h2>
-        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('soTable', 'TARA_Sales_Orders_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-            <i class="fas fa-download"></i> Export CSV
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            {% if user_can_view('import_data') %}
+            <a href="/import-data?tab=sales" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-upload"></i> Import</a>
+            {% endif %}
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('soTable', 'TARA_Sales_Orders_{{ today }}')" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-download"></i> Export CSV</button>
+        </div>
     </div>
-    
-    <!-- Filter Bar -->
     <div class="filter-bar">
-        <div class="filter-group">
-            <label>Date From</label>
-            <input type="date" id="soBody_date_from" onchange="filterTable('soBody','soNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Date To</label>
-            <input type="date" id="soBody_date_to" onchange="filterTable('soBody','soNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Status</label>
-            <select id="soBody_status" onchange="filterTable('soBody','soNoData')">
-                <option value="all">All</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="preparing">Preparing</option>
-                <option value="delivered">Delivered</option>
-                <option value="invoiced">Invoiced</option>
-            </select>
-        </div>
-        <div class="filter-group" style="flex:1; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="soBody_search" placeholder="Customer or SO #..." oninput="filterTable('soBody','soNoData')">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('soBody')" style="padding:8px 12px; font-size:11px;">
-            <i class="fas fa-times"></i> Clear
-        </button>
+        <div class="filter-group"><label>Date From</label><input type="date" id="soBody_date_from" onchange="filterTable('soBody','soNoData')"></div>
+        <div class="filter-group"><label>Date To</label><input type="date" id="soBody_date_to" onchange="filterTable('soBody','soNoData')"></div>
+        <div class="filter-group"><label>Status</label><select id="soBody_status" onchange="filterTable('soBody','soNoData')"><option value="all">All</option><option value="confirmed">Confirmed</option><option value="preparing">Preparing</option><option value="delivered">Delivered</option><option value="invoiced">Invoiced</option></select></div>
+        <div class="filter-group" style="flex:1;min-width:150px;"><label>Search</label><input type="text" id="soBody_search" placeholder="Customer or SO #..." oninput="filterTable('soBody','soNoData')"></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('soBody')" style="padding:8px 12px; font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
-    
-    <div class="table-wrapper">
-        <table id="soTable">
-            <thead>
-                <tr>
-                    <th>SO #</th>
-                    <th>Customer</th>
-                    <th>Order Date</th>
-                    <th>Delivery</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="soBody">
-                {% for so in orders %}
-                <tr data-filter='{"date":"{{ so.order_date }}","status":"{{ so.status }}","search":"{{ (so.customer_name or '')|lower }} {{ so.so_number|lower }}"}'>
-                    <td><strong>{{ so.so_number }}</strong></td>
-                    <td>{{ so.customer_name or '-' }}</td>
-                    <td>{{ so.order_date }}</td>
-                    <td>{{ so.delivery_date or '-' }}</td>
-                    <td>₱ {{ "{:,.2f}".format(so.total_amount) }}</td>
-                    <td>
-                        {% if so.status == 'confirmed' %}
-                        <span class="badge badge-info">Confirmed</span>
-                        {% elif so.status == 'preparing' %}
-                        <span class="badge badge-warning">Preparing</span>
-                        {% elif so.status == 'delivered' %}
-                        <span class="badge badge-success">Delivered</span>
-                        {% elif so.status == 'invoiced' %}
-                        <span class="badge badge-success">Invoiced</span>
-                        {% else %}
-                        <span class="badge badge-danger">{{ so.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if so.status == 'confirmed' %}
-                        <a href="/deliver_so/{{ so.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Deliver this order? Inventory will be deducted and an invoice will be created.')" style="padding:5px 12px; font-size:12px;">
-                            <i class="fas fa-truck"></i> Deliver
-                        </a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% else %}
-                <tr id="soNoData"><td colspan="7" style="text-align: center; padding: 30px;">No sales orders yet</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <div class="table-wrapper"><table id="soTable"><thead><tr><th>SO #</th><th>Customer</th><th>Order Date</th><th>Delivery</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="soBody">
+        {% for so in orders %}
+        <tr data-filter='{"date":"{{ so.order_date }}","status":"{{ so.status }}","search":"{{ (so.customer_name or '')|lower }} {{ so.so_number|lower }}"}'>
+            <td><strong>{{ so.so_number }}</strong></td>
+            <td>{{ so.customer_name or '-' }}</td>
+            <td>{{ so.order_date }}</td>
+            <td>{{ so.delivery_date or '-' }}</td>
+            <td>₱ {{ "{:,.2f}".format(so.total_amount) }}</td>
+            <td>
+                {% if so.status == 'confirmed' %}<span class="badge badge-info">Confirmed</span>
+                {% elif so.status == 'preparing' %}<span class="badge badge-warning">Preparing</span>
+                {% elif so.status == 'delivered' %}<span class="badge badge-success">Delivered</span>
+                {% elif so.status == 'invoiced' %}<span class="badge badge-success">Invoiced</span>
+                {% else %}<span class="badge badge-danger">{{ so.status }}</span>{% endif %}
+            </td>
+            <td style="white-space:nowrap;">
+                {% if so.status == 'confirmed' %}
+                <a href="/deliver_so/{{ so.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Deliver this order?')" style="padding:5px 12px;font-size:12px;"><i class="fas fa-truck"></i> Deliver</a>
+                {% endif %}
+                {% if so.customer_email %}
+                <a href="/email_so/{{ so.id }}" class="btn-icon" title="Email SO to Customer"><i class="fas fa-envelope"></i></a>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr id="soNoData"><td colspan="7" style="text-align:center;padding:30px;">No sales orders yet</td></tr>
+        {% endfor %}
+    </tbody></table></div>
 </div>
 
 <script>
@@ -182,16 +102,9 @@
         const tbody = document.getElementById('soItemsBody');
         const row = document.createElement('tr');
         row.className = 'so-item-row';
-        row.innerHTML = `
-            <td><input type="text" name="product_name[]" placeholder="e.g., Packed meal" required style="width:100%; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-            <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updateSOTotal()" style="width:80px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-            <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updateSOTotal()" style="width:120px; padding:8px; border:1px solid var(--border-light); border-radius:8px; background:var(--bg-secondary); color:var(--text-primary);"></td>
-            <td class="so-subtotal" style="font-weight:600;">₱0.00</td>
-            <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove(); updateSOTotal();"><i class="fas fa-times"></i></button></td>
-        `;
+        row.innerHTML = `<td><input type="text" name="product_name[]" placeholder="e.g., Packed meal" required style="width:100%;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td><input type="number" name="quantity[]" value="1" min="1" required onchange="updateSOTotal()" style="width:80px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updateSOTotal()" style="width:120px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td class="so-subtotal" style="font-weight:600;">₱0.00</td><td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updateSOTotal();"><i class="fas fa-times"></i></button></td>`;
         tbody.appendChild(row);
     }
-    
     function updateSOTotal() {
         const rows = document.querySelectorAll('.so-item-row');
         let grandTotal = 0;

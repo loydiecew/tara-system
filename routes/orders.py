@@ -85,8 +85,8 @@ def add_po():
     po_number = f"PO-{date.today().strftime('%Y%m%d')}-{session['user_id']}-{cursor.lastrowid if hasattr(cursor, 'lastrowid') else '1'}"
     
     cursor.execute("""
-        INSERT INTO purchase_orders (user_id, supplier_id, po_number, order_date, expected_date, total_amount, notes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO purchase_orders (user_id, supplier_id, po_number, order_date, expected_date, total_amount, notes, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'ordered')
     """, (session['user_id'], supplier_id, po_number, order_date, 
           expected_date if expected_date else None, total, notes))
     po_id = cursor.lastrowid
@@ -172,8 +172,8 @@ def receive_po(po_id):
 @orders_bp.route('/sales-orders')
 def sales_orders():
     if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-        
+        return redirect(url_for('auth.login'))  
+
     if not check_module_access('sales_orders'): return redirect(url_for('dashboard.dashboard'))
 
     if session.get('role') not in ['admin', 'owner', 'manager']:
@@ -244,10 +244,10 @@ def add_so():
     so_number = f"SO-{date.today().strftime('%Y%m%d')}-{session['user_id']}"
     
     cursor.execute("""
-        INSERT INTO sales_orders (user_id, customer_id, so_number, order_date, delivery_date, total_amount, notes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], customer_id, so_number, order_date,
-          delivery_date if delivery_date else None, total, notes))
+        INSERT INTO purchase_orders (user_id, supplier_id, po_number, order_date, expected_date, total_amount, notes, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'ordered')
+    """, (session['user_id'], supplier_id, po_number, order_date, 
+          expected_date if expected_date else None, total, notes))
     so_id = cursor.lastrowid
     
     for item in items:
@@ -318,4 +318,76 @@ def deliver_so(so_id):
     db.close()
     
     flash(f'SO #{so["so_number"]} delivered! Inventory deducted, invoice created.', 'success')
+    return redirect(url_for('orders.sales_orders'))
+
+@orders_bp.route('/email_po/<int:po_id>')
+def email_po(po_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT po.*, s.name as supplier_name, s.email as supplier_email
+        FROM purchase_orders po
+        LEFT JOIN suppliers s ON po.supplier_id = s.id
+        WHERE po.id = %s AND po.user_id = %s
+    """, (po_id, session['user_id']))
+    po = cursor.fetchone()
+    cursor.close()
+    db.close()
+    
+    if not po or not po.get('supplier_email'):
+        flash('Supplier has no email address.', 'error')
+        return redirect(url_for('orders.purchase_orders'))
+    
+    from models.email_service import send_email
+    subject = f"Purchase Order {po['po_number']} from {session.get('business_name', 'TARA')}"
+    body = f"""<p>Dear {po['supplier_name']},</p>
+    <p>Please find our purchase order below:</p>
+    <p><strong>PO Number:</strong> {po['po_number']}<br>
+    <strong>Date:</strong> {po['order_date']}<br>
+    <strong>Expected Delivery:</strong> {po.get('expected_date', 'N/A')}<br>
+    <strong>Total:</strong> ₱{float(po['total_amount']):,.2f}</p>
+    <p>Thank you.</p>"""
+    
+    success, msg = send_email(po['supplier_email'], subject, body)
+    flash('PO emailed to supplier!' if success else f'Failed: {msg}', 'success' if success else 'error')
+    return redirect(url_for('orders.purchase_orders'))
+
+@orders_bp.route('/email_so/<int:so_id>')
+def email_so(so_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT so.*, c.name as customer_name, c.email as customer_email
+        FROM sales_orders so
+        LEFT JOIN customers c ON so.customer_id = c.id
+        WHERE so.id = %s AND so.user_id = %s
+    """, (so_id, session['user_id']))
+    so = cursor.fetchone()
+    cursor.close()
+    db.close()
+    
+    if not so or not so.get('customer_email'):
+        flash('Customer has no email address.', 'error')
+        return redirect(url_for('orders.sales_orders'))
+    
+    from models.email_service import send_email
+    subject = f"Sales Order {so['so_number']} from {session.get('business_name', 'TARA')}"
+    body = f"""<p>Dear {so['customer_name']},</p>
+    <p>Thank you for your order! Here are the details:</p>
+    <p><strong>SO Number:</strong> {so['so_number']}<br>
+    <strong>Date:</strong> {so['order_date']}<br>
+    <strong>Delivery Date:</strong> {so.get('delivery_date', 'N/A')}<br>
+    <strong>Total:</strong> ₱{float(so['total_amount']):,.2f}</p>
+    <p>We'll notify you once it's delivered.</p>"""
+    
+    success, msg = send_email(so['customer_email'], subject, body)
+    flash('SO emailed to customer!' if success else f'Failed: {msg}', 'success' if success else 'error')
     return redirect(url_for('orders.sales_orders'))

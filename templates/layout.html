@@ -825,6 +825,11 @@
                         <i class="fas fa-store-alt"></i><span>Branches</span>
                     </a>
                     {% endif %}
+                    {% if user_can_view('import_data') %}
+                    <a href="/import-data" class="nav-item {{ is_active('import_data') }}">
+                        <i class="fas fa-upload"></i><span>Import Data</span>
+                    </a>
+                    {% endif %}
                     {% endif %}
                 </div>
                 {% endif %}
@@ -855,6 +860,11 @@
                     <a href="/balance-sheet" class="nav-item {{ is_active('balance_sheet') }}">
                         <i class="fas fa-file-invoice"></i><span>Balance Sheet</span>
                     </a>
+                    {% if session.role in ['admin', 'owner'] and session.plan in ['pro', 'enterprise'] %}
+                    <a href="/admin/audit" class="nav-item {{ is_active('admin_audit') }}">
+                        <i class="fas fa-history"></i><span>Audit Log</span>
+                    </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -1152,7 +1162,8 @@
                 '/all-transactions': 'accounting', '/journal': 'accounting',
                 '/ledger': 'accounting', '/trial-balance': 'accounting',
                 '/income-statement': 'accounting', '/balance-sheet': 'accounting',
-                '/insights': 'accounting','/reports': 'accounting'     
+                '/insights': 'accounting','/reports': 'accounting',    
+                '/import-data': 'operations','/admin/audit': 'accounting',
             };
             
             const CATEGORY_MODULES = {
@@ -1179,6 +1190,7 @@
                     {% if user_can_view('timecards') %}{name:'Timecards',url:'/timecards',icon:'fa-clock'},{% endif %}
                     {% if user_can_view('assets') %}{name:'Fixed Assets',url:'/assets',icon:'fa-building'},{% endif %}
                     {% if user_can_view('branches') %}{name:'Branches',url:'/branches',icon:'fa-store-alt'},{% endif %}
+                    {% if user_can_view('import_data') %}{name:'Import Data',url:'/import-data',icon:'fa-upload'},{% endif %}
                     {% if user_can_view('users_roles') %}{name:'Users & Roles',url:'/users-roles',icon:'fa-users-gear'},{% endif %}
                 ].filter(Boolean),
                 'accounting': [
@@ -1190,6 +1202,7 @@
                     {% if user_can_view('trial_balance') %}{name:'Trial Balance',url:'/trial-balance',icon:'fa-balance-scale-right'},{% endif %}
                     {% if user_can_view('income_statement') %}{name:'Income Statement',url:'/income-statement',icon:'fa-file-invoice-dollar'},{% endif %}
                     {% if user_can_view('balance_sheet') %}{name:'Balance Sheet',url:'/balance-sheet',icon:'fa-file-invoice'},{% endif %}
+                    {% if user_can_view('admin_audit') %}{name:'Audit Log',url:'/admin/audit',icon:'fa-history'},{% endif %}
                 ].filter(Boolean)
             };
             

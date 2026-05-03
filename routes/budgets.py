@@ -37,10 +37,12 @@ def budgets():
             AND t.type = 'expense'
             AND t.deleted_at IS NULL
         JOIN users u ON b.user_id = u.id
+        LEFT JOIN users ut ON t.user_id = ut.id
         WHERE u.business_id = %s
+        AND (ut.business_id = %s OR t.id IS NULL)
         GROUP BY b.id, b.category, b.month, b.budget_amount
         ORDER BY b.month DESC, b.category ASC
-    """, (business_id,))
+    """, (business_id, business_id))
     budgets = cursor.fetchall()
     
     for b in budgets:
@@ -135,10 +137,12 @@ def budget_comparison():
             AND t.type = 'expense'
             AND t.deleted_at IS NULL
         JOIN users u ON b.user_id = u.id
+        LEFT JOIN users ut ON t.user_id = ut.id
         WHERE u.business_id = %s AND b.month = %s
+        AND (ut.business_id = %s OR t.id IS NULL)
         GROUP BY b.category, b.budget_amount
         ORDER BY b.category
-    """, (month, month, business_id, month))
+    """, (month, month, business_id, month, business_id))
     data = cursor.fetchall()
     
     cursor.close()
