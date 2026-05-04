@@ -6,243 +6,228 @@ from models.helpers import get_week_range
 
 insights_bp = Blueprint('insights', __name__)
 
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
+from datetime import date, timedelta
+import json
+from models.database import get_db
+from models.helpers import get_week_range
+
+insights_bp = Blueprint('insights', __name__)
+
 @insights_bp.route('/insights')
 def insights():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
     is_cashier = session.get('role') == 'cashier'
-
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    
     business_id = session.get('business_id', session['user_id'])
-    
-    # Get current date and week ranges
     today = date.today()
-    current_week_start, current_week_end = get_week_range(today)
-    last_week_start = current_week_start - timedelta(days=7)
-    last_week_end = current_week_end - timedelta(days=7)
     
-    # ========== CURRENT WEEK - SALES REVENUE ==========
+    # Get period from query string
+    period = request.args.get('period', 'month')
+    
+    if period == 'quarter':
+        quarter = (today.month - 1) // 3
+        start_date = date(today.year, quarter * 3 + 1, 1)
+        end_date = today
+        compare_start = (start_date - timedelta(days=1))
+        compare_start = date(compare_start.year, ((compare_start.month-1)//3)*3 + 1, 1)
+        compare_end = start_date - timedelta(days=1)
+    elif period == 'year':
+        start_date = date(today.year, 1, 1)
+        end_date = today
+        compare_start = date(today.year - 1, 1, 1)
+        compare_end = date(today.year - 1, 12, 31)
+    elif len(period) == 7 and '-' in period:
+        year, month = map(int, period.split('-'))
+        start_date = date(year, month, 1)
+        if month == 12:
+            end_date = date(year, month, 31)
+        else:
+            end_date = date(year, month + 1, 1) - timedelta(days=1)
+        compare_start = (start_date - timedelta(days=1)).replace(day=1)
+        if compare_start.month == 12:
+            compare_end = compare_start.replace(day=31)
+        else:
+            compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+    else:
+        start_date = today.replace(day=1)
+        if today.month == 12:
+            end_date = today.replace(day=31)
+        else:
+            end_date = (today.replace(month=today.month + 1, day=1) - timedelta(days=1))
+        compare_start = (start_date - timedelta(days=1)).replace(day=1)
+        if compare_start.month == 12:
+            compare_end = compare_start.replace(day=31)
+        else:
+            compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+    
+    # Revenue
     cursor.execute("""
-        SELECT SUM(s.amount) as total FROM sales s
-        JOIN users u ON s.user_id = u.id
-        WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
-    """, (business_id, current_week_start, current_week_end))
-    result = cursor.fetchone()
-    current_sales_revenue = float(result['total']) if result['total'] else 0.0
+        SELECT SUM(amount) as total FROM (
+            SELECT t.amount FROM transactions t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s AND t.status != 'void'
+            UNION ALL
+            SELECT s.amount FROM sales s JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+        ) AS revenue
+    """, (business_id, start_date, end_date, business_id, start_date, end_date))
+    current_revenue = float(cursor.fetchone()['total'] or 0)
     
-    # ========== CURRENT WEEK - OTHER INCOME ==========
+    # Expenses
     cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'income' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, current_week_start, current_week_end))
-    result = cursor.fetchone()
-    current_other_income = float(result['total']) if result['total'] else 0.0
+        SELECT SUM(t.amount) as total FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date BETWEEN %s AND %s AND t.status != 'void'
+    """, (business_id, start_date, end_date))
+    current_expenses = float(cursor.fetchone()['total'] or 0)
+    current_profit = current_revenue - current_expenses
     
-    current_total_income = current_sales_revenue + current_other_income
-    
-    # ========== LAST WEEK - SALES REVENUE ==========
+    # Compare period
     cursor.execute("""
-        SELECT SUM(s.amount) as total FROM sales s
-        JOIN users u ON s.user_id = u.id
-        WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
-    """, (business_id, last_week_start, last_week_end))
-    result = cursor.fetchone()
-    last_sales_revenue = float(result['total']) if result['total'] else 0.0
-    
-    # ========== LAST WEEK - OTHER INCOME ==========
-    cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'income' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, last_week_start, last_week_end))
-    result = cursor.fetchone()
-    last_other_income = float(result['total']) if result['total'] else 0.0
-    
-    last_total_income = last_sales_revenue + last_other_income
-    
-    # ========== CURRENT WEEK EXPENSES ==========
-    cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, current_week_start, current_week_end))
-    result = cursor.fetchone()
-    current_expenses = float(result['total']) if result['total'] else 0.0
-    
-    # ========== LAST WEEK EXPENSES ==========
-    cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
-        AND t.transaction_date BETWEEN %s AND %s
-    """, (business_id, last_week_start, last_week_end))
-    result = cursor.fetchone()
-    last_expenses = float(result['total']) if result['total'] else 0.0
-    
-    current_profit = current_total_income - current_expenses
-    last_profit = last_total_income - last_expenses
-    
-    # ========== EXPENSES BY CATEGORY ==========
-    cursor.execute("""
-        SELECT t.category, SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
-        AND t.transaction_date BETWEEN %s AND %s
-        GROUP BY t.category
-    """, (business_id, current_week_start, current_week_end))
-    current_expenses_by_category = {}
-    for row in cursor.fetchall():
-        if row['category']:
-            current_expenses_by_category[row['category']] = float(row['total'])
+        SELECT SUM(amount) as total FROM (
+            SELECT t.amount FROM transactions t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s AND t.status != 'void'
+            UNION ALL
+            SELECT s.amount FROM sales s JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+        ) AS revenue
+    """, (business_id, compare_start, compare_end, business_id, compare_start, compare_end))
+    compare_revenue = float(cursor.fetchone()['total'] or 0)
     
     cursor.execute("""
-        SELECT t.category, SUM(t.amount) as total FROM transactions t
-        JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
-        AND t.transaction_date BETWEEN %s AND %s
-        GROUP BY t.category
-    """, (business_id, last_week_start, last_week_end))
-    last_expenses_by_category = {}
-    for row in cursor.fetchall():
-        if row['category']:
-            last_expenses_by_category[row['category']] = float(row['total'])
+        SELECT SUM(t.amount) as total FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date BETWEEN %s AND %s AND t.status != 'void'
+    """, (business_id, compare_start, compare_end))
+    compare_expenses = float(cursor.fetchone()['total'] or 0)
+    compare_profit = compare_revenue - compare_expenses
     
-    # ========== PERCENTAGE CHANGES ==========
     def calc_change(current, last):
-        if last == 0:
-            return 0.0 if current == 0 else 100.0
+        if last == 0: return 0.0 if current == 0 else 100.0
         return ((current - last) / last) * 100.0
     
-    sales_change = calc_change(current_total_income, last_total_income)
-    expense_change = calc_change(current_expenses, last_expenses)
-    profit_change = calc_change(current_profit, last_profit)
-    profit_margin = (current_profit / current_total_income * 100.0) if current_total_income > 0 else 0.0
+    revenue_change = calc_change(current_revenue, compare_revenue)
+    expense_change = calc_change(current_expenses, compare_expenses)
+    profit_change = calc_change(current_profit, compare_profit)
+    profit_margin = (current_profit / current_revenue * 100) if current_revenue > 0 else 0
     
-    # ========== SMART ALERTS ==========
+    # Available months for dropdown
+    cursor.execute("""
+        SELECT DISTINCT DATE_FORMAT(d, '%Y-%m') as month FROM (
+            SELECT transaction_date as d FROM transactions t JOIN users u ON t.user_id = u.id WHERE u.business_id = %s
+            UNION SELECT sale_date FROM sales s JOIN users u ON s.user_id = u.id WHERE u.business_id = %s
+        ) AS dates ORDER BY month DESC LIMIT 24
+    """, (business_id, business_id))
+    available_months = [row['month'] for row in cursor.fetchall()]
+    
+    # Monthly comparison data (last 12 months)
+    monthly_data = []
+    for i in range(11, -1, -1):
+        m_start = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+        if m_start.month == 12:
+            m_end = m_start.replace(day=31)
+        else:
+            m_end = (m_start.replace(month=m_start.month + 1, day=1) - timedelta(days=1))
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as rev FROM (
+                SELECT t.amount FROM transactions t JOIN users u ON t.user_id = u.id
+                WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s AND t.status != 'void'
+                UNION ALL
+                SELECT s.amount FROM sales s JOIN users u ON s.user_id = u.id
+                WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+            ) AS r
+        """, (business_id, m_start, m_end, business_id, m_start, m_end))
+        rev = float(cursor.fetchone()['rev'] or 0)
+        
+        cursor.execute("""
+            SELECT COALESCE(SUM(amount), 0) as exp FROM transactions t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date BETWEEN %s AND %s AND t.status != 'void'
+        """, (business_id, m_start, m_end))
+        exp = float(cursor.fetchone()['exp'] or 0)
+        
+        monthly_data.append({
+            'month': m_start.strftime('%b %Y'),
+            'revenue': rev,
+            'expenses': exp,
+            'profit': rev - exp
+        })
+    
+    # Alerts (enhanced)
     alerts = []
     
-    for category, current_amount in current_expenses_by_category.items():
-        last_amount = last_expenses_by_category.get(category, 0.0)
-        if last_amount > 0:
-            increase_pct = ((current_amount - last_amount) / last_amount) * 100.0
-            if increase_pct > 20:
-                alerts.append({
-                    'type': 'expense_spike',
-                    'severity': 'high',
-                    'category': category,
-                    'current': current_amount,
-                    'last': last_amount,
-                    'increase_pct': increase_pct,
-                    'message': f"{category} increased by {increase_pct:.0f}% this week"
-                })
+    # Overdue invoices
+    cursor.execute("""
+        SELECT COUNT(*) as count, COALESCE(SUM(i.amount), 0) as total
+        FROM invoices i JOIN users u ON i.user_id = u.id
+        WHERE u.business_id = %s AND i.status IN ('unpaid', 'partially_paid') AND i.due_date < %s AND i.deleted_at IS NULL
+    """, (business_id, today))
+    overdue = cursor.fetchone()
+    if overdue['count'] > 0:
+        alerts.append({'type': 'overdue', 'severity': 'high', 'message': f"{overdue['count']} invoice{'s' if overdue['count']>1 else ''} overdue", 'detail': f"₱{float(overdue['total']):,.0f} outstanding", 'link': '/ar'})
     
-    if last_total_income > 0 and sales_change < -10:
-        alerts.append({
-            'type': 'sales_drop',
-            'severity': 'medium',
-            'current': current_total_income,
-            'last': last_total_income,
-            'drop_pct': -sales_change,
-            'message': f"Income dropped by {-sales_change:.0f}% this week"
-        })
+    # Low stock
+    cursor.execute("""
+        SELECT COUNT(*) as count FROM products p JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.quantity < p.reorder_level AND p.deleted_at IS NULL
+    """, (business_id,))
+    low = cursor.fetchone()
+    if low['count'] > 0:
+        alerts.append({'type': 'low_stock', 'severity': 'medium', 'message': f"{low['count']} product{'s' if low['count']>1 else ''} low stock", 'detail': 'Reorder now', 'link': '/inventory'})
     
-    if last_profit > 0 and profit_change < -10:
-        alerts.append({
-            'type': 'profit_decline',
-            'severity': 'high',
-            'current': current_profit,
-            'last': last_profit,
-            'decline_pct': -profit_change,
-            'message': f"Profit declined by {-profit_change:.0f}% this week"
-        })
+    # Bills due this week
+    week_end = today + timedelta(days=7)
+    cursor.execute("""
+        SELECT COUNT(*) as count, COALESCE(SUM(b.amount), 0) as total FROM bills b JOIN users u ON b.user_id = u.id
+        WHERE u.business_id = %s AND b.status = 'unpaid' AND b.due_date BETWEEN %s AND %s AND b.deleted_at IS NULL
+    """, (business_id, today, week_end))
+    bills_due = cursor.fetchone()
+    if bills_due['count'] > 0:
+        alerts.append({'type': 'bills_due', 'severity': 'medium', 'message': f"{bills_due['count']} bill{'s' if bills_due['count']>1 else ''} due this week", 'detail': f"₱{float(bills_due['total']):,.0f} to pay", 'link': '/ap'})
     
-    # ========== RECOMMENDATIONS ==========
+    # Revenue decline (vs last month)
+    if revenue_change < -10:
+        alerts.append({'type': 'revenue_decline', 'severity': 'medium', 'message': f'Revenue down {abs(revenue_change):.0f}% vs last period', 'detail': 'Review sales strategy', 'link': '/insights'})
+    
+    # Expense spike
+    if expense_change > 20:
+        alerts.append({'type': 'expense_spike', 'severity': 'high', 'message': f'Expenses up {expense_change:.0f}% vs last period', 'detail': 'Review spending', 'link': '/insights'})
+    
+    # Recommendations
     recommendations = []
-    
-    for alert in alerts:
-        if alert['type'] == 'expense_spike':
-            normal_amount = alert['last']
-            spike_amount = alert['current']
-            excess = spike_amount - normal_amount
-            recommendations.append({
-                'type': 'cost_cutting',
-                'category': alert['category'],
-                'current': spike_amount,
-                'normal': normal_amount,
-                'excess': excess,
-                'action': f"Review {alert['category']} spending. You spent ₱{excess:,.0f} more than last week.",
-                'potential_savings': excess * 0.5,
-                'message': f"Reduce {alert['category']} by 50% to save ₱{excess * 0.5:,.0f}"
-            })
-        elif alert['type'] == 'sales_drop':
-            recommendations.append({
-                'type': 'sales_improvement',
-                'drop_pct': alert['drop_pct'],
-                'current': alert['current'],
-                'last': alert['last'],
-                'action': f"Investigate why income dropped by {alert['drop_pct']:.0f}%. Consider a promotion.",
-                'potential_gain': alert['last'] * 0.1,
-                'message': f"A 10% income increase would add ₱{alert['last'] * 0.1:,.0f}"
-            })
-        elif alert['type'] == 'profit_decline':
-            recommendations.append({
-                'type': 'profit_improvement',
-                'decline_pct': alert['decline_pct'],
-                'action': f"Review both income and expenses. Profit dropped {alert['decline_pct']:.0f}%.",
-                'message': f"Focus on high-margin products and reduce unnecessary costs"
-            })
-    
+    if profit_margin < 20:
+        recommendations.append({'type': 'margin', 'action': f'Profit margin is {profit_margin:.0f}%. Target 30-40%.', 'detail': 'Reduce costs or increase prices by 5-10%'})
+    if current_expenses > current_revenue * 0.8:
+        recommendations.append({'type': 'cost', 'action': 'Expenses are over 80% of revenue.', 'detail': 'Review top expense categories'})
+    if overdue['count'] > 0:
+        recommendations.append({'type': 'collection', 'action': f'{overdue["count"]} overdue invoice{"s" if overdue["count"]>1 else ""}.', 'detail': 'Send payment reminders'})
+    if low['count'] > 0:
+        recommendations.append({'type': 'inventory', 'action': f'{low["count"]} product{"s" if low["count"]>1 else ""} low stock.', 'detail': 'Create purchase orders'})
     if not recommendations:
-        if profit_margin < 20:
-            recommendations.append({
-                'type': 'margin_improvement',
-                'action': f"Your profit margin is {profit_margin:.0f}%. Industry average is 30-40%.",
-                'message': "Try reducing costs or increasing prices by 5-10%"
-            })
-        else:
-            recommendations.append({
-                'type': 'maintain',
-                'action': "Your business is performing well. Continue monitoring weekly trends.",
-                'message': "Keep tracking expenses and look for growth opportunities"
-            })
-    
-    # ========== PREDICTIVE PLANNER BASELINE ==========
-    baseline_sales = float(current_total_income) if current_total_income > 0 else 100000.0
-    baseline_expenses = float(current_expenses) if current_expenses > 0 else 70000.0
-    baseline_profit = float(current_profit)
+        recommendations.append({'type': 'positive', 'action': 'Your business is performing well.', 'detail': 'Keep monitoring trends'})
     
     cursor.close()
     db.close()
     
-    week_display = f"{current_week_start.strftime('%b %d')} - {current_week_end.strftime('%b %d, %Y')}"
+    period_label = f"{start_date.strftime('%b %d, %Y')} — {end_date.strftime('%b %d, %Y')}"
     
     return render_template('insights.html',
                          username=session['username'],
-                         week_display=week_display,
-                         current_sales=current_total_income,
+                         current_sales=current_revenue,
                          current_expenses=current_expenses,
                          current_profit=current_profit,
-                         last_sales=last_total_income,
-                         last_expenses=last_expenses,
-                         last_profit=last_profit,
-                         sales_change=sales_change,
+                         sales_change=revenue_change,
                          expense_change=expense_change,
                          profit_change=profit_change,
                          profit_margin=profit_margin,
                          alerts=alerts,
                          recommendations=recommendations,
-                         baseline_sales=baseline_sales,
-                         baseline_expenses=baseline_expenses,
-                         current_profit_baseline=baseline_profit,
+                         available_months=available_months,
+                         monthly_data=monthly_data,
+                         period=period,
+                         period_label=period_label,
                          is_cashier=is_cashier)
-
 
 # ========== ENHANCED BUSINESS INSIGHTS API ENDPOINTS ==========
 

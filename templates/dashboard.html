@@ -139,10 +139,13 @@
             <!-- KPI Row 1 -->
             <div class="kpi-row">
                 <div class="kpi-card">
-                    <div class="kpi-label">Revenue</div>
+                    <div class="kpi-label">Revenue ({{ period_label }})</div>
                     <div class="kpi-value">₱ {{ "{:,.0f}".format(monthly_income|default(0)) }}</div>
                     <div class="kpi-sub {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
-                        <i class="fas {% if sales_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i> {{ "%.1f"|format(sales_change|abs) }}% vs {{ compare_label|lower }}
+                        <i class="fas {% if sales_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i> {{ "%.1f"|format(sales_change|abs) }}% vs {{ compare_label }}
+                    </div>
+                    <div style="font-size:10px; color: var(--text-secondary); margin-top:4px;">
+                        Cash: ₱{{ "{:,.0f}".format(monthly_income - monthly_sales|default(0)) }} · Sales: ₱{{ "{:,.0f}".format(monthly_sales|default(0)) }}
                     </div>
                 </div>
                 <div class="kpi-card">
@@ -207,14 +210,6 @@
             </div>
             {% endif %}
 
-            <!-- Mini Chart -->
-            <div class="chart-card" style="padding: 16px;">
-                <h3 style="margin-bottom: 6px;"><i class="fas fa-chart-line"></i> Revenue vs Expenses</h3>
-                <div id="miniChartContainer" style="height: 40px; width: 100%;">
-                    <canvas id="revExpChart"></canvas>
-                </div>
-            </div>
-
             <!-- Recent Transactions -->
             <div class="chart-card" style="padding: 16px;">
                 <h3 style="margin-bottom: 12px;"><i class="fas fa-clock"></i> Recent Transactions</h3>
@@ -271,6 +266,16 @@
         </div>
     </div>
 </div>
+<!-- Day Detail Modal -->
+<div id="detailModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 id="modalTitle">Day Details</h3>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div id="modalBody" style="max-height: 60vh; overflow-y: auto;"></div>
+    </div>
+</div>
 {% endblock %}
 {% block extra_js %}
 <script>
@@ -284,7 +289,6 @@ document.addEventListener('DOMContentLoaded',function(){
     window._quickSales=s;window._quickMax=m||1;
     renderQuickCalendar(quickYear,quickMonth);
     const dp=document.getElementById('dashboardPeriod');if(dp)dp.value='{{ period }}';
-    loadMiniChart();
 });
 
 function renderQuickCalendar(y,m){
@@ -305,34 +309,40 @@ function renderQuickCalendar(y,m){
     g.innerHTML=h;if(e)e.innerHTML=`₱${T.toLocaleString()} <span style="font-size:9px;color:var(--text-secondary);">this month</span>`;
 }
 
-// Minimal Chart
-function loadMiniChart(){
-    const container = document.getElementById('miniChartContainer');
-    if(!container) return;
-    fetch('/api/chart-data?period=30')
-        .then(r=>r.json())
-        .then(d=>{
-            const ctx=document.getElementById('revExpChart').getContext('2d');
-            new Chart(ctx,{
-                type:'line',
-                data:{
-                    labels:d.labels,
-                    datasets:[
-                        {label:'Rev',data:d.sales,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.05)',borderWidth:1.5,pointRadius:0,tension:0.4},
-                        {label:'Exp',data:d.expenses,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.02)',borderWidth:1.5,pointRadius:0,tension:0.4}
-                    ]
-                },
-                options:{
-                    responsive:true,maintainAspectRatio:false,
-                    plugins:{legend:{display:false}},
-                    scales:{x:{display:false},y:{display:false}}
-                }
-            });
+function showDayDetail(dateStr, amount) {
+    fetch(`/api/day-detail?date=${dateStr}`)
+        .then(res => res.json())
+        .then(data => {
+            let html = `<div style="padding:10px;"><h3 style="margin-bottom:12px;">${dateStr}</h3>`;
+            
+            if (data.transactions && data.transactions.length > 0) {
+                html += '<div style="margin-bottom:12px;"><strong>Transactions:</strong>';
+                data.transactions.forEach(t => {
+                    html += `<div style="font-size:12px;padding:4px 0;color:${t.type==='income'?'#10b981':'#ef4444'};">${t.description}: ₱${parseFloat(t.amount).toFixed(2)}</div>`;
+                });
+                html += '</div>';
+            }
+            
+            if (data.sales && data.sales.length > 0) {
+                html += '<div style="margin-bottom:12px;"><strong>Sales:</strong>';
+                data.sales.forEach(s => {
+                    html += `<div style="font-size:12px;padding:4px 0;color:#10b981;">${s.customer_name}: ₱${parseFloat(s.amount).toFixed(2)}</div>`;
+                });
+                html += '</div>';
+            }
+            
+            if (data.totals) {
+                html += `<div style="border-top:1px solid var(--border-light);padding-top:8px;font-weight:600;">Total: ₱${parseFloat(data.totals.total).toFixed(2)}</div>`;
+            }
+            
+            if (!data.transactions.length && !data.sales.length) {
+                html += '<p style="color:var(--text-secondary);">No transactions on this day.</p>';
+            }
+            
+            html += '</div>';
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('detailModal').style.display = 'flex';
         });
-}
-
-function showDayDetail(d,a){
-    showToast(a>0?`${d}: ₱${a.toLocaleString()} in sales`:`${d}: No sales`,'info');
 }
 function switchDashboardPeriod(){
     window.location.href=`/dashboard?period=${document.getElementById('dashboardPeriod').value}`;
@@ -375,6 +385,7 @@ const CATEGORY_DATA = {
             {name:'Sales Orders',icon:'fa-clipboard-list',url:'/sales-orders',desc:'Customer orders'},
             {name:'Quotations',icon:'fa-file-contract',url:'/quotations',desc:'Price quotes'},
             {name:'Budgeting',icon:'fa-chart-pie',url:'/budgets',desc:'Set and track budgets'},
+            {name:'Predictive Planner',icon:'fa-chart-simple',url:'/planner',desc:'Model scenarios and forecast'},
             {name:'Projects',icon:'fa-folder-tree',url:'/projects',desc:'Profit centers'},
             {name:'Timecards',icon:'fa-clock',url:'/timecards',desc:'Billable hours'},
             {name:'Fixed Assets',icon:'fa-building',url:'/assets',desc:'Equipment and depreciation'},
@@ -431,5 +442,12 @@ function loadCategory(cat) {
     html += '</div></div>';
     container.innerHTML = html;
 }
+
+function closeModal() {
+    document.getElementById('detailModal').style.display = 'none';
+}
+window.onclick = function(event) {
+    if (event.target === document.getElementById('detailModal')) closeModal();
+};
 </script>
 {% endblock %}

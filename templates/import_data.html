@@ -38,6 +38,9 @@
     <button class="import-tab" data-tab="suppliers">Suppliers</button>
     <button class="import-tab" data-tab="bills">Bills</button>
     <button class="import-tab" data-tab="invoices">Invoices</button>
+    <button class="import-tab" data-tab="po">Purchase Orders</button>
+    <button class="import-tab" data-tab="so">Sales Orders</button>
+    <button class="import-tab" data-tab="opening_balances">Opening Balances</button>
 </div>
 
 <div style="margin-bottom:16px;padding:12px;background:var(--bg-primary);border-radius:10px;">
@@ -79,7 +82,10 @@
         'customers': { label: 'Customers_Template.csv', csv: 'Name,Email,Phone\nCustomer Name,email@example.com,09123456789' },
         'suppliers': { label: 'Suppliers_Template.csv', csv: 'Name,Email,Phone,Address\nSupplier Name,email@example.com,09123456789,123 Main St' },
         'bills': { label: 'Bills_Template.csv', csv: 'Supplier,Amount,Due_Date,Description\nSupplier Name,5000,2026-01-15,Utilities' },
-        'invoices': { label: 'Invoices_Template.csv', csv: 'Customer,Amount,Due_Date,Description\nCustomer Name,5000,2026-01-15,Services' }
+        'invoices': { label: 'Invoices_Template.csv', csv: 'Customer,Amount,Due_Date,Description\nCustomer Name,5000,2026-01-15,Services' },
+        'po': { label: 'PO_Template.csv', csv: 'Supplier,Order_Date,Expected_Date,Item,Qty,Unit_Price\nABC Supply,2026-01-01,2026-01-15,Coffee beans,10,560' },
+        'so': { label: 'SO_Template.csv', csv: 'Customer,Order_Date,Delivery_Date,Item,Qty,Unit_Price\nXYZ Corp,2026-01-01,2026-01-10,Catering,1,15000' },
+        'opening_balances': { label: 'Opening_Balances.csv', csv: 'Type,Name,Amount,Date\nAR,Juan Dela Cruz,5000,2026-01-01\nAP,ABC Supply,3000,2026-01-01\nInventory,Opening Stock,50000,2026-01-01\nBank,BPI Savings,100000,2026-01-01' },
     };
     
     function updateTab(tab) {

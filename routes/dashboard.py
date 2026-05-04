@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from datetime import date, timedelta, datetime
 from models.database import get_db
 import calendar
@@ -12,11 +12,22 @@ def dashboard():
     
     # Get period from query string
     period = request.args.get('period', 'month')
-    
+        
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
     business_id = session.get('business_id')
+
+    # Get all months with data for the dropdown
+    cursor.execute("""
+        SELECT DISTINCT DATE_FORMAT(d, '%Y-%m') as month FROM (
+            SELECT transaction_date as d FROM transactions t JOIN users u ON t.user_id = u.id WHERE u.business_id = %s
+            UNION SELECT sale_date FROM sales s JOIN users u ON s.user_id = u.id WHERE u.business_id = %s
+        ) AS all_dates ORDER BY month DESC LIMIT 12
+    """, (business_id, business_id))
+    available_months = [row['month'] for row in cursor.fetchall()]
+
     if not business_id:
         business_id = session['user_id']
     
@@ -146,7 +157,7 @@ def dashboard():
         ) AS all_revenue
     """, (business_id, compare_start, compare_end, business_id, compare_start, compare_end))
     compare_revenue = float(cursor.fetchone()['total'] or 0)
-    
+
     # ========== COMPARE PERIOD EXPENSES ==========
     cursor.execute("""
         SELECT SUM(t.amount) as total FROM transactions t
@@ -158,6 +169,14 @@ def dashboard():
     
     compare_profit = compare_revenue - compare_expenses
     
+    # ========== SALES ONLY (for KPI breakdown) ==========
+    cursor.execute("""
+        SELECT SUM(s.amount) as total FROM sales s
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
+    """, (business_id, start_date, end_date))
+    monthly_sales = float(cursor.fetchone()['total'] or 0)
+
     # ========== HELPER FUNCTION FOR PERCENTAGE CHANGE ==========
     def calc_change(current, last):
         if last == 0:
@@ -426,4 +445,45 @@ def dashboard():
                          alerts=alerts,
                          period=period,
                          period_label=period_label,
-                         compare_label=compare_label)
+                         compare_label=compare_label,
+                         available_months=available_months)
+
+@dashboard_bp.route('/api/day-detail')
+def day_detail():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    date_str = request.args.get('date', '')
+    if not date_str:
+        return jsonify({'error': 'Date required'}), 400
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Transactions
+    cursor.execute("""
+        SELECT t.description, t.amount, t.type
+        FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.transaction_date = %s AND t.status != 'void'
+    """, (business_id, date_str))
+    transactions = cursor.fetchall()
+    
+    # Sales
+    cursor.execute("""
+        SELECT s.customer_name, s.amount
+        FROM sales s JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.sale_date = %s
+    """, (business_id, date_str))
+    sales = cursor.fetchall()
+    
+    total = sum(float(t['amount']) for t in transactions) + sum(float(s['amount']) for s in sales)
+    
+    cursor.close()
+    db.close()
+    
+    return jsonify({
+        'transactions': transactions,
+        'sales': sales,
+        'totals': {'total': total}
+    })

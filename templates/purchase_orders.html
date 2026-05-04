@@ -133,10 +133,10 @@
                     </td>
                     <td style="white-space: nowrap;">
                         {% if po.status == 'ordered' %}
-                        <a href="/receive_po/{{ po.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Receive this order? Inventory will be updated and a bill will be created.')" style="padding:5px 12px; font-size:12px;"><i class="fas fa-check"></i> Receive</a>
+                        <a href="/receive_po/{{ po.id }}" class="btn btn-primary btn-sm" onclick="return confirm('Receive this order?')" style="padding:5px 12px;font-size:12px;"><i class="fas fa-check"></i> Receive</a>
                         {% endif %}
                         {% if po.supplier_email %}
-                        <a href="/email_po/{{ po.id }}" class="btn-icon" title="Email PO to Supplier"><i class="fas fa-envelope"></i></a>
+                        <a href="/email_po/{{ po.id }}" class="btn-icon" title="Email PO"><i class="fas fa-envelope"></i></a>
                         {% endif %}
                     </td>
                 </tr>
@@ -153,7 +153,20 @@
         const tbody = document.getElementById('poItemsBody');
         const row = document.createElement('tr');
         row.className = 'po-item-row';
-        row.innerHTML = `<td><input type="text" name="product_name[]" placeholder="e.g., Coffee beans" required style="width:100%;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td><input type="number" name="quantity[]" value="1" min="1" required onchange="updatePOTotal()" style="width:80px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updatePOTotal()" style="width:120px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td><td class="po-subtotal" style="font-weight:600;">₱0.00</td><td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updatePOTotal();"><i class="fas fa-times"></i></button></td>`;
+        row.innerHTML = `<td>
+            <select name="product_name[]" onchange="autoFillPrice(this)" style="width:100%;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                <option value="">-- Select Product --</option>
+                {% for p in products %}
+                <option value="{{ p.name }}" data-price="{{ p.cogs or p.price }}">{{ p.name }} (Stock: {{ p.quantity }})</option>
+                {% endfor %}
+                <option value="__custom__">+ Custom Item</option>
+            </select>
+            <input type="text" name="product_name_custom[]" placeholder="Custom item name" style="display:none;width:100%;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);margin-top:4px;">
+        </td>
+        <td><input type="number" name="quantity[]" value="1" min="1" required onchange="updatePOTotal()" style="width:80px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td>
+        <td><input type="number" name="unit_price[]" step="0.01" value="0" required onchange="updatePOTotal()" style="width:120px;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);"></td>
+        <td class="po-subtotal" style="font-weight:600;">₱0.00</td>
+        <td><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updatePOTotal();"><i class="fas fa-times"></i></button></td>`;
         tbody.appendChild(row);
     }
     function updatePOTotal() {
@@ -167,6 +180,25 @@
             grandTotal += subtotal;
         });
         document.getElementById('poGrandTotal').textContent = '₱' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+    function autoFillPrice(select) {
+        const selected = select.options[select.selectedIndex];
+        const customInput = select.parentElement.querySelector('input[name="product_name_custom[]"]');
+        
+        if (select.value === '__custom__') {
+            customInput.style.display = 'block';
+            customInput.required = true;
+            select.removeAttribute('name');
+        } else {
+            customInput.style.display = 'none';
+            customInput.required = false;
+            select.setAttribute('name', 'product_name[]');
+            if (selected.dataset.price) {
+                const row = select.closest('tr');
+                row.querySelector('input[name="unit_price[]"]').value = selected.dataset.price;
+                updatePOTotal();
+            }
+        }
     }
 </script>
 {% endblock %}

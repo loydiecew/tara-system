@@ -4,13 +4,12 @@ from flask_mail import Mail
 from models.database import get_db
 from models.helpers import user_has_feature
 from routes.permissions import create_enterprise_role_templates
-
 # ---------- Import all blueprints ----------
 from routes import (
     auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
-    budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp,
+    budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp, planner_bp,
     branches_bp, payments_bp, recurring_bp, bank_rec_bp,
     fiscal_bp, tax_bp, currencies_bp, permissions_bp
 )
@@ -36,7 +35,7 @@ BLUEPRINTS = [
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
     budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp,
     branches_bp, payments_bp, recurring_bp, bank_rec_bp,
-    fiscal_bp, tax_bp, currencies_bp, permissions_bp
+    fiscal_bp, tax_bp, currencies_bp, permissions_bp, planner_bp
 ]
 for bp in BLUEPRINTS:
     app.register_blueprint(bp)

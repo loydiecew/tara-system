@@ -33,6 +33,15 @@ def purchase_orders():
     """, (business_id,))
     orders = cursor.fetchall()
     
+     # Get products for dropdown
+    cursor.execute("""
+        SELECT p.id, p.name, p.cogs, p.price, p.quantity FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.deleted_at IS NULL
+        ORDER BY p.name
+    """, (business_id,))
+    products = cursor.fetchall()
+
     # Get suppliers for dropdown
     cursor.execute("""
         SELECT s.id, s.name FROM suppliers s
@@ -48,8 +57,8 @@ def purchase_orders():
                          username=session['username'],
                          orders=orders,
                          suppliers=suppliers,
+                         products=products,
                          today=date.today().isoformat())
-
 
 @orders_bp.route('/add_po', methods=['POST'])
 def add_po():
@@ -183,7 +192,15 @@ def sales_orders():
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])
-    
+
+    cursor.execute("""
+        SELECT p.id, p.name, p.price, p.quantity FROM products p
+        JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.deleted_at IS NULL
+        ORDER BY p.name
+    """, (business_id,))
+    products = cursor.fetchall()
+
     cursor.execute("""
         SELECT so.*, c.name as customer_name
         FROM sales_orders so
@@ -208,6 +225,7 @@ def sales_orders():
                          username=session['username'],
                          orders=orders,
                          customers=customers,
+                         products=products,
                          today=date.today().isoformat())
 
 
@@ -243,11 +261,18 @@ def add_so():
     
     so_number = f"SO-{date.today().strftime('%Y%m%d')}-{session['user_id']}"
     
+    delivery_date = request.form.get('delivery_date', '')
+
+    db = get_db()
+    cursor = db.cursor()
+    
+    so_number = f"SO-{date.today().strftime('%Y%m%d')}-{session['user_id']}"
+    
     cursor.execute("""
-        INSERT INTO purchase_orders (user_id, supplier_id, po_number, order_date, expected_date, total_amount, notes, status)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, 'ordered')
-    """, (session['user_id'], supplier_id, po_number, order_date, 
-          expected_date if expected_date else None, total, notes))
+        INSERT INTO sales_orders (user_id, customer_id, so_number, order_date, delivery_date, total_amount, notes, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'confirmed')
+    """, (session['user_id'], customer_id, so_number, order_date,          
+        delivery_date if delivery_date else None, total, notes))
     so_id = cursor.lastrowid
     
     for item in items:

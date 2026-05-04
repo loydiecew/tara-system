@@ -1,0 +1,210 @@
+{% extends "layout.html" %}
+
+{% block title %}Predictive Planner{% endblock %}
+{% block page_title %}Predictive Planner{% endblock %}
+{% block page_subtitle %}Model scenarios and forecast profitability{% endblock %}
+
+{% block extra_css %}
+<style>
+    .planner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .scenario-card { background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; }
+    .result-card { background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04)); border: 1px solid rgba(16,185,129,0.2); border-radius: 20px; padding: 24px; text-align: center; }
+    .result-value { font-size: 36px; font-weight: 800; }
+    .result-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .preset-btn { padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-light); background: var(--bg-primary); color: var(--text-secondary); transition: all 0.2s; }
+    .preset-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .preset-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    @media (max-width: 900px) { .planner-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card"><div class="stat-title">Current Revenue (This Month)</div><div class="stat-value" style="color:#10b981;font-size:22px;">₱{{ "{:,.0f}".format(current_revenue) }}</div></div>
+    <div class="stat-card"><div class="stat-title">Current Expenses</div><div class="stat-value" style="color:#ef4444;font-size:22px;">₱{{ "{:,.0f}".format(current_expenses) }}</div></div>
+    <div class="stat-card"><div class="stat-title">Current Profit</div><div class="stat-value" style="color:{% if current_profit >= 0 %}#10b981{% else %}#ef4444{% endif %};font-size:22px;">₱{{ "{:,.0f}".format(current_profit) }}</div></div>
+</div>
+
+<div class="planner-grid">
+    <!-- LEFT: Controls -->
+    <div>
+        <div class="card" style="margin-bottom: 16px;">
+            <div class="card-header"><h2><i class="fas fa-sliders-h"></i> Variables</h2></div>
+            
+            <div style="margin-bottom: 12px;">
+                <label style="margin-right: 16px;"><input type="radio" name="scenarioType" value="general" checked onchange="toggleMode()"> General Business</label>
+                <label><input type="radio" name="scenarioType" value="product" onchange="toggleMode()"> Per Product</label>
+                <select id="productSelect" style="display:none;margin-left:12px;padding:6px 10px;border-radius:8px;" onchange="loadProductActuals()">
+                    <option value="">-- Select Product --</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}" data-price="{{ p.price }}" data-cogs="{{ p.cogs }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+                <button class="preset-btn" onclick="setPreset('best')">Best Case</button>
+                <button class="preset-btn" onclick="setPreset('worst')">Worst Case</button>
+                <button class="preset-btn" onclick="setPreset('optimistic')">+10% All</button>
+                <button class="preset-btn" onclick="setPreset('pessimistic')">-10% All</button>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group"><label>Price Change (%)</label><input type="number" id="priceInput" value="0" step="1" onchange="calculate()"></div>
+                <div class="form-group"><label>Volume Change (%)</label><input type="number" id="volumeInput" value="0" step="1" onchange="calculate()"></div>
+                <div class="form-group"><label>COGS Change (%)</label><input type="number" id="cogsInput" value="0" step="1" onchange="calculate()"></div>
+                <div class="form-group"><label>Marketing Change (%)</label><input type="number" id="marketingInput" value="0" step="1" onchange="calculate()"></div>
+                <div class="form-group"><label>Labor Change (%)</label><input type="number" id="laborInput" value="0" step="1" onchange="calculate()"></div>
+                <div class="form-group"><label>Scenario Name</label><input type="text" id="scenarioName" placeholder="My scenario"></div>
+            </div>
+        </div>
+        
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="saveScenario()"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-secondary" onclick="loadScenario()"><i class="fas fa-folder-open"></i> Load</button>
+            <button class="btn btn-secondary" onclick="resetAll()"><i class="fas fa-undo"></i> Reset</button>
+        </div>
+        
+        <!-- Break-Even Calculator -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-calculator"></i> Break-Even Calculator</h2></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group"><label>Fixed Costs (₱)</label><input type="number" id="beFixedCosts" value="{{ current_expenses|default(0) }}" onchange="calcBreakeven()"></div>
+                <div class="form-group"><label>Price per Unit (₱)</label><input type="number" id="bePrice" value="150" onchange="calcBreakeven()"></div>
+                <div class="form-group"><label>Variable Cost/Unit (₱)</label><input type="number" id="beVarCost" value="50" onchange="calcBreakeven()"></div>
+                <div class="form-group" style="display:flex;align-items:flex-end;"><button class="btn btn-primary btn-sm" onclick="calcBreakeven()">Calculate</button></div>
+            </div>
+            <div id="breakevenResult" style="margin-top:12px;padding:12px;background:var(--bg-primary);border-radius:10px;text-align:center;font-size:13px;color:var(--text-secondary);">
+                Enter values and click Calculate
+            </div>
+        </div>
+    </div>
+    
+    <!-- RIGHT: Results -->
+    <div>
+        <div class="result-card" style="margin-bottom: 16px;">
+            <div class="result-label">Projected Revenue</div>
+            <div class="result-value" style="color:#10b981;" id="projRevenue">₱{{ "{:,.0f}".format(current_revenue) }}</div>
+        </div>
+        <div class="result-card" style="margin-bottom: 16px;">
+            <div class="result-label">Projected Expenses</div>
+            <div class="result-value" style="color:#ef4444;" id="projExpenses">₱{{ "{:,.0f}".format(current_expenses) }}</div>
+        </div>
+        <div class="result-card" style="margin-bottom: 16px;">
+            <div class="result-label">Projected Profit</div>
+            <div class="result-value" style="color:{% if current_profit >= 0 %}#10b981{% else %}#ef4444{% endif %};" id="projProfit">₱{{ "{:,.0f}".format(current_profit) }}</div>
+            <div style="font-size:14px;margin-top:4px;color:var(--text-secondary);" id="projChange">—</div>
+        </div>
+        
+        <!-- Comparison Table -->
+        <div class="card">
+            <div class="card-header"><h2><i class="fas fa-table"></i> Current vs Projected</h2></div>
+            <table style="width:100%;font-size:13px;">
+                <thead><tr><th></th><th style="text-align:right;">Current</th><th style="text-align:right;">Projected</th><th style="text-align:right;">Change</th></tr></thead>
+                <tbody>
+                    <tr><td>Revenue</td><td style="text-align:right;" id="cmpRevCurr">₱{{ "{:,.0f}".format(current_revenue) }}</td><td style="text-align:right;color:#10b981;" id="cmpRevProj">—</td><td style="text-align:right;" id="cmpRevChg">—</td></tr>
+                    <tr><td>Expenses</td><td style="text-align:right;" id="cmpExpCurr">₱{{ "{:,.0f}".format(current_expenses) }}</td><td style="text-align:right;color:#ef4444;" id="cmpExpProj">—</td><td style="text-align:right;" id="cmpExpChg">—</td></tr>
+                    <tr style="font-weight:700;"><td>Profit</td><td style="text-align:right;" id="cmpPrfCurr">₱{{ "{:,.0f}".format(current_profit) }}</td><td style="text-align:right;" id="cmpPrfProj">—</td><td style="text-align:right;" id="cmpPrfChg">—</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Load Scenario Modal -->
+<div id="loadScenarioModal" class="modal">
+    <div class="modal-content" style="max-width:500px;">
+        <div class="modal-header"><h3>Load Scenario</h3><span class="close-modal" onclick="closeLoadModal()">&times;</span></div>
+        <div id="loadScenarioBody" style="max-height:50vh;overflow-y:auto;"><p style="text-align:center;padding:20px;">Loading...</p></div>
+    </div>
+</div>
+
+<script>
+const currentRevenue={{ current_revenue }},currentExpenses={{ current_expenses }},currentProfit={{ current_profit }};
+const currentCOGS=currentExpenses*0.4,currentMarketing=currentExpenses*0.2,currentLabor=currentExpenses*0.3;
+
+function calculate(){
+    const p=parseFloat(document.getElementById('priceInput').value||0)/100;
+    const v=parseFloat(document.getElementById('volumeInput').value||0)/100;
+    const c=parseFloat(document.getElementById('cogsInput').value||0)/100;
+    const m=parseFloat(document.getElementById('marketingInput').value||0)/100;
+    const l=parseFloat(document.getElementById('laborInput').value||0)/100;
+    const newRev=currentRevenue*(1+p)*(1+v);
+    const newCOGS=currentCOGS*(1+c),newMkt=currentMarketing*(1+m),newLab=currentLabor*(1+l);
+    const newExp=newCOGS+newMkt+newLab,newProf=newRev-newExp;
+    const diff=newProf-currentProfit,pct=currentProfit>0?(diff/currentProfit*100):0;
+    
+    document.getElementById('projRevenue').innerText='₱'+Math.round(newRev).toLocaleString();
+    document.getElementById('projExpenses').innerText='₱'+Math.round(newExp).toLocaleString();
+    document.getElementById('projProfit').innerText='₱'+Math.round(newProf).toLocaleString();
+    document.getElementById('projProfit').style.color=newProf>=0?'#10b981':'#ef4444';
+    const chg=document.getElementById('projChange');
+    chg.innerHTML=diff>=0?`▲ ₱${Math.abs(Math.round(diff)).toLocaleString()} (+${pct.toFixed(1)}%)`:`▼ ₱${Math.abs(Math.round(diff)).toLocaleString()} (${pct.toFixed(1)}%)`;
+    chg.style.color=diff>=0?'#10b981':'#ef4444';
+    
+    document.getElementById('cmpRevProj').innerText='₱'+Math.round(newRev).toLocaleString();
+    document.getElementById('cmpExpProj').innerText='₱'+Math.round(newExp).toLocaleString();
+    document.getElementById('cmpPrfProj').innerText='₱'+Math.round(newProf).toLocaleString();
+    document.getElementById('cmpRevChg').innerHTML=(newRev-currentRevenue>=0?'+':'')+'₱'+Math.round(newRev-currentRevenue).toLocaleString();
+    document.getElementById('cmpExpChg').innerHTML=(newExp-currentExpenses>=0?'+':'')+'₱'+Math.round(newExp-currentExpenses).toLocaleString();
+    document.getElementById('cmpPrfChg').innerHTML=(diff>=0?'+':'')+'₱'+Math.round(diff).toLocaleString();
+    document.getElementById('cmpPrfChg').style.color=diff>=0?'#10b981':'#ef4444';
+}
+
+function setPreset(type){
+    const presets={best:{price:20,volume:15,cogs:-10,marketing:5,labor:0},worst:{price:-10,volume:-20,cogs:10,marketing:0,labor:0},optimistic:{price:10,volume:10,cogs:0,marketing:10,labor:0},pessimistic:{price:-10,volume:-10,cogs:5,marketing:-10,labor:0}};
+    const p=presets[type];if(!p)return;
+    document.getElementById('priceInput').value=p.price;document.getElementById('volumeInput').value=p.volume;
+    document.getElementById('cogsInput').value=p.cogs;document.getElementById('marketingInput').value=p.marketing;
+    document.getElementById('laborInput').value=p.labor;calculate();
+}
+
+function resetAll(){
+    document.getElementById('priceInput').value=0;document.getElementById('volumeInput').value=0;
+    document.getElementById('cogsInput').value=0;document.getElementById('marketingInput').value=0;
+    document.getElementById('laborInput').value=0;document.getElementById('scenarioName').value='';calculate();
+}
+
+function toggleMode(){
+    const mode=document.querySelector('input[name="scenarioType"]:checked').value;
+    document.getElementById('productSelect').style.display=mode==='product'?'inline-block':'none';
+}
+
+function saveScenario(){
+    const name=document.getElementById('scenarioName').value.trim();
+    if(!name){showToast('Enter a scenario name','warning');return;}
+    const type=document.querySelector('input[name="scenarioType"]:checked').value;
+    const pid=document.getElementById('productSelect').value||null;
+    fetch('/api/saved-scenarios',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,scenario_type:type,product_id:pid,data:{price_change:document.getElementById('priceInput').value,volume_change:document.getElementById('volumeInput').value,cogs_change:document.getElementById('cogsInput').value,marketing_change:document.getElementById('marketingInput').value,labor_change:document.getElementById('laborInput').value}})})
+    .then(r=>r.json()).then(d=>{if(d.success)showToast('Saved','success');else showToast('Error','error');});
+}
+
+function loadScenario(){
+    const modal=document.getElementById('loadScenarioModal'),body=document.getElementById('loadScenarioBody');
+    modal.style.display='flex';body.innerHTML='<p style="text-align:center;padding:20px;">Loading...</p>';
+    fetch('/api/saved-scenarios').then(r=>r.json()).then(d=>{
+        if(!d.scenarios||d.scenarios.length===0){body.innerHTML='<div style="text-align:center;padding:40px;"><p>No saved scenarios</p></div>';return;}
+        let h='<div style="display:flex;flex-direction:column;gap:8px;">';
+        d.scenarios.forEach((s,i)=>{const dt=s.data||{};h+=`<div style="background:var(--bg-primary);border:1px solid var(--border-light);border-radius:12px;padding:14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="applyScenario(${i});closeLoadModal();"><div><div style="font-weight:600;">${s.name}</div><div style="font-size:11px;color:var(--text-secondary);">${s.scenario_type==='product'?'Product':'General'} · ${new Date(s.created_at).toLocaleDateString()}</div></div><button class="btn-icon btn-icon-danger" onclick="event.stopPropagation();deleteScenario(${s.id})"><i class="fas fa-trash"></i></button></div>`;});
+        h+='</div>';body.innerHTML=h;window._scenarios=d.scenarios;
+    });
+}
+function applyScenario(i){const s=window._scenarios[i];if(!s)return;const d=s.data||{};document.getElementById('priceInput').value=d.price_change||0;document.getElementById('volumeInput').value=d.volume_change||0;document.getElementById('cogsInput').value=d.cogs_change||0;document.getElementById('marketingInput').value=d.marketing_change||0;document.getElementById('laborInput').value=d.labor_change||0;document.getElementById('scenarioName').value=s.name||'';if(s.scenario_type==='product'){document.querySelector('input[value=product]').checked=true;toggleMode();if(s.product_id)document.getElementById('productSelect').value=s.product_id;}calculate();}
+function deleteScenario(id){if(!confirm('Delete?'))return;fetch('/api/delete-scenario/'+id,{method:'DELETE'}).then(()=>loadScenario());}
+function closeLoadModal(){document.getElementById('loadScenarioModal').style.display='none';}
+function calcBreakeven(){
+    const fc=parseFloat(document.getElementById('beFixedCosts').value||0);
+    const pp=parseFloat(document.getElementById('bePrice').value||0);
+    const vc=parseFloat(document.getElementById('beVarCost').value||0);
+    fetch('/api/planner/breakeven',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({fixed_costs:fc,price_per_unit:pp,variable_cost_per_unit:vc})})
+    .then(r=>r.json()).then(d=>{
+        const el=document.getElementById('breakevenResult');
+        if(d.error){el.innerHTML='<span style="color:#ef4444;">'+d.error+'</span>';return;}
+        el.innerHTML=`<strong>Break-even:</strong> ${d.breakeven_units} units · ₱${d.breakeven_revenue.toLocaleString()} revenue<br><span style="font-size:11px;">Contribution margin: ₱${d.contribution_margin}/unit</span>`;
+    });
+}
+window.onclick=function(e){if(e.target===document.getElementById('loadScenarioModal'))closeLoadModal();};
+calculate();
+</script>
+{% endblock %}

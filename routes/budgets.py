@@ -31,18 +31,17 @@ def budgets():
             b.id, b.category, b.month, b.budget_amount,
             COALESCE(SUM(t.amount), 0) as actual_amount
         FROM budgets b
+        JOIN users u ON b.user_id = u.id
         LEFT JOIN transactions t ON t.category = b.category 
             AND MONTH(t.transaction_date) = MONTH(b.month)
             AND YEAR(t.transaction_date) = YEAR(b.month)
             AND t.type = 'expense'
             AND t.deleted_at IS NULL
-        JOIN users u ON b.user_id = u.id
-        LEFT JOIN users ut ON t.user_id = ut.id
+            AND t.user_id = b.user_id
         WHERE u.business_id = %s
-        AND (ut.business_id = %s OR t.id IS NULL)
         GROUP BY b.id, b.category, b.month, b.budget_amount
         ORDER BY b.month DESC, b.category ASC
-    """, (business_id, business_id))
+    """, (business_id,))
     budgets = cursor.fetchall()
     
     for b in budgets:

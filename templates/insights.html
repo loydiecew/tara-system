@@ -2,1048 +2,249 @@
 
 {% block title %}Business Insights{% endblock %}
 {% block page_title %}Business Insights{% endblock %}
-{% block page_subtitle %}Analytics, trends, and what-if planning{% endblock %}
+{% block page_subtitle %}{{ period_label }}{% endblock %}
 
 {% block extra_css %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
     .chart-container {
-        background: var(--bg-secondary);
-        border-radius: 20px;
-        padding: 20px;
-        margin-bottom: 24px;
-        border: 1px solid var(--border-light);
-        height: 220px;
+        background: var(--bg-secondary); border-radius: 20px; padding: 20px;
+        margin-bottom: 24px; border: 1px solid var(--border-light); height: 240px;
     }
     .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 16px; margin-bottom: 24px;
     }
     .kpi-card {
-        background: var(--bg-secondary);
-        border-radius: 16px;
-        padding: 16px;
-        border: 1px solid var(--border-light);
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s;
+        background: var(--glass-bg); backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border); border-radius: 16px;
+        padding: 20px; text-align: center; cursor: pointer;
+        transition: all 0.3s ease; box-shadow: var(--card-shadow);
     }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--card-shadow-hover);
-        border-color: #10b981;
-    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: var(--accent); }
     .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-primary); }
     .kpi-label { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
     .trend-up { color: #10b981; }
     .trend-down { color: #ef4444; }
-
-    #expenseCategoriesChart {
-        max-height: 140px !important;
-        max-width: 140px !important;
-    }
-
-    /* Modal */
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-    }
-    .modal-content {
-        background: var(--bg-secondary);
-        border-radius: 20px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto;
-        padding: 24px;
-    }
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--border-light);
-    }
-    .close-modal {
-        cursor: pointer;
-        font-size: 24px;
-        color: var(--text-secondary);
-    }
-
-    /* Tables */
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-    }
-    .data-table th, .data-table td {
-        padding: 10px 12px;
-        text-align: left;
-        border-bottom: 1px solid var(--border-light);
-    }
-    .data-table th {
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 11px;
-        text-transform: uppercase;
-    }
-    .data-table tr:hover {
-        background: var(--bg-primary);
-    }
-
-    /* Planner inputs */
-    .input-group {
-        margin-bottom: 16px;
-    }
-    .input-group label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: 600;
-        font-size: 13px;
-    }
-    .input-group input[type="number"] {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid var(--border-light);
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        font-size: 14px;
-    }
-    .result-panel {
-        background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(5,150,105,0.05) 100%);
-        border-radius: 16px;
-        padding: 20px;
-        text-align: center;
-        margin-top: 20px;
-    }
-    .result-profit { font-size: 32px; font-weight: 800; }
-    .result-change { font-size: 14px; margin-top: 4px; }
-
-    /* Section headings */
-    .section-heading {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16px;
-    }
-    .section-heading h2 {
-        font-size: 16px;
-        margin: 0;
-    }
-
-    /* Bento grid for analysis */
-    .analysis-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-bottom: 24px;
-    }
-
-    @media (max-width: 900px) {
-        .analysis-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-    @keyframes slideIn {
-        from { transform: translateX(100px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
+    .data-table th { font-weight: 600; color: var(--text-secondary); font-size: 11px; text-transform: uppercase; }
+    .data-table tr:hover { background: var(--bg-primary); }
+    .analysis-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
+    .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .section-heading h2 { font-size: 16px; margin: 0; }
+    .alert-item { padding: 14px 16px; border-radius: 12px; margin-bottom: 8px; border-left: 4px solid; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; }
+    .alert-item.high { background: #fef2f2; border-color: #ef4444; }
+    .alert-item.medium { background: #fffbeb; border-color: #f59e0b; }
+    .rec-item { background: var(--bg-primary); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border-light); margin-bottom: 8px; }
+    @media (max-width: 900px) { .analysis-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- ============================================ -->
-<!-- KPI CARDS (Clickable)                         -->
-<!-- ============================================ -->
+<!-- Period Selector -->
+<div style="display: flex; gap: 12px; margin-bottom: 24px; align-items: center; flex-wrap: wrap;">
+    <span style="font-weight: 600; color: var(--text-secondary); font-size: 13px;">Period:</span>
+    <select id="insightsPeriod" onchange="switchPeriod()" style="padding: 8px 14px; border: 1px solid var(--border-light); border-radius: 10px; background: var(--bg-secondary); color: var(--text-primary); font-size: 13px;">
+        <option value="month" {{ 'selected' if period == 'month' else '' }}>This Month</option>
+        <option value="quarter" {{ 'selected' if period == 'quarter' else '' }}>This Quarter</option>
+        <option value="year" {{ 'selected' if period == 'year' else '' }}>This Year</option>
+        {% for m in available_months %}
+        <option value="{{ m }}" {{ 'selected' if period == m else '' }}>{{ m }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- KPI Cards -->
 <div class="kpi-grid">
-    <div class="kpi-card" onclick="showStatDetail('sales')">
-        <div class="kpi-value">₱{{ "{:,.0f}".format(current_sales|default(0)) }}</div>
+    <div class="kpi-card">
         <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value" style="color: #10b981;">₱{{ "{:,.0f}".format(current_sales|default(0)) }}</div>
         <div class="trend-{% if sales_change >= 0 %}up{% else %}down{% endif %}" style="font-size: 12px; margin-top: 4px;">
             {% if sales_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(sales_change|abs) }}%
         </div>
     </div>
-    <div class="kpi-card" onclick="showStatDetail('expenses')">
-        <div class="kpi-value">₱{{ "{:,.0f}".format(current_expenses|default(0)) }}</div>
+    <div class="kpi-card">
         <div class="kpi-label">Total Expenses</div>
+        <div class="kpi-value" style="color: #ef4444;">₱{{ "{:,.0f}".format(current_expenses|default(0)) }}</div>
         <div class="trend-{% if expense_change <= 0 %}up{% else %}down{% endif %}" style="font-size: 12px; margin-top: 4px;">
             {% if expense_change <= 0 %}▼{% else %}▲{% endif %} {{ "%.1f"|format(expense_change|abs) }}%
         </div>
     </div>
-    <div class="kpi-card" onclick="showStatDetail('profit')">
-        <div class="kpi-value">₱{{ "{:,.0f}".format(current_profit|default(0)) }}</div>
+    <div class="kpi-card">
         <div class="kpi-label">Profit</div>
+        <div class="kpi-value" style="color: {% if current_profit >= 0 %}#10b981{% else %}#ef4444{% endif %};">₱{{ "{:,.0f}".format(current_profit|default(0)) }}</div>
         <div class="trend-{% if profit_change >= 0 %}up{% else %}down{% endif %}" style="font-size: 12px; margin-top: 4px;">
             {% if profit_change >= 0 %}▲{% else %}▼{% endif %} {{ "%.1f"|format(profit_change|abs) }}%
         </div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-value">{{ "%.1f"|format(profit_margin|default(0)) }}%</div>
         <div class="kpi-label">Profit Margin</div>
+        <div class="kpi-value">{{ "%.1f"|format(profit_margin|default(0)) }}%</div>
     </div>
 </div>
 
-<!-- ============================================ -->
-<!-- CHARTS SECTION (Compact)                      -->
-<!-- ============================================ -->
+<!-- Charts -->
 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
-    <!-- Line Chart -->
-    <div class="chart-container" style="padding: 12px;">
+    <div class="chart-container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h3 style="font-size: 13px; margin: 0;"><i class="fas fa-chart-line"></i> Sales vs Expenses</h3>
-            <select id="chartPeriod" style="padding: 4px 8px; font-size: 11px; border-radius: 8px;">
-                <option value="7">7 Days</option>
-                <option value="30">30 Days</option>
-                <option value="90">90 Days</option>
+            <select id="chartPeriod" style="padding: 4px 8px; font-size: 11px; border-radius: 8px;" onchange="updateCharts()">
+                <option value="7">7 Days</option><option value="30" selected>30 Days</option><option value="90">90 Days</option>
             </select>
         </div>
         <canvas id="salesExpensesChart"></canvas>
     </div>
-
-    <!-- Donut Chart -->
-    <div class="chart-container" style="padding: 12px;">
+    <div class="chart-container">
         <h3 style="font-size: 13px; margin-bottom: 8px;"><i class="fas fa-chart-pie"></i> Expense Breakdown</h3>
-        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-            <canvas id="expenseCategoriesChart"></canvas>
-            <div id="expenseLegend" style="font-size: 10px; flex: 1;"></div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <canvas id="expenseCategoriesChart" style="max-height:140px;max-width:140px;"></canvas>
+            <div id="expenseLegend" style="font-size:10px;flex:1;"></div>
         </div>
     </div>
 </div>
 
-<!-- ============================================ -->
-<!-- ENHANCED: PRODUCT PROFITABILITY + CUSTOMER RANKING -->
-<!-- ============================================ -->
+<!-- Monthly Comparison Chart -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header section-heading">
+        <h2><i class="fas fa-chart-bar"></i> Monthly Comparison (12 Months)</h2>
+    </div>
+    <div style="height: 250px;"><canvas id="monthlyChart"></canvas></div>
+</div>
+
 {% if not is_cashier %}
+<!-- Product Profitability + Customer Ranking -->
 <div class="analysis-grid">
-    <!-- Product Profitability -->
     <div class="card">
         <div class="card-header section-heading">
             <h2><i class="fas fa-box"></i> Product Profitability</h2>
             <span style="font-size: 11px; color: var(--text-secondary);">Revenue - COGS</span>
         </div>
-        <div style="overflow-x: auto;">
-            <table class="data-table" id="productProfitTable">
-                <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Sold</th>
-                        <th>Revenue</th>
-                        <th>Gross Profit</th>
-                        <th>Margin</th>
-                    </tr>
-                </thead>
-                <tbody id="productProfitBody">
-                    <tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <div style="overflow-x:auto;"><table class="data-table" id="productProfitTable"><thead><tr><th>Product</th><th>Sold</th><th>Revenue</th><th>Profit</th><th>Margin</th></tr></thead><tbody id="productProfitBody"><tr><td colspan="5" style="text-align:center;padding:20px;">Loading...</td></tr></tbody></table></div>
     </div>
-
-    <!-- Customer Ranking -->
     <div class="card">
         <div class="card-header section-heading">
             <h2><i class="fas fa-users"></i> Customer Ranking</h2>
-            <span style="font-size: 11px; color: var(--text-secondary);">Top customers by revenue</span>
+            <span style="font-size: 11px; color: var(--text-secondary);">Top customers</span>
         </div>
-        <div style="overflow-x: auto;">
-            <table class="data-table" id="customerRankTable">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Customer</th>
-                        <th>Revenue</th>
-                        <th>% of Total</th>
-                    </tr>
-                </thead>
-                <tbody id="customerRankBody">
-                    <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-secondary);">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <div style="overflow-x:auto;"><table class="data-table" id="customerRankTable"><thead><tr><th>#</th><th>Customer</th><th>Revenue</th><th>%</th></tr></thead><tbody id="customerRankBody"><tr><td colspan="4" style="text-align:center;padding:20px;">Loading...</td></tr></tbody></table></div>
     </div>
 </div>
 {% endif %}
 
-<!-- ============================================ -->
-<!-- SALES BY DAY / WEEK                          -->
-<!-- ============================================ -->
+<!-- Sales by Day/Week -->
 <div class="card" style="margin-bottom: 24px;">
     <div class="card-header section-heading">
         <h2><i class="fas fa-calendar-alt"></i> Sales Analysis</h2>
         <select id="salesAnalysisPeriod" style="padding: 4px 8px; font-size: 11px; border-radius: 8px;" onchange="loadSalesAnalysis()">
-            <option value="day">By Day of Week</option>
-            <option value="week">By Week of Month</option>
+            <option value="day">By Day of Week</option><option value="week">By Week of Month</option>
         </select>
     </div>
-    <div style="overflow-x: auto;">
-        <table class="data-table" id="salesAnalysisTable">
-            <thead id="salesAnalysisHead"></thead>
-            <tbody id="salesAnalysisBody">
-                <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-secondary);">Loading...</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <div style="overflow-x:auto;"><table class="data-table" id="salesAnalysisTable"><thead id="salesAnalysisHead"></thead><tbody id="salesAnalysisBody"><tr><td colspan="3" style="text-align:center;padding:20px;">Loading...</td></tr></tbody></table></div>
 </div>
 
-<!-- ============================================ -->
-<!-- YEAR-OVER-YEAR COMPARISON                    -->
-<!-- ============================================ -->
+<!-- Year-over-Year -->
 <div class="card" style="margin-bottom: 24px;">
-    <div class="card-header section-heading">
-        <h2><i class="fas fa-balance-scale"></i> Year-over-Year Comparison</h2>
-        <span style="font-size: 11px; color: var(--text-secondary);">This month vs same month last year</span>
-    </div>
-    <div id="yoyContent" style="text-align: center; padding: 20px; color: var(--text-secondary);">
-        Loading...
-    </div>
+    <div class="card-header section-heading"><h2><i class="fas fa-balance-scale"></i> Year-over-Year</h2></div>
+    <div id="yoyContent" style="text-align:center;padding:20px;">Loading...</div>
 </div>
 
-<!-- ============================================ -->
-<!-- SMART ALERTS                                 -->
-<!-- ============================================ -->
+<!-- Smart Alerts -->
 <div class="card" style="margin-bottom: 24px;">
-    <div class="card-header">
-        <h2><i class="fas fa-bell"></i> Smart Alerts</h2>
-    </div>
+    <div class="card-header"><h2><i class="fas fa-bell"></i> Smart Alerts</h2></div>
     {% if alerts %}
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-        {% for alert in alerts %}
-            <div style="padding: 16px; border-radius: 12px; background: {% if alert.severity == 'high' %}#fef2f2{% else %}#fffbeb{% endif %}; border-left: 4px solid {% if alert.severity == 'high' %}#ef4444{% else %}#f59e0b{% endif %};">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
-                    <div>
-                        <strong>
-                            {% if alert.type == 'expense_spike' %} Expense Spike ({{ alert.increase_pct|round }}% up)
-                            {% elif alert.type == 'sales_drop' %} Sales Drop ({{ alert.drop_pct|round }}% down)
-                            {% elif alert.type == 'profit_decline' %} Profit Decline ({{ alert.decline_pct|round }}% down)
-                            {% endif %}
-                        </strong>
-                        <div style="font-size: 13px; color: var(--text-secondary);">{{ alert.message }}</div>
-                    </div>
-                    <div style="font-size: 12px;">
-                        <span style="background: var(--bg-primary); padding: 2px 8px; border-radius: 12px;">Current: ₱{{ "%.0f"|format(alert.current) }}</span>
-                        <span style="margin-left: 8px; background: var(--bg-primary); padding: 2px 8px; border-radius: 12px;">Previous: ₱{{ "%.0f"|format(alert.last) }}</span>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
+    {% for a in alerts %}
+    <a href="{{ a.link }}" style="text-decoration:none;">
+        <div class="alert-item {{ a.severity }}">
+            <div><strong>{{ a.message }}</strong><div style="font-size:12px;color:var(--text-secondary);">{{ a.detail }}</div></div>
         </div>
+    </a>
+    {% endfor %}
     {% else %}
-        <div style="text-align: center; padding: 30px; background: #f0fdf4; border-radius: 12px;">
-            <i class="fas fa-check-circle" style="font-size: 24px; color: #10b981;"></i>
-            <p style="margin-top: 8px;">All metrics look good</p>
-        </div>
+    <div style="text-align:center;padding:30px;color:#10b981;"><i class="fas fa-check-circle" style="font-size:24px;"></i><p style="margin-top:8px;">All metrics look good</p></div>
     {% endif %}
 </div>
 
-<!-- ============================================ -->
-<!-- RECOMMENDATIONS                              -->
-<!-- ============================================ -->
-{% if not is_cashier %}
+<!-- Recommendations -->
 <div class="card" style="margin-bottom: 24px;">
-    <div class="card-header">
-        <h2><i class="fas fa-lightbulb"></i> Recommendations</h2>
+    <div class="card-header"><h2><i class="fas fa-lightbulb"></i> Recommendations</h2></div>
+    {% for r in recommendations %}
+    <div class="rec-item">
+        <strong>{{ r.action }}</strong>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">{{ r.detail }}</div>
     </div>
-    <div style="display: flex; flex-direction: column; gap: 16px;">
-        {% for rec in recommendations %}
-        <div style="background: var(--bg-primary); border-radius: 16px; padding: 16px; border: 1px solid var(--border-light);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                <div>
-                    <strong>
-                        {% if rec.type == 'cost_cutting' %} {{ rec.category }} Cost Reduction
-                        {% elif rec.type == 'sales_improvement' %} Sales Recovery
-                        {% elif rec.type == 'profit_improvement' %} Profit Protection
-                        {% elif rec.type == 'margin_improvement' %} Margin Improvement
-                        {% else %} Suggestion{% endif %}
-                    </strong>
-                    <div style="font-size: 13px; color: var(--text-secondary);">{{ rec.action|truncate(100) }}</div>
-                </div>
-                {% if rec.potential_savings %}
-                <div style="text-align: center; min-width: 100px;">
-                    <div style="font-size: 20px; font-weight: 700; color: #10b981;">₱{{ "%.0f"|format(rec.potential_savings) }}</div>
-                    <div style="font-size: 11px;">potential savings</div>
-                </div>
-                {% elif rec.potential_gain %}
-                <div style="text-align: center; min-width: 100px;">
-                    <div style="font-size: 20px; font-weight: 700; color: #10b981;">₱{{ "%.0f"|format(rec.potential_gain) }}</div>
-                    <div style="font-size: 11px;">potential gain</div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- ============================================ -->
-<!-- REDESIGNED PREDICTIVE PLANNER                -->
-<!-- ============================================ -->
-{% if not is_cashier %}
-<div class="card" style="margin-bottom: 24px;">
-    <div class="card-header section-heading">
-        <h2><i class="fas fa-chart-simple"></i> Predictive Planner</h2>
-        <div>
-            <button class="btn btn-secondary btn-sm" onclick="saveScenario()" style="margin-right: 4px;"><i class="fas fa-save"></i> Save</button>
-            <button class="btn btn-secondary btn-sm" onclick="loadScenario()"><i class="fas fa-folder-open"></i> Load</button>
-        </div>
-    </div>
-
-    <!-- Scenario Toggle -->
-    <div style="margin-bottom: 16px;">
-        <label style="margin-right: 16px;">
-            <input type="radio" name="scenarioType" value="general" checked onchange="toggleScenarioType()"> General Business
-        </label>
-        <label>
-            <input type="radio" name="scenarioType" value="product" onchange="toggleScenarioType()"> Per Product
-        </label>
-        <select id="productSelect" style="display:none; margin-left: 12px; padding: 6px 10px; border-radius: 8px;" onchange="updateProductScenario()">
-            <option value="">-- Select Product --</option>
-        </select>
-    </div>
-
-    <!-- Number Inputs (No Sliders) -->
-    <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px;">
-        <h3 style="margin-bottom: 16px; font-size: 16px;">Adjust Your Variables</h3>
-
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-            <div class="input-group">
-                <label>Price Change (%)</label>
-                <input type="number" id="priceInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
-            </div>
-            <div class="input-group">
-                <label>Sales Volume Change (%)</label>
-                <input type="number" id="volumeInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
-            </div>
-            <div class="input-group">
-                <label>COGS Change (%)</label>
-                <input type="number" id="cogsInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
-            </div>
-            <div class="input-group">
-                <label>Marketing Spend Change (%)</label>
-                <input type="number" id="marketingInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
-            </div>
-            <div class="input-group">
-                <label>Labor Cost Change (%)</label>
-                <input type="number" id="laborInput" value="0" step="1" min="-50" max="100" onchange="updatePredictive()">
-            </div>
-            <div class="input-group">
-                <label>Scenario Name</label>
-                <input type="text" id="scenarioName" placeholder="My scenario" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border-light); background:var(--bg-primary); color:var(--text-primary);">
-            </div>
-        </div>
-
-        <div class="result-panel">
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px;">
-                <div>
-                    <div style="font-size: 11px;">Current Revenue</div>
-                    <div style="font-weight: 700;" id="baselineRevenue">₱{{ "{:,.0f}".format(baseline_sales|default(0)) }}</div>
-                </div>
-                <div>
-                    <div style="font-size: 11px;">Current Expenses</div>
-                    <div style="font-weight: 700;" id="baselineExpensesDisplay">₱{{ "{:,.0f}".format(baseline_expenses|default(0)) }}</div>
-                </div>
-            </div>
-            <div style="height: 1px; background: var(--border-light); margin: 12px 0;"></div>
-            <div class="result-profit" id="projectedProfit">₱{{ "{:,.0f}".format(current_profit_baseline|default(0)) }}</div>
-            <div class="result-change" id="profitChange">—</div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- LOAD SCENARIO MODAL -->
-<div id="loadScenarioModal" class="modal">
-    <div class="modal-content" style="max-width: 500px;">
-        <div class="modal-header">
-            <h3><i class="fas fa-folder-open"></i> Load Saved Scenario</h3>
-            <span class="close-modal" onclick="closeLoadScenarioModal()">&times;</span>
-        </div>
-        <div id="loadScenarioBody" style="max-height: 50vh; overflow-y: auto;">
-            <p style="text-align:center; padding:20px; color:var(--text-secondary);">Loading scenarios...</p>
-        </div>
-    </div>
+    {% endfor %}
 </div>
 
-<!-- ============================================ -->
-<!-- MODAL FOR DETAILS                            -->
-<!-- ============================================ -->
-<div id="detailModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">Details</h3>
-            <span class="close-modal" onclick="closeModal()">&times;</span>
-        </div>
-        <div id="modalBody" style="max-height: 60vh; overflow-y: auto;"></div>
-    </div>
-</div>
-
-<!-- ============================================ -->
-<!-- JAVASCRIPT                                   -->
-<!-- ============================================ -->
 <script>
-    // ==================== CHARTS ====================
-    let salesExpensesChart = null;
-    let expenseCategoriesChart = null;
+let salesExpensesChart=null,expenseCategoriesChart=null,monthlyChart=null;
 
-    function updateCharts() {
-        const period = document.getElementById('chartPeriod').value;
-        fetch(`/api/chart-data?period=${period}`)
-            .then(res => res.json())
-            .then(data => {
-                // Line Chart
-                if (salesExpensesChart) salesExpensesChart.destroy();
-                const ctx1 = document.getElementById('salesExpensesChart').getContext('2d');
-                salesExpensesChart = new Chart(ctx1, {
-                    type: 'line',
-                    data: {
-                        labels: data.labels,
-                        datasets: [
-                            { label: 'Sales', data: data.sales, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, tension: 0.3, fill: true },
-                            { label: 'Expenses', data: data.expenses, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.05)', borderWidth: 2, pointRadius: 2, pointHoverRadius: 4, tension: 0.3, fill: true }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } } },
-                        scales: { y: { beginAtZero: true, grid: { lineWidth: 0.5 } }, x: { ticks: { font: { size: 8 } } } }
-                    }
-                });
+function switchPeriod(){window.location.href='/insights?period='+document.getElementById('insightsPeriod').value;}
 
-                // Donut Chart
-                if (expenseCategoriesChart) expenseCategoriesChart.destroy();
-                const ctx2 = document.getElementById('expenseCategoriesChart').getContext('2d');
-                expenseCategoriesChart = new Chart(ctx2, {
-                    type: 'doughnut',
-                    data: {
-                        labels: data.categoryLabels,
-                        datasets: [{ data: data.categoryValues, backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'], borderWidth: 0, cutout: '65%' }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ₱${ctx.raw.toFixed(0)}` } }
-                        },
-                        layout: { padding: 5 }
-                    }
-                });
-
-                // Custom legend
-                const legendDiv = document.getElementById('expenseLegend');
-                if (legendDiv && data.categoryLabels && data.categoryLabels.length > 0) {
-                    legendDiv.innerHTML = data.categoryLabels.map((label, i) =>
-                        `<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <div style="width: 10px; height: 10px; background: ${['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'][i]}; border-radius: 2px;"></div>
-                            <span style="flex:1;">${label}</span>
-                            <span style="font-weight:600;">₱${data.categoryValues[i].toFixed(0)}</span>
-                         </div>`
-                    ).join('');
-                } else if (legendDiv) {
-                    legendDiv.innerHTML = '<div style="color: var(--text-secondary); font-size: 11px;">No expense data</div>';
-                }
-            })
-            .catch(err => console.error('Chart error:', err));
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCharts();
-        document.getElementById('chartPeriod').addEventListener('change', updateCharts);
-
-        // Load new sections
-        loadProductProfitability();
-        loadCustomerRanking();
-        loadSalesAnalysis();
-        loadYoYComparison();
-        updatePredictive();
-    });
-
-    // ==================== PRODUCT PROFITABILITY ====================
-    function loadProductProfitability() {
-        fetch('/api/product-profitability?period=month')
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.getElementById('productProfitBody');
-                if (data.error) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">${data.error}</td></tr>`;
-                    return;
-                }
-                if (!data.products || data.products.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">No product sales data yet</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = data.products.map(p => `
-                    <tr>
-                        <td><strong>${p.name}</strong></td>
-                        <td>${p.units_sold}</td>
-                        <td>₱${parseFloat(p.revenue).toFixed(2)}</td>
-                        <td style="color:${p.profit >= 0 ? '#10b981' : '#ef4444'};">₱${parseFloat(p.profit).toFixed(2)}</td>
-                        <td>${p.margin}%</td>
-                    </tr>
-                `).join('');
-            })
-            .catch(err => {
-                document.getElementById('productProfitBody').innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
-                console.error(err);
-            });
-    }
-
-    // ==================== CUSTOMER RANKING ====================
-    function loadCustomerRanking() {
-        fetch('/api/customer-ranking?period=month&limit=5')
-            .then(res => res.json())
-            .then(data => {
-                const tbody = document.getElementById('customerRankBody');
-                if (!data.customers || data.customers.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-secondary);">No customer data yet</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = data.customers.map(c => `
-                    <tr>
-                        <td>${c.rank}</td>
-                        <td><strong>${c.name}</strong></td>
-                        <td>₱${parseFloat(c.total_sales).toFixed(2)}</td>
-                        <td>${c.percentage}%</td>
-                    </tr>
-                `).join('');
-            })
-            .catch(err => {
-                document.getElementById('customerRankBody').innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
-                console.error(err);
-            });
-    }
-
-    // ==================== SALES ANALYSIS (Day/Week) ====================
-    function loadSalesAnalysis() {
-        const period = document.getElementById('salesAnalysisPeriod').value;
-        const thead = document.getElementById('salesAnalysisHead');
-        const tbody = document.getElementById('salesAnalysisBody');
-        
-        // Fixed header — never changes
-        thead.innerHTML = '<tr><th>Period</th><th>Total Sales</th><th>Percentage</th></tr>';
-        
-        if (period === 'day') {
-            fetch('/api/sales-by-day')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.days && data.days.length > 0) {
-                        const total = Object.values(data.sales_by_day).reduce((a, b) => a + b, 0);
-                        tbody.innerHTML = data.days.map(day => {
-                            const sales = data.sales_by_day[day] || 0;
-                            const pct = total > 0 ? (sales / total * 100).toFixed(1) : '0.0';
-                            return `
-                                <tr>
-                                    <td><strong>${day}</strong></td>
-                                    <td>₱${sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                    <td>${pct}%</td>
-                                </tr>`;
-                        }).join('');
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-secondary);">No sales data available</td></tr>';
-                    }
-                })
-                .catch(err => {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
-                    console.error(err);
-                });
-        } else {
-            fetch('/api/sales-by-week')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.weeks && data.weeks.length > 0) {
-                        tbody.innerHTML = data.weeks.map(w => `
-                            <tr>
-                                <td><strong>${w.week_label}</strong></td>
-                                <td>₱${w.total_sales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                <td>${w.percent_of_month}%</td>
-                            </tr>
-                        `).join('');
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-secondary);">No sales data this month</td></tr>';
-                    }
-                })
-                .catch(err => {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#ef4444;">Failed to load</td></tr>';
-                    console.error(err);
-                });
-        }
-    }
-
-    // ==================== YEAR-OVER-YEAR ====================
-    function loadYoYComparison() {
-        fetch('/api/yoy-comparison')
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('yoyContent');
-                if (!data.current || !data.previous) {
-                    container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-secondary);">Not enough historical data for YoY comparison.</p>';
-                    return;
-                }
-                const changes = data.changes || {};
-                container.innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
-                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px;">
-                            <div style="font-size: 11px; color: var(--text-secondary);">Revenue</div>
-                            <div style="font-size: 18px; font-weight: 700;">₱${parseFloat(data.current.revenue).toFixed(0)}</div>
-                            <div style="font-size: 12px; color: ${changes.revenue >= 0 ? '#10b981' : '#ef4444'};">
-                                ${changes.revenue >= 0 ? '▲' : '▼'} ${Math.abs(changes.revenue).toFixed(1)}% vs last year
-                            </div>
-                        </div>
-                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px;">
-                            <div style="font-size: 11px; color: var(--text-secondary);">Expenses</div>
-                            <div style="font-size: 18px; font-weight: 700;">₱${parseFloat(data.current.expenses).toFixed(0)}</div>
-                            <div style="font-size: 12px; color: ${changes.expenses <= 0 ? '#10b981' : '#ef4444'};">
-                                ${changes.expenses <= 0 ? '▼' : '▲'} ${Math.abs(changes.expenses).toFixed(1)}% vs last year
-                            </div>
-                        </div>
-                        <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px;">
-                            <div style="font-size: 11px; color: var(--text-secondary);">Profit</div>
-                            <div style="font-size: 18px; font-weight: 700;">₱${parseFloat(data.current.profit).toFixed(0)}</div>
-                            <div style="font-size: 12px; color: ${changes.profit >= 0 ? '#10b981' : '#ef4444'};">
-                                ${changes.profit >= 0 ? '▲' : '▼'} ${Math.abs(changes.profit).toFixed(1)}% vs last year
-                            </div>
-                        </div>
-                    </div>
-                `;
-            })
-            .catch(err => {
-                document.getElementById('yoyContent').innerHTML = '<p style="text-align:center; padding:20px; color:#ef4444;">Failed to load YoY data.</p>';
-                console.error(err);
-            });
-    }
-
-    // ==================== MODAL ====================
-    function showStatDetail(type) {
-        fetch(`/api/stats-detail/${type}`)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('modalTitle').innerText = data.title;
-                if (data.items && data.items.length > 0) {
-                    let html = '<table style="width:100%"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>';
-                    data.items.forEach(item => {
-                        let amountColor = '#10b981';
-                        let amountPrefix = '+';
-                        if (item.type === 'Expense' || (item.amount < 0)) {
-                            amountColor = '#ef4444';
-                            amountPrefix = '-';
-                        }
-                        if (item.category && item.type !== 'Income') {
-                            amountColor = '#ef4444';
-                            amountPrefix = '-';
-                        }
-                        html += `<tr>
-                            <td>${item.date}</td>
-                            <td>${item.description || item.name || '-'}</td>
-                            <td style="color:${amountColor}; font-weight:500;">${amountPrefix}₱${parseFloat(item.amount).toFixed(2)}</td>
-                        </tr>`;
-                    });
-                    html += '</tbody></table>';
-                    document.getElementById('modalBody').innerHTML = html;
-                } else {
-                    document.getElementById('modalBody').innerHTML = '<p>No data available for this period.</p>';
-                }
-                document.getElementById('detailModal').style.display = 'flex';
-            });
-    }
-
-    function closeModal() { document.getElementById('detailModal').style.display = 'none'; }
-    // Close modals on outside click
-    window.onclick = function(event) {
-        if (event.target === document.getElementById('detailModal')) closeModal();
-        if (event.target === document.getElementById('loadScenarioModal')) closeLoadScenarioModal();
-    };
-
-    // ==================== PREDICTIVE PLANNER ====================
-    const baselineSales = {{ baseline_sales|default(100000) }};
-    const baselineExpenses = {{ baseline_expenses|default(70000) }};
-    const baselineProfit = {{ current_profit_baseline|default(0) }};
-    const baselineCOGS = baselineExpenses * 0.4;
-    const baselineMarketing = baselineExpenses * 0.2;
-    const baselineLabor = baselineExpenses * 0.3;
-
-    function updatePredictive() {
-        const priceChange = parseFloat(document.getElementById('priceInput').value || 0) / 100;
-        const volumeChange = parseFloat(document.getElementById('volumeInput').value || 0) / 100;
-        const cogsChange = parseFloat(document.getElementById('cogsInput').value || 0) / 100;
-        const marketingChange = parseFloat(document.getElementById('marketingInput').value || 0) / 100;
-        const laborChange = parseFloat(document.getElementById('laborInput').value || 0) / 100;
-
-        const newSales = baselineSales * (1 + priceChange) * (1 + volumeChange);
-        const newCOGS = baselineCOGS * (1 + cogsChange);
-        const newMarketing = baselineMarketing * (1 + marketingChange);
-        const newLabor = baselineLabor * (1 + laborChange);
-        const newExpenses = newCOGS + newMarketing + newLabor;
-        const newProfit = newSales - newExpenses;
-        const profitDifference = newProfit - baselineProfit;
-        const profitPercent = baselineProfit > 0 ? (profitDifference / baselineProfit) * 100 : 0;
-
-        document.getElementById('projectedProfit').innerHTML = `₱${Math.round(newProfit).toLocaleString()}`;
-        const changeSpan = document.getElementById('profitChange');
-        if (profitDifference >= 0) {
-            changeSpan.innerHTML = `▲ ₱${Math.abs(Math.round(profitDifference)).toLocaleString()} (+${profitPercent.toFixed(1)}%)`;
-            changeSpan.style.color = '#10b981';
-        } else {
-            changeSpan.innerHTML = `▼ ₱${Math.abs(Math.round(profitDifference)).toLocaleString()} (${profitPercent.toFixed(1)}%)`;
-            changeSpan.style.color = '#ef4444';
-        }
-
-        document.getElementById('baselineRevenue').innerText = `₱${Math.round(newSales).toLocaleString()}`;
-        document.getElementById('baselineExpensesDisplay').innerText = `₱${Math.round(newExpenses).toLocaleString()}`;
-    }
-
-        // ==================== SCENARIO SAVE/LOAD (With UI) ====================
-    function saveScenario() {
-        const name = document.getElementById('scenarioName').value.trim();
-        if (!name) {
-            showToast('Please enter a scenario name', 'warning');
-            return;
-        }
-        
-        const type = document.querySelector('input[name="scenarioType"]:checked').value;
-        const productId = document.getElementById('productSelect').value || null;
-
-        const data = {
-            name: name,
-            scenario_type: type,
-            product_id: productId,
-            data: {
-                price_change: document.getElementById('priceInput').value || 0,
-                volume_change: document.getElementById('volumeInput').value || 0,
-                cogs_change: document.getElementById('cogsInput').value || 0,
-                marketing_change: document.getElementById('marketingInput').value || 0,
-                labor_change: document.getElementById('laborInput').value || 0
-            }
-        };
-
-        fetch('/api/saved-scenarios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        })
-        .then(res => res.json())
-        .then(result => {
-            if (result.success) {
-                showToast('Scenario saved successfully!', 'success');
-            } else {
-                showToast('Error: ' + (result.error || 'Failed to save'), 'error');
-            }
-        })
-        .catch(err => {
-            showToast('Network error', 'error');
-            console.error(err);
+function updateCharts(){
+    const period=document.getElementById('chartPeriod').value;
+    fetch('/api/chart-data?period='+period)
+        .then(r=>r.json()).then(d=>{
+            if(salesExpensesChart)salesExpensesChart.destroy();
+            const ctx=document.getElementById('salesExpensesChart').getContext('2d');
+            salesExpensesChart=new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[{label:'Sales',data:d.sales,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.05)',borderWidth:2,pointRadius:2,tension:0.3,fill:true},{label:'Expenses',data:d.expenses,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.05)',borderWidth:2,pointRadius:2,tension:0.3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:9}}}},scales:{y:{beginAtZero:true}}}});
+            if(expenseCategoriesChart)expenseCategoriesChart.destroy();
+            const ctx2=document.getElementById('expenseCategoriesChart').getContext('2d');
+            expenseCategoriesChart=new Chart(ctx2,{type:'doughnut',data:{labels:d.categoryLabels,datasets:[{data:d.categoryValues,backgroundColor:['#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],borderWidth:0,cutout:'65%'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>c.label+': ₱'+c.raw.toFixed(0)}}}}});
+            const leg=document.getElementById('expenseLegend');
+            if(leg&&d.categoryLabels&&d.categoryLabels.length>0){leg.innerHTML=d.categoryLabels.map((l,i)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><div style="width:10px;height:10px;background:${['#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'][i]};border-radius:2px;"></div><span style="flex:1;">${l}</span><span style="font-weight:600;">₱${d.categoryValues[i].toFixed(0)}</span></div>`).join('');}else if(leg){leg.innerHTML='<div style="color:var(--text-secondary);font-size:11px;">No data</div>';}
         });
-    }
+}
 
-    function loadScenario() {
-        const modal = document.getElementById('loadScenarioModal');
-        const body = document.getElementById('loadScenarioBody');
-        
-        // Show modal with loading state
-        modal.style.display = 'flex';
-        body.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-secondary);">Loading scenarios...</p>';
-        
-        fetch('/api/saved-scenarios')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.scenarios || data.scenarios.length === 0) {
-                    body.innerHTML = `
-                        <div style="text-align:center; padding:40px 20px;">
-                            <i class="fas fa-inbox" style="font-size:40px; color:var(--text-muted); margin-bottom:12px;"></i>
-                            <p style="color:var(--text-secondary);">No saved scenarios yet</p>
-                            <p style="font-size:12px; color:var(--text-muted);">Adjust variables and click Save to create one</p>
-                        </div>`;
-                    return;
-                }
-                
-                let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
-                data.scenarios.forEach((s, i) => {
-                    const d = s.data || {};
-                    const typeLabel = s.scenario_type === 'product' ? 'Product' : 'General';
-                    const date = new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    html += `
-                        <div class="scenario-item" onclick="applyScenario(${i})" style="
-                            background: var(--bg-primary);
-                            border: 1px solid var(--border-light);
-                            border-radius: 12px;
-                            padding: 14px;
-                            cursor: pointer;
-                            transition: all 0.2s;
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                        " onmouseover="this.style.borderColor='#10b981'" onmouseout="this.style.borderColor='var(--border-light)'">
-                            <div>
-                                <div style="font-weight:600; font-size:14px;">${s.name}</div>
-                                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${typeLabel} · ${date}</div>
-                            </div>
-                            <div style="display:flex; gap:8px;">
-                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); applyAndClose(${i})" style="padding:6px 12px; font-size:12px;">
-                                    <i class="fas fa-check"></i> Apply
-                                </button>
-                                <button class="btn-icon btn-icon-danger" onclick="event.stopPropagation(); deleteScenario(${s.id})" title="Delete" style="font-size:14px;">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>`;
-                });
-                html += '</div>';
-                body.innerHTML = html;
-                
-                // Store scenarios globally for apply functions
-                window._loadedScenarios = data.scenarios;
-            })
-            .catch(err => {
-                body.innerHTML = '<p style="text-align:center; padding:20px; color:#ef4444;">Failed to load scenarios</p>';
-                console.error(err);
-            });
-    }
-    
-    function applyScenario(index) {
-        const scenario = window._loadedScenarios[index];
-        if (!scenario) return;
-        fillScenarioForm(scenario);
-    }
-    
-    function applyAndClose(index) {
-        applyScenario(index);
-        closeLoadScenarioModal();
-    }
-    
-    function fillScenarioForm(scenario) {
-        const d = scenario.data || {};
-        document.getElementById('priceInput').value = d.price_change || 0;
-        document.getElementById('volumeInput').value = d.volume_change || 0;
-        document.getElementById('cogsInput').value = d.cogs_change || 0;
-        document.getElementById('marketingInput').value = d.marketing_change || 0;
-        document.getElementById('laborInput').value = d.labor_change || 0;
-        document.getElementById('scenarioName').value = scenario.name || '';
-        
-        if (scenario.scenario_type === 'product') {
-            document.querySelector('input[name="scenarioType"][value="product"]').checked = true;
-            toggleScenarioType();
-            if (scenario.product_id) {
-                document.getElementById('productSelect').value = scenario.product_id;
-            }
-        } else {
-            document.querySelector('input[name="scenarioType"][value="general"]').checked = true;
-            toggleScenarioType();
-        }
-        updatePredictive();
-    }
-    
-    function deleteScenario(scenarioId) {
-        if (!confirm('Delete this scenario?')) return;
-        
-        fetch(`/api/delete-scenario/${scenarioId}`, { method: 'DELETE' })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success) {
-                    showToast('Scenario deleted', 'success');
-                    loadScenario(); // Refresh the modal
-                } else {
-                    showToast('Failed to delete', 'error');
-                }
-            })
-            .catch(err => {
-                showToast('Network error', 'error');
-                console.error(err);
-            });
-    }
-    
-    function closeLoadScenarioModal() {
-        document.getElementById('loadScenarioModal').style.display = 'none';
-    }
-    
-    // Toast notification
-    function showToast(message, type = 'info') {
-        // Remove existing toast
-        const existing = document.querySelector('.toast-notification');
-        if (existing) existing.remove();
-        
-        const colors = {
-            success: '#10b981',
-            error: '#ef4444',
-            warning: '#f59e0b',
-            info: '#3b82f6'
-        };
-        
-        const toast = document.createElement('div');
-        toast.className = 'toast-notification';
-        toast.style.cssText = `
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: var(--bg-secondary);
-            border-left: 4px solid ${colors[type] || colors.info};
-            color: var(--text-primary);
-            padding: 14px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 2000;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            animation: slideIn 0.3s ease;
-            max-width: 400px;
-        `;
-        toast.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px;">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}" style="color:${colors[type]};"></i>
-                <span>${message}</span>
-            </div>`;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
+function loadMonthlyChart(){
+    const data={{ monthly_data|tojson }};
+    if(monthlyChart)monthlyChart.destroy();
+    const ctx=document.getElementById('monthlyChart').getContext('2d');
+    monthlyChart=new Chart(ctx,{type:'bar',data:{labels:data.map(d=>d.month),datasets:[{label:'Revenue',data:data.map(d=>d.revenue),backgroundColor:'#10b981',borderRadius:4},{label:'Expenses',data:data.map(d=>d.expenses),backgroundColor:'#ef4444',borderRadius:4},{label:'Profit',data:data.map(d=>d.profit),backgroundColor:'#3b82f6',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}},scales:{y:{beginAtZero:true}}}});
+}
 
-    function toggleScenarioType() {
-        const type = document.querySelector('input[name="scenarioType"]:checked').value;
-        const select = document.getElementById('productSelect');
-        select.style.display = type === 'product' ? 'inline-block' : 'none';
-        
-        // Fetch products when switching to Per Product mode
-        if (type === 'product' && select.options.length <= 1) {
-            loadProductList();
-        }
-    }
+document.addEventListener('DOMContentLoaded',function(){updateCharts();loadMonthlyChart();loadProductProfitability();loadCustomerRanking();loadSalesAnalysis();loadYoYComparison();});
 
-    function loadProductList() {
-        fetch('/api/product-list')
-            .then(res => res.json())
-            .then(data => {
-                const select = document.getElementById('productSelect');
-                select.innerHTML = '<option value="">-- Select Product --</option>';
-                if (data.products && data.products.length > 0) {
-                    data.products.forEach(p => {
-                        select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
-                    });
-                }
-            })
-            .catch(err => console.error('Failed to load products:', err));
-    }
+function loadProductProfitability(){
+    fetch('/api/product-profitability?period=month').then(r=>r.json()).then(d=>{
+        const t=document.getElementById('productProfitBody');
+        if(d.error){t.innerHTML=`<tr><td colspan="5" style="text-align:center;padding:20px;">${d.error}</td></tr>`;return;}
+        if(!d.products||d.products.length===0){t.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;">No data</td></tr>';return;}
+        t.innerHTML=d.products.map(p=>`<tr><td><strong>${p.name}</strong></td><td>${p.units_sold}</td><td>₱${parseFloat(p.revenue).toFixed(2)}</td><td style="color:${p.profit>=0?'#10b981':'#ef4444'};">₱${parseFloat(p.profit).toFixed(2)}</td><td>${p.margin}%</td></tr>`).join('');
+    }).catch(()=>document.getElementById('productProfitBody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:#ef4444;">Failed</td></tr>');
+}
 
-    function updateProductScenario() {
-        updatePredictive();
-    }
+function loadCustomerRanking(){
+    fetch('/api/customer-ranking?period=month&limit=5').then(r=>r.json()).then(d=>{
+        const t=document.getElementById('customerRankBody');
+        if(!d.customers||d.customers.length===0){t.innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;">No data</td></tr>';return;}
+        t.innerHTML=d.customers.map(c=>`<tr><td>${c.rank}</td><td><strong>${c.name}</strong></td><td>₱${parseFloat(c.total_sales).toFixed(2)}</td><td>${c.percentage}%</td></tr>`).join('');
+    }).catch(()=>document.getElementById('customerRankBody').innerHTML='<tr><td colspan="4" style="text-align:center;padding:20px;color:#ef4444;">Failed</td></tr>');
+}
 
-    // Initialize
-    updatePredictive();
+function loadSalesAnalysis(){
+    const p=document.getElementById('salesAnalysisPeriod').value;
+    const h=document.getElementById('salesAnalysisHead'),b=document.getElementById('salesAnalysisBody');
+    h.innerHTML='<tr><th>Period</th><th>Total Sales</th><th>%</th></tr>';
+    if(p==='day'){
+        fetch('/api/sales-by-day').then(r=>r.json()).then(d=>{
+            if(d.days&&d.days.length>0){const t=Object.values(d.sales_by_day).reduce((a,b)=>a+b,0);b.innerHTML=d.days.map(day=>{const s=d.sales_by_day[day]||0;return`<tr><td><strong>${day}</strong></td><td>₱${s.toLocaleString(undefined,{minimumFractionDigits:2})}</td><td>${t>0?(s/t*100).toFixed(1):'0.0'}%</td></tr>`;}).join('');}else{b.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;">No data</td></tr>';}
+        }).catch(()=>b.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;color:#ef4444;">Failed</td></tr>');
+    }else{
+        fetch('/api/sales-by-week').then(r=>r.json()).then(d=>{
+            if(d.weeks&&d.weeks.length>0){b.innerHTML=d.weeks.map(w=>`<tr><td><strong>${w.week_label}</strong></td><td>₱${w.total_sales.toLocaleString(undefined,{minimumFractionDigits:2})}</td><td>${w.percent_of_month}%</td></tr>`).join('');}else{b.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;">No data</td></tr>';}
+        }).catch(()=>b.innerHTML='<tr><td colspan="3" style="text-align:center;padding:20px;color:#ef4444;">Failed</td></tr>');
+    }
+}
+
+function loadYoYComparison(){
+    fetch('/api/yoy-comparison').then(r=>r.json()).then(d=>{
+        const c=document.getElementById('yoyContent');
+        if(!d.current||!d.previous){c.innerHTML='<p style="text-align:center;padding:20px;">Not enough historical data.</p>';return;}
+        const ch=d.changes||{};
+        c.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;"><div style="background:var(--bg-primary);border-radius:12px;padding:16px;"><div style="font-size:11px;color:var(--text-secondary);">Revenue</div><div style="font-size:18px;font-weight:700;">₱${parseFloat(d.current.revenue).toFixed(0)}</div><div style="font-size:12px;color:${ch.revenue>=0?'#10b981':'#ef4444'};">${ch.revenue>=0?'▲':'▼'} ${Math.abs(ch.revenue).toFixed(1)}%</div></div><div style="background:var(--bg-primary);border-radius:12px;padding:16px;"><div style="font-size:11px;color:var(--text-secondary);">Expenses</div><div style="font-size:18px;font-weight:700;">₱${parseFloat(d.current.expenses).toFixed(0)}</div><div style="font-size:12px;color:${ch.expenses<=0?'#10b981':'#ef4444'};">${ch.expenses<=0?'▼':'▲'} ${Math.abs(ch.expenses).toFixed(1)}%</div></div><div style="background:var(--bg-primary);border-radius:12px;padding:16px;"><div style="font-size:11px;color:var(--text-secondary);">Profit</div><div style="font-size:18px;font-weight:700;">₱${parseFloat(d.current.profit).toFixed(0)}</div><div style="font-size:12px;color:${ch.profit>=0?'#10b981':'#ef4444'};">${ch.profit>=0?'▲':'▼'} ${Math.abs(ch.profit).toFixed(1)}%</div></div></div>`;
+    }).catch(()=>document.getElementById('yoyContent').innerHTML='<p style="text-align:center;padding:20px;color:#ef4444;">Failed</p>');
+}
 </script>
 {% endblock %}
