@@ -13,7 +13,7 @@ def assets():
 
     if not check_module_access('assets'): return redirect(url_for('dashboard.dashboard'))
 
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Fixed Assets are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     

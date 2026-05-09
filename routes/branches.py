@@ -11,7 +11,7 @@ def branches():
 
     if not check_module_access('branches'): return redirect(url_for('dashboard.dashboard'))
 
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Multi-branch is available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     

@@ -14,7 +14,7 @@ def quotations():
 
     if not check_module_access('quotations'): return redirect(url_for('dashboard.dashboard'))
 
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Quotations are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     
@@ -54,7 +54,7 @@ def add_quote():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Quotations are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     

@@ -110,8 +110,8 @@
 {% endblock %}
 {% block content %}
 
-<!-- Category Bar -->
-{% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+<!-- Category Bar (Suite only) -->
+{% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}
 <div class="dash-catbar">
     <a href="#" onclick="loadCategory('dashboard')" class="active" id="cat-home"><i class="fas fa-home"></i> Home</a>
     <a href="#" onclick="loadCategory('finance')" id="cat-finance"><i class="fas fa-coins"></i> Finance</a>
@@ -120,6 +120,7 @@
     <a href="#" onclick="loadCategory('accounting')" id="cat-accounting"><i class="fas fa-chart-line"></i> Reports</a>
 </div>
 {% endif %}
+
 <div id="mainContent">
     <!-- Period -->
     <div class="period-row">
@@ -132,9 +133,9 @@
         </select>
     </div>
 
-    <!-- FULL TWO-COLUMN LAYOUT: Left = everything, Right = calendar bar -->
+    <!-- FULL TWO-COLUMN LAYOUT -->
     <div class="dash-layout">
-        <!-- LEFT COLUMN: All content -->
+        <!-- LEFT COLUMN -->
         <div style="display: flex; flex-direction: column; gap: 16px;">
             <!-- KPI Row 1 -->
             <div class="kpi-row">
@@ -143,9 +144,6 @@
                     <div class="kpi-value">₱ {{ "{:,.0f}".format(monthly_income|default(0)) }}</div>
                     <div class="kpi-sub {% if sales_change >= 0 %}positive{% else %}negative{% endif %}">
                         <i class="fas {% if sales_change >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i> {{ "%.1f"|format(sales_change|abs) }}% vs {{ compare_label }}
-                    </div>
-                    <div style="font-size:10px; color: var(--text-secondary); margin-top:4px;">
-                        Cash: ₱{{ "{:,.0f}".format(monthly_income - monthly_sales|default(0)) }} · Sales: ₱{{ "{:,.0f}".format(monthly_sales|default(0)) }}
                     </div>
                 </div>
                 <div class="kpi-card">
@@ -188,8 +186,8 @@
                 </div>
             </div>
 
-            <!-- Enterprise KPI Row -->
-            {% if session.plan == 'enterprise' %}
+            <!-- Suite KPI Row -->
+            {% if session.plan == 'suite' %}
             <div class="kpi-row">
                 <div class="kpi-card">
                     <div class="kpi-label">Projects</div>
@@ -231,7 +229,7 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Calendar + Quick Actions + Alerts (starts from top) -->
+        <!-- RIGHT COLUMN -->
         <div class="dash-right">
             <div class="dash-calendar">
                 <div class="dash-cal-header">
@@ -266,6 +264,7 @@
         </div>
     </div>
 </div>
+
 <!-- Day Detail Modal -->
 <div id="detailModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
@@ -314,7 +313,6 @@ function showDayDetail(dateStr, amount) {
         .then(res => res.json())
         .then(data => {
             let html = `<div style="padding:10px;"><h3 style="margin-bottom:12px;">${dateStr}</h3>`;
-            
             if (data.transactions && data.transactions.length > 0) {
                 html += '<div style="margin-bottom:12px;"><strong>Transactions:</strong>';
                 data.transactions.forEach(t => {
@@ -322,7 +320,6 @@ function showDayDetail(dateStr, amount) {
                 });
                 html += '</div>';
             }
-            
             if (data.sales && data.sales.length > 0) {
                 html += '<div style="margin-bottom:12px;"><strong>Sales:</strong>';
                 data.sales.forEach(s => {
@@ -330,15 +327,12 @@ function showDayDetail(dateStr, amount) {
                 });
                 html += '</div>';
             }
-            
             if (data.totals) {
                 html += `<div style="border-top:1px solid var(--border-light);padding-top:8px;font-weight:600;">Total: ₱${parseFloat(data.totals.total).toFixed(2)}</div>`;
             }
-            
             if (!data.transactions.length && !data.sales.length) {
                 html += '<p style="color:var(--text-secondary);">No transactions on this day.</p>';
             }
-            
             html += '</div>';
             document.getElementById('modalBody').innerHTML = html;
             document.getElementById('detailModal').style.display = 'flex';
@@ -354,10 +348,10 @@ function nextQuickMonth(){
     const t=new Date();if(quickYear===t.getFullYear()&&quickMonth===t.getMonth())return;if(quickMonth===11){quickMonth=0;quickYear++;}else{quickMonth++;}renderQuickCalendar(quickYear,quickMonth);
 }
 
+// Category data for Suite dashboard
 const CATEGORY_DATA = {
     finance: {
-        name: 'Finance',
-        icon: 'fa-coins',
+        name: 'Finance', icon: 'fa-coins',
         modules: [
             {name:'Cash Management',icon:'fa-coins',url:'/cash',desc:'Track income and expenses'},
             {name:'Sales Management',icon:'fa-chart-simple',url:'/sales',desc:'Record sales transactions'},
@@ -369,16 +363,14 @@ const CATEGORY_DATA = {
         ]
     },
     receivables: {
-        name: 'Receivables & Payables',
-        icon: 'fa-hand-holding-usd',
+        name: 'Receivables & Payables', icon: 'fa-hand-holding-usd',
         modules: [
             {name:'Accounts Receivable',icon:'fa-hand-holding-usd',url:'/ar',desc:'Customer invoices and payments'},
             {name:'Accounts Payable',icon:'fa-truck-fast',url:'/ap',desc:'Supplier bills and payments'},
         ]
     },
     operations: {
-        name: 'Operations',
-        icon: 'fa-boxes-stacked',
+        name: 'Operations', icon: 'fa-boxes-stacked',
         modules: [
             {name:'Inventory',icon:'fa-boxes-stacked',url:'/inventory',desc:'Products and stock'},
             {name:'Purchase Orders',icon:'fa-truck-loading',url:'/purchase-orders',desc:'Order from suppliers'},
@@ -395,8 +387,7 @@ const CATEGORY_DATA = {
         ]
     },
     accounting: {
-        name: 'Reports',
-        icon: 'fa-chart-line',
+        name: 'Reports', icon: 'fa-chart-line',
         modules: [
             {name:'Business Insights',icon:'fa-chart-line',url:'/insights',desc:'Analytics and predictions'},
             {name:'PDF Reports',icon:'fa-file-pdf',url:'/reports',desc:'Export professional reports'},

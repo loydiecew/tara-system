@@ -12,7 +12,7 @@ def timecards():
     
     if not check_module_access('timecards'): return redirect(url_for('dashboard.dashboard'))
 
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Timecards are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     

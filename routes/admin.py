@@ -510,4 +510,4 @@ def users_roles():
                          username=session['username'],
                          users=users,
                          roles=roles,
-                         modules=ALL_MODULES if session.get('plan') == 'enterprise' else [])
+                         modules=ALL_MODULES if session.get('plan') == 'suite' else [])

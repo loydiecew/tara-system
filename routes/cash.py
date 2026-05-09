@@ -46,7 +46,7 @@ def cash():
     
     # Get projects for dropdown
     projects = []
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor.execute("""
             SELECT p.id, p.name FROM projects p
             JOIN users u ON p.user_id = u.id
@@ -133,7 +133,7 @@ def add_transaction():
             cursor.lastrowid, new_values=new_transaction)
     
     # ========== DOUBLE-ENTRY JOURNAL (Pro and Enterprise only) ==========
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         # Get account mapping for this transaction type and category
         cursor.execute("""
             SELECT debit_account_id, credit_account_id FROM transaction_account_mapping

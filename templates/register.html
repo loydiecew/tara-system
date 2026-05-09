@@ -536,18 +536,21 @@
                     <div class="input-wrap">
                         <i class="fas fa-chart-simple"></i>
                         <select name="business_size" id="businessSize" required>
-                            <option value="solo" {% if plan == 'starter' %}selected{% endif %}>Solo — Just me</option>
-                            <option value="small" {% if plan == 'essentials' or plan == 'professional' %}selected{% endif %}>Small Team — 2–10 staff</option>
-                            <option value="medium" {% if plan == 'suite' or plan == 'executive' %}selected{% endif %}>Growing — 10+ staff, multiple branches</option>
+                            <option value="solo" {% if plan == 'starter' %}selected{% endif %}>Solo — Just me (Starter)</option>
+                            <option value="small" {% if plan == 'essentials' %}selected{% endif %}>Small — 1–3 staff (Essentials)</option>
+                            <option value="growing" {% if plan == 'professional' %}selected{% endif %}>Growing — 2–10 staff (Professional)</option>
+                            <option value="medium" {% if plan == 'suite' or plan == 'executive' %}selected{% endif %}>Established — 10+ staff, multi-branch (Suite)</option>
                         </select>
                     </div>
                     <div class="field-hint" id="sizeHint">
                         {% if plan == 'starter' %}
                         Solo gets you Starter — free forever.
-                        {% elif plan == 'essentials' or plan == 'professional' %}
-                        Small team gets you Professional features with your 30-day trial.
+                        {% elif plan == 'essentials' %}
+                        Small team gets you Essentials — ₱199/mo with 30-day trial.
+                        {% elif plan == 'professional' %}
+                        Growing team gets you Professional — ₱599/mo with 30-day trial.
                         {% else %}
-                        Growing business gets you Suite/Enterprise features with your 30-day trial.
+                        Established business gets you Suite — ₱1,499/mo with 30-day trial.
                         {% endif %}
                     </div>
                 </div>

@@ -7,7 +7,7 @@ from routes.permissions import create_enterprise_role_templates
 
 # ---------- Import all blueprints ----------
 from routes import (
-    auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
+    auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
     budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp, planner_bp,
@@ -31,7 +31,7 @@ mail = Mail(app)
 
 # ---------- Register blueprints ----------
 BLUEPRINTS = [
-    auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
+    auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
     budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp,
@@ -91,14 +91,14 @@ def inject_user_context():
 
     if 'user_id' in session:
         ctx.update({
-            'user_plan': session.get('plan', 'basic'),
-            'user_plan_name': session.get('plan_name', 'Basic'),
+            'user_plan': session.get('plan', 'starter'),
+            'user_plan_name': session.get('plan_name', 'Starter'),
             'has_feature': lambda feature: user_has_feature(session['user_id'], feature),
         })
     else:
         ctx.update({
-            'user_plan': 'basic',
-            'user_plan_name': 'Basic',
+            'user_plan': 'starter',
+            'user_plan_name': 'Starter',
             'has_feature': lambda feature: False,
             'get_branches': lambda: [],
             'user_can_view': lambda m: True,
@@ -109,8 +109,9 @@ def inject_user_context():
 # ---------- Public routes ----------
 @app.route('/')
 def home():
-    """Landing page for visitors. Logged-in users skip to dashboard."""
     if 'user_id' in session:
+        if session.get('plan') == 'starter':
+            return redirect(url_for('quick_tap.index'))
         return redirect(url_for('dashboard.dashboard'))
     return render_template('landing.html')
 
@@ -130,7 +131,7 @@ def terms():
 def upgrade_to_pro():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    _update_plan(2, 'pro', 'Pro')
+    _update_plan(3, 'professional', 'Professional')
     return redirect(url_for('plan.plan'))
 
 
@@ -138,7 +139,7 @@ def upgrade_to_pro():
 def upgrade_to_enterprise():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    _update_plan(3, 'enterprise', 'Enterprise')
+    _update_plan(4, 'suite', 'Suite')
     create_enterprise_role_templates(session.get('business_id'), session['user_id'])
     return redirect(url_for('plan.plan'))
 
@@ -147,7 +148,7 @@ def upgrade_to_enterprise():
 def switch_to_basic():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    _update_plan(1, 'basic', 'Basic')
+    _update_plan(1, 'starter', 'Starter')
     return redirect(url_for('plan.plan'))
 
 

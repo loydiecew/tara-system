@@ -2,38 +2,47 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from datetime import date, timedelta, datetime
 from models.database import get_db
 import calendar
+import json
 
 dashboard_bp = Blueprint('dashboard', __name__)
+
+
+def calc_change(current, last):
+    """Calculate percentage change between two values."""
+    if last == 0:
+        return 0.0 if current == 0 else 100.0
+    return ((current - last) / last) * 100.0
+
 
 @dashboard_bp.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
-    # Get period from query string
-    period = request.args.get('period', 'month')
-        
 
+    # ── Starter users go to Quick Tap ──
+    if session.get('plan') == 'starter':
+        return redirect(url_for('quick_tap.index'))
+
+    period = request.args.get('period', 'month')
     db = get_db()
     cursor = db.cursor(dictionary=True)
-    
-    business_id = session.get('business_id')
 
-    # Get all months with data for the dropdown
+    business_id = session.get('business_id', session['user_id'])
+    today = date.today()
+
+    # ── Available months for dropdown ──
     cursor.execute("""
-        SELECT DISTINCT DATE_FORMAT(d, '%Y-%m') as month FROM (
-            SELECT transaction_date as d FROM transactions t JOIN users u ON t.user_id = u.id WHERE u.business_id = %s
-            UNION SELECT sale_date FROM sales s JOIN users u ON s.user_id = u.id WHERE u.business_id = %s
+        SELECT DISTINCT DATE_FORMAT(d, '%%Y-%%m') as month FROM (
+            SELECT transaction_date as d FROM transactions t
+            JOIN users u ON t.user_id = u.id WHERE u.business_id = %s
+            UNION
+            SELECT sale_date FROM sales s
+            JOIN users u ON s.user_id = u.id WHERE u.business_id = %s
         ) AS all_dates ORDER BY month DESC LIMIT 12
     """, (business_id, business_id))
     available_months = [row['month'] for row in cursor.fetchall()]
 
-    if not business_id:
-        business_id = session['user_id']
-    
-    today = date.today()
-    
-    # Set date range based on period
+    # ── Date range calculation ──
     if period == 'today':
         start_date = today
         end_date = today
@@ -41,6 +50,7 @@ def dashboard():
         compare_end = today - timedelta(days=1)
         period_label = 'Today'
         compare_label = 'Yesterday'
+
     elif period == 'week':
         from models.helpers import get_week_range
         start_date, end_date = get_week_range(today)
@@ -48,29 +58,27 @@ def dashboard():
         compare_end = end_date - timedelta(days=7)
         period_label = 'This Week'
         compare_label = 'Last Week'
-    else:  # month (or last_month)
+
+    else:  # month or last_month
         if period == 'last_month':
-            # Last month
-            start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
-            if start_date.month == 12:
-                end_date = start_date.replace(day=31)
-            else:
-                end_date = (start_date.replace(month=start_date.month + 1, day=1) - timedelta(days=1))
+            first_of_this_month = today.replace(day=1)
+            last_day_of_prev = first_of_this_month - timedelta(days=1)
+            start_date = last_day_of_prev.replace(day=1)
+            end_date = last_day_of_prev
             period_label = start_date.strftime('%B')
             compare_start = (start_date - timedelta(days=1)).replace(day=1)
-            if compare_start.month == 12:
-                compare_end = compare_start.replace(day=31)
-            else:
-                compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+            compare_end = start_date - timedelta(days=1)
             compare_label = compare_start.strftime('%B')
+
         elif today.day <= 3:
-            # Early in month - check if current month has data, fall back to last month
+            # Early in month — check if current month has data, else fall back
             start_date = today.replace(day=1)
             if today.month == 12:
                 end_date = today.replace(day=31)
             else:
-                end_date = (today.replace(month=today.month + 1, day=1) - timedelta(days=1))
-            
+                next_month = today.replace(month=today.month + 1, day=1)
+                end_date = next_month - timedelta(days=1)
+
             cursor.execute("""
                 SELECT COUNT(*) as count FROM (
                     SELECT t.id FROM transactions t
@@ -83,46 +91,39 @@ def dashboard():
                 ) AS all_data
             """, (business_id, start_date, end_date, business_id, start_date, end_date))
             current_month_count = cursor.fetchone()['count']
-            
+
             if current_month_count == 0:
                 # Fall back to last month
-                start_date = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
-                if start_date.month == 12:
-                    end_date = start_date.replace(day=31)
-                else:
-                    end_date = (start_date.replace(month=start_date.month + 1, day=1) - timedelta(days=1))
+                last_day_of_prev = start_date - timedelta(days=1)
+                start_date = last_day_of_prev.replace(day=1)
+                end_date = last_day_of_prev
                 period = 'last_month'
                 period_label = start_date.strftime('%B')
-            else:
-                period_label = 'This Month'
-            
+
             compare_start = (start_date - timedelta(days=1)).replace(day=1)
-            if compare_start.month == 12:
-                compare_end = compare_start.replace(day=31)
-            else:
-                compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+            compare_end = start_date - timedelta(days=1)
             compare_label = compare_start.strftime('%B')
+
         else:
-            # Normal month view
             start_date = today.replace(day=1)
             if today.month == 12:
                 end_date = today.replace(day=31)
             else:
-                end_date = (today.replace(month=today.month + 1, day=1) - timedelta(days=1))
+                next_month = today.replace(month=today.month + 1, day=1)
+                end_date = next_month - timedelta(days=1)
             period_label = 'This Month'
             compare_start = (start_date - timedelta(days=1)).replace(day=1)
-            if compare_start.month == 12:
-                compare_end = compare_start.replace(day=31)
-            else:
-                compare_end = (compare_start.replace(month=compare_start.month + 1, day=1) - timedelta(days=1))
+            compare_end = start_date - timedelta(days=1)
             compare_label = compare_start.strftime('%B')
-    
-    # ========== CURRENT PERIOD REVENUE (Sales + Cash Income) ==========
+
+    # ────────────────────────────────────────────────
+    # CURRENT PERIOD: Revenue (Sales + Cash Income)
+    # ────────────────────────────────────────────────
     cursor.execute("""
-        SELECT SUM(amount) as total FROM (
+        SELECT COALESCE(SUM(amount), 0) as total FROM (
             SELECT t.amount FROM transactions t
             JOIN users u ON t.user_id = u.id
-            WHERE u.business_id = %s AND t.type = 'income' 
+            WHERE u.business_id = %s AND t.type = 'income'
             AND t.transaction_date BETWEEN %s AND %s
             UNION ALL
             SELECT s.amount FROM sales s
@@ -131,24 +132,26 @@ def dashboard():
         ) AS all_revenue
     """, (business_id, start_date, end_date, business_id, start_date, end_date))
     current_revenue = float(cursor.fetchone()['total'] or 0)
-    
-    # ========== CURRENT PERIOD EXPENSES ==========
+
+    # Current Period: Expenses
     cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
+        SELECT COALESCE(SUM(t.amount), 0) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
+        WHERE u.business_id = %s AND t.type = 'expense'
         AND t.transaction_date BETWEEN %s AND %s
     """, (business_id, start_date, end_date))
     current_expenses = float(cursor.fetchone()['total'] or 0)
-    
+
     current_profit = current_revenue - current_expenses
-    
-    # ========== COMPARE PERIOD REVENUE (Sales + Cash Income) ==========
+
+    # ────────────────────────────────────────────────
+    # COMPARE PERIOD
+    # ────────────────────────────────────────────────
     cursor.execute("""
-        SELECT SUM(amount) as total FROM (
+        SELECT COALESCE(SUM(amount), 0) as total FROM (
             SELECT t.amount FROM transactions t
             JOIN users u ON t.user_id = u.id
-            WHERE u.business_id = %s AND t.type = 'income' 
+            WHERE u.business_id = %s AND t.type = 'income'
             AND t.transaction_date BETWEEN %s AND %s
             UNION ALL
             SELECT s.amount FROM sales s
@@ -158,49 +161,45 @@ def dashboard():
     """, (business_id, compare_start, compare_end, business_id, compare_start, compare_end))
     compare_revenue = float(cursor.fetchone()['total'] or 0)
 
-    # ========== COMPARE PERIOD EXPENSES ==========
     cursor.execute("""
-        SELECT SUM(t.amount) as total FROM transactions t
+        SELECT COALESCE(SUM(t.amount), 0) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s AND t.type = 'expense' 
+        WHERE u.business_id = %s AND t.type = 'expense'
         AND t.transaction_date BETWEEN %s AND %s
     """, (business_id, compare_start, compare_end))
     compare_expenses = float(cursor.fetchone()['total'] or 0)
-    
+
     compare_profit = compare_revenue - compare_expenses
-    
-    # ========== SALES ONLY (for KPI breakdown) ==========
+
+    # ── Percentage changes ──
+    revenue_change = calc_change(current_revenue, compare_revenue)
+    expense_change = calc_change(current_expenses, compare_expenses)
+    profit_change = calc_change(current_profit, compare_profit)
+    profit_margin = (current_profit / current_revenue * 100) if current_revenue > 0 else 0
+
+    # ── Sales only (for KPI display) ──
     cursor.execute("""
-        SELECT SUM(s.amount) as total FROM sales s
+        SELECT COALESCE(SUM(s.amount), 0) as total FROM sales s
         JOIN users u ON s.user_id = u.id
         WHERE u.business_id = %s AND s.sale_date BETWEEN %s AND %s
     """, (business_id, start_date, end_date))
     monthly_sales = float(cursor.fetchone()['total'] or 0)
 
-    # ========== HELPER FUNCTION FOR PERCENTAGE CHANGE ==========
-    def calc_change(current, last):
-        if last == 0:
-            return 0.0 if current == 0 else 100.0
-        return ((current - last) / last) * 100.0
-    
-    revenue_change = calc_change(current_revenue, compare_revenue)
-    expense_change = calc_change(current_expenses, compare_expenses)
-    profit_change = calc_change(current_profit, compare_profit)
-    profit_margin = (current_profit / current_revenue * 100) if current_revenue > 0 else 0
-    
-    # ========== CASH BALANCE (all time) ==========
+    # ────────────────────────────────────────────────
+    # ALL-TIME TOTALS
+    # ────────────────────────────────────────────────
     cursor.execute("""
-        SELECT 
-            SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as total_income,
-            SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as total_expense
+        SELECT
+            COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END), 0) as total_income,
+            COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) as total_expense
         FROM transactions t
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s
     """, (business_id,))
     totals = cursor.fetchone()
-    cash_balance = (float(totals['total_income'] or 0)) - (float(totals['total_expense'] or 0))
-    
-    # ========== AR OUTSTANDING ==========
+    cash_balance = float(totals['total_income'] or 0) - float(totals['total_expense'] or 0)
+
+    # ── AR Outstanding ──
     cursor.execute("""
         SELECT COALESCE(SUM(i.amount), 0) as total_invoiced
         FROM invoices i
@@ -208,7 +207,7 @@ def dashboard():
         WHERE u.business_id = %s AND i.status IN ('unpaid', 'partially_paid') AND i.deleted_at IS NULL
     """, (business_id,))
     total_invoiced = float(cursor.fetchone()['total_invoiced'] or 0)
-    
+
     cursor.execute("""
         SELECT COALESCE(SUM(p.amount), 0) as total_paid
         FROM payments p
@@ -217,10 +216,9 @@ def dashboard():
         WHERE u.business_id = %s AND i.deleted_at IS NULL
     """, (business_id,))
     total_ar_paid = float(cursor.fetchone()['total_paid'] or 0)
-    
     ar_outstanding = total_invoiced - total_ar_paid
 
-    # ========== AP OUTSTANDING ==========
+    # ── AP Outstanding ──
     cursor.execute("""
         SELECT COALESCE(SUM(b.amount), 0) as total_billed
         FROM bills b
@@ -228,7 +226,7 @@ def dashboard():
         WHERE u.business_id = %s AND b.status IN ('unpaid', 'partially_paid') AND b.deleted_at IS NULL
     """, (business_id,))
     total_billed = float(cursor.fetchone()['total_billed'] or 0)
-    
+
     cursor.execute("""
         SELECT COALESCE(SUM(p.amount), 0) as total_paid
         FROM payments p
@@ -237,15 +235,14 @@ def dashboard():
         WHERE u.business_id = %s AND b.deleted_at IS NULL
     """, (business_id,))
     total_ap_paid = float(cursor.fetchone()['total_paid'] or 0)
-    
     ap_outstanding = total_billed - total_ap_paid
 
-    # ========== INVENTORY SUMMARY ==========
+    # ── Inventory Summary ──
     cursor.execute("""
-        SELECT 
-            SUM(p.quantity * p.price) as total_value,
+        SELECT
+            COALESCE(SUM(p.quantity * p.price), 0) as total_value,
             COUNT(*) as total_products,
-            SUM(CASE WHEN p.quantity < p.reorder_level THEN 1 ELSE 0 END) as low_stock_count
+            COALESCE(SUM(CASE WHEN p.quantity < p.reorder_level THEN 1 ELSE 0 END), 0) as low_stock_count
         FROM products p
         JOIN users u ON p.user_id = u.id
         WHERE u.business_id = %s AND p.deleted_at IS NULL
@@ -254,40 +251,38 @@ def dashboard():
     inventory_value = float(inv_summary['total_value'] or 0)
     total_products = inv_summary['total_products'] or 0
     low_stock_count = inv_summary['low_stock_count'] or 0
-    
-    # ========== RECENT TRANSACTIONS ==========
+
+    # ── Recent Transactions ──
     cursor.execute("""
         SELECT t.* FROM transactions t
         JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s 
-        ORDER BY t.transaction_date DESC 
+        WHERE u.business_id = %s
+        ORDER BY t.transaction_date DESC, t.id DESC
         LIMIT 5
     """, (business_id,))
     recent = cursor.fetchall()
-    
-    # ========== CALENDAR HEATMAP DATA ==========
+
+    # ── Calendar Heatmap (last 365 days) ──
     heatmap_start = today - timedelta(days=365)
-    
+
     cursor.execute("""
-        SELECT sale_date, SUM(amount) as total
+        SELECT sale_date, COALESCE(SUM(amount), 0) as total
         FROM sales s
         JOIN users u ON s.user_id = u.id
         WHERE u.business_id = %s AND s.sale_date >= %s
-        GROUP BY sale_date
-        ORDER BY sale_date ASC
+        GROUP BY sale_date ORDER BY sale_date ASC
     """, (business_id, heatmap_start))
     daily_sales = cursor.fetchall()
-    
+
     cursor.execute("""
-        SELECT transaction_date, SUM(amount) as total
+        SELECT transaction_date, COALESCE(SUM(amount), 0) as total
         FROM transactions t
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date >= %s
-        GROUP BY transaction_date
-        ORDER BY transaction_date ASC
+        GROUP BY transaction_date ORDER BY transaction_date ASC
     """, (business_id, heatmap_start))
     daily_income = cursor.fetchall()
-    
+
     heatmap_dict = {}
     for d in daily_sales:
         key = d['sale_date'].isoformat() if hasattr(d['sale_date'], 'isoformat') else str(d['sale_date'])
@@ -295,23 +290,24 @@ def dashboard():
     for d in daily_income:
         key = d['transaction_date'].isoformat() if hasattr(d['transaction_date'], 'isoformat') else str(d['transaction_date'])
         heatmap_dict[key] = heatmap_dict.get(key, 0) + float(d['total'] or 0)
-    
-    import json
+
     heatmap_data = json.dumps([{'date': k, 'amount': v} for k, v in heatmap_dict.items()])
 
-    # ========== ALERTS ==========
+    # ────────────────────────────────────────────────
+    # ALERTS
+    # ────────────────────────────────────────────────
     alerts = []
-    
+
     # Overdue invoices
     cursor.execute("""
-        SELECT COUNT(*) as count, SUM(i.amount) as total
+        SELECT COUNT(*) as count, COALESCE(SUM(i.amount), 0) as total
         FROM invoices i
         JOIN users u ON i.user_id = u.id
         WHERE u.business_id = %s AND i.status IN ('unpaid', 'partially_paid')
         AND i.due_date < %s AND i.deleted_at IS NULL
     """, (business_id, today))
     overdue = cursor.fetchone()
-    if overdue['count'] > 0:
+    if overdue and overdue['count'] > 0:
         alerts.append({
             'type': 'overdue',
             'icon': 'fa-exclamation-circle',
@@ -320,46 +316,40 @@ def dashboard():
             'detail': f"₱{float(overdue['total'] or 0):,.0f} outstanding",
             'link': '/ar'
         })
-    
-    # Low stock products
-    cursor.execute("""
-        SELECT COUNT(*) as count FROM products p
-        JOIN users u ON p.user_id = u.id
-        WHERE u.business_id = %s AND p.quantity < p.reorder_level AND p.deleted_at IS NULL
-    """, (business_id,))
-    low_stock = cursor.fetchone()
-    if low_stock['count'] > 0:
+
+    # Low stock
+    if low_stock_count > 0:
         alerts.append({
             'type': 'low_stock',
             'icon': 'fa-box-open',
             'color': '#f59e0b',
-            'message': f"{low_stock['count']} product{'s' if low_stock['count'] > 1 else ''} low stock",
+            'message': f"{low_stock_count} product{'s' if low_stock_count > 1 else ''} low stock",
             'detail': 'Reorder now to avoid stockout',
             'link': '/inventory'
         })
-    
+
     # Expense spike (this week vs last week)
     from models.helpers import get_week_range
     this_week_start, this_week_end = get_week_range(today)
     last_week_start = this_week_start - timedelta(days=7)
     last_week_end = this_week_end - timedelta(days=7)
-    
+
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions t
+        SELECT COALESCE(SUM(amount), 0) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s AND t.type = 'expense'
         AND t.transaction_date BETWEEN %s AND %s
     """, (business_id, this_week_start, this_week_end))
     this_week_exp = float(cursor.fetchone()['total'] or 0)
-    
+
     cursor.execute("""
-        SELECT SUM(amount) as total FROM transactions t
+        SELECT COALESCE(SUM(amount), 0) as total FROM transactions t
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s AND t.type = 'expense'
         AND t.transaction_date BETWEEN %s AND %s
     """, (business_id, last_week_start, last_week_end))
     last_week_exp = float(cursor.fetchone()['total'] or 0)
-    
+
     if last_week_exp > 0:
         expense_spike = ((this_week_exp - last_week_exp) / last_week_exp) * 100
         if expense_spike > 20:
@@ -371,10 +361,10 @@ def dashboard():
                 'detail': f'₱{this_week_exp:,.0f} vs ₱{last_week_exp:,.0f} last week',
                 'link': '/insights'
             })
-    
+
     # Sales drop (this week vs last week)
     cursor.execute("""
-        SELECT SUM(amount) as total FROM (
+        SELECT COALESCE(SUM(amount), 0) as total FROM (
             SELECT t.amount FROM transactions t
             JOIN users u ON t.user_id = u.id
             WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s
@@ -385,9 +375,9 @@ def dashboard():
         ) AS revenue
     """, (business_id, this_week_start, this_week_end, business_id, this_week_start, this_week_end))
     this_week_rev = float(cursor.fetchone()['total'] or 0)
-    
+
     cursor.execute("""
-        SELECT SUM(amount) as total FROM (
+        SELECT COALESCE(SUM(amount), 0) as total FROM (
             SELECT t.amount FROM transactions t
             JOIN users u ON t.user_id = u.id
             WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date BETWEEN %s AND %s
@@ -398,7 +388,7 @@ def dashboard():
         ) AS revenue
     """, (business_id, last_week_start, last_week_end, business_id, last_week_start, last_week_end))
     last_week_rev = float(cursor.fetchone()['total'] or 0)
-    
+
     if last_week_rev > 0:
         sales_drop = ((this_week_rev - last_week_rev) / last_week_rev) * 100
         if sales_drop < -10:
@@ -413,7 +403,8 @@ def dashboard():
 
     cursor.close()
     db.close()
-    
+
+    # ── Greeting ──
     now = datetime.now()
     current_hour = now.hour
     if current_hour < 12:
@@ -424,64 +415,63 @@ def dashboard():
         greeting = "Evening"
 
     return render_template('dashboard.html',
-                         username=session['username'],
-                         monthly_income=current_revenue,
-                         monthly_expense=current_expenses,
-                         profit=current_profit,
-                         sales_change=revenue_change,
-                         expense_change=expense_change,
-                         profit_change=profit_change,
-                         profit_margin=profit_margin,
-                         cash_balance=cash_balance,
-                         ar_outstanding=ar_outstanding,
-                         ap_outstanding=ap_outstanding,
-                         inventory_value=inventory_value,
-                         total_products=total_products,
-                         low_stock_count=low_stock_count,
-                         transactions=recent,
-                         greeting=greeting,
-                         today=now.strftime('%B %d, %Y'),
-                         heatmap_data=heatmap_data,
-                         alerts=alerts,
-                         period=period,
-                         period_label=period_label,
-                         compare_label=compare_label,
-                         available_months=available_months)
+                           username=session['username'],
+                           monthly_income=current_revenue,
+                           monthly_expense=current_expenses,
+                           profit=current_profit,
+                           sales_change=revenue_change,
+                           expense_change=expense_change,
+                           profit_change=profit_change,
+                           profit_margin=profit_margin,
+                           cash_balance=cash_balance,
+                           ar_outstanding=ar_outstanding,
+                           ap_outstanding=ap_outstanding,
+                           inventory_value=inventory_value,
+                           total_products=total_products,
+                           low_stock_count=low_stock_count,
+                           transactions=recent,
+                           greeting=greeting,
+                           today=now.strftime('%B %d, %Y'),
+                           heatmap_data=heatmap_data,
+                           alerts=alerts,
+                           period=period,
+                           period_label=period_label,
+                           compare_label=compare_label,
+                           available_months=available_months)
+
 
 @dashboard_bp.route('/api/day-detail')
 def day_detail():
     if 'user_id' not in session:
         return jsonify({'error': 'Not logged in'}), 401
-    
+
     date_str = request.args.get('date', '')
     if not date_str:
         return jsonify({'error': 'Date required'}), 400
-    
+
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])
-    
-    # Transactions
+
     cursor.execute("""
         SELECT t.description, t.amount, t.type
         FROM transactions t JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s AND t.transaction_date = %s AND t.status != 'void'
     """, (business_id, date_str))
     transactions = cursor.fetchall()
-    
-    # Sales
+
     cursor.execute("""
         SELECT s.customer_name, s.amount
         FROM sales s JOIN users u ON s.user_id = u.id
         WHERE u.business_id = %s AND s.sale_date = %s
     """, (business_id, date_str))
     sales = cursor.fetchall()
-    
+
     total = sum(float(t['amount']) for t in transactions) + sum(float(s['amount']) for s in sales)
-    
+
     cursor.close()
     db.close()
-    
+
     return jsonify({
         'transactions': transactions,
         'sales': sales,

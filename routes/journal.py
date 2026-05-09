@@ -133,7 +133,7 @@ def ledger():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['pro', 'enterprise']:
+    if session.get('plan') not in ['professional', 'suite']:
         flash('Double-entry journal is available on Pro and Enterprise plans only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     
@@ -197,7 +197,7 @@ def trial_balance():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['pro', 'enterprise']:
+    if session.get('plan') not in ['professional', 'suite']:
         flash('Trial Balance is available on Pro and Enterprise plans.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     

@@ -719,7 +719,7 @@
     <div class="particles-container" id="particlesContainer"></div>
 
     <div class="app">
-        <aside class="sidebar {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}enterprise-hide{% endif %}">
+        <aside class="sidebar {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}enterprise-hide{% endif %}">
         <!-- Fixed Header -->
             <div class="sidebar-header">
                 <div class="logo">
@@ -731,8 +731,34 @@
                 </button>
             </div>
             
-                        <!-- Scrollable Nav Sections -->
+            <!-- Scrollable Nav Sections -->
             <div class="sidebar-nav-scroll">
+
+                {% if session.plan == 'starter' %}
+                <!-- ═══════ STARTER ═══════ -->
+                <div class="nav-section">
+                    <div class="nav-label">MAIN</div>
+                    <a href="/quick-tap" class="nav-item {{ 'active' if request.path == '/quick-tap' else '' }}">
+                        <i class="fas fa-bolt"></i><span>Quick Tap</span>
+                    </a>
+                    <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
+                        <i class="fas fa-chart-pie"></i><span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-label">CUSTOMER CREDIT</div>
+                    <a href="/quick-tap" class="nav-item {{ 'active' if request.path == '/quick-tap' else '' }}">
+                        <i class="fas fa-hand-holding-usd"></i><span>Who Owes Me</span>
+                    </a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-label">HISTORY</div>
+                    <a href="/quick-tap/weekly" class="nav-item {{ 'active' if request.path == '/quick-tap/weekly' else '' }}">
+                        <i class="fas fa-calendar-week"></i><span>Weekly Summary</span>
+                    </a>
+                </div>
+                {% else %}
+                <!-- ═══════ ESSENTIALS+ ═══════ -->
                 <div class="nav-section">
                     <div class="nav-label">MAIN</div>
                     <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
@@ -755,34 +781,34 @@
                         <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                     </a>
 
-                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('recurring') %}
+                    {% if session.plan in ['professional', 'suite'] and user_can_view('recurring') %}
                     <a href="/recurring" class="nav-item {{ is_active('recurring') }}">
                         <i class="fas fa-redo-alt"></i><span>Recurring Transaction</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('bank_reconciliation') %}
+                    {% if session.plan in ['professional', 'suite'] and user_can_view('bank_reconciliation') %}
                     <a href="/bank-reconciliation" class="nav-item {{ is_active('bank_reconciliation') }}">
                         <i class="fas fa-university"></i><span>Bank Reconciliation</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('tax') %}
+                    {% if session.plan in ['professional', 'suite'] and user_can_view('tax') %}
                     <a href="/tax" class="nav-item {{ is_active('tax') }}">
                         <i class="fas fa-file-invoice"></i><span>Tax Reports</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('currencies') %}
+                    {% if session.plan in ['professional', 'suite'] and user_can_view('currencies') %}
                     <a href="/currencies" class="nav-item {{ is_active('currencies') }}">
                         <i class="fas fa-dollar-sign"></i><span>Currencies</span>
                     </a>
                     {% endif %}
-                    {% if session.plan == 'enterprise' and user_can_view('fiscal_year') %}
+                    {% if session.plan == 'suite' and user_can_view('fiscal_year') %}
                     <a href="/fiscal-year" class="nav-item {{ is_active('fiscal') }}">
                         <i class="fas fa-calendar-check"></i><span>Fiscal Year</span>
                     </a>
                     {% endif %}
                 </div>
 
-                {% if session.plan in ['pro', 'enterprise'] and (user_can_view('ar') or user_can_view('ap')) %}
+                {% if session.plan in ['professional', 'suite'] and (user_can_view('ar') or user_can_view('ap')) %}
                 <div class="nav-section">
                     <div class="nav-label">RECEIVABLES & PAYABLES</div>
                     {% if user_can_view('ar') %}
@@ -798,7 +824,7 @@
                 </div>
                 {% endif %}
 
-                {% if session.plan in ['pro', 'enterprise'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
+                {% if session.plan in ['professional', 'suite'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
                 <div class="nav-section">
                     <div class="nav-label">OPERATIONS</div>
                     {% if user_can_view('inventory') %}
@@ -822,7 +848,7 @@
                     </a>
                     {% endif %}
 
-                    {% if session.plan == 'enterprise' %}
+                    {% if session.plan == 'suite' %}
                     {% if user_can_view('quotations') %}
                     <a href="/quotations" class="nav-item {{ is_active('quotations') }}">
                         <i class="fas fa-file-contract"></i><span>Quotations</span>
@@ -875,12 +901,12 @@
                     <a href="/journal" class="nav-item {{ is_active('journal') }}">
                         <i class="fas fa-book-open"></i><span>General Journal</span>
                     </a>
-                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('ledger') %}
+                    {% if session.plan in ['professional', 'suite'] and user_can_view('ledger') %}
                     <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
                         <i class="fas fa-balance-scale"></i><span>General Ledger</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['pro', 'enterprise'] and user_can_view('trial_balance') %}
+                    {% if session.plan in ['professional', 'suite'] and user_can_view('trial_balance') %}
                     <a href="/trial-balance" class="nav-item {{ is_active('trial_balance') }}">
                         <i class="fas fa-balance-scale-right"></i><span>Trial Balance</span>
                     </a>
@@ -891,12 +917,13 @@
                     <a href="/balance-sheet" class="nav-item {{ is_active('balance_sheet') }}">
                         <i class="fas fa-file-invoice"></i><span>Balance Sheet</span>
                     </a>
-                    {% if session.role in ['admin', 'owner'] and session.plan in ['pro', 'enterprise'] %}
+                    {% if session.role in ['admin', 'owner'] and session.plan in ['professional', 'suite'] %}
                     <a href="/admin/audit" class="nav-item {{ is_active('admin_audit') }}">
                         <i class="fas fa-history"></i><span>Audit Log</span>
                     </a>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
 
             <!-- Fixed Footer -->
@@ -966,7 +993,7 @@
             {% endwith %}
 
             <!-- Enterprise Navigation Bar -->
-            {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+            {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}
             <div id="enterpriseNav" style="margin-bottom: 24px; display: none;">
                 <div style="display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap;">
                     <a href="/dashboard" id="enCat-home" class="en-cat-tab" style="padding: 8px 18px; border-radius: 12px; font-size: 12px; font-weight: 600; text-decoration: none; color: var(--text-secondary); background: var(--glass-bg); border: 1px solid var(--glass-border); transition: all 0.3s ease;"
@@ -1041,7 +1068,7 @@
         if (savedTheme === 'dark') document.body.classList.add('dark');
 
         // ========== ENTERPRISE MODE ==========
-        {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+        {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}
         document.body.classList.add('enterprise-mode');
         {% endif %}
 
@@ -1178,7 +1205,7 @@
         };
 
         // ========== ENTERPRISE NAVIGATION BAR ==========
-        {% if session.plan == 'enterprise' and session.role in ['admin', 'owner'] %}
+        {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}
         (function() {
             const MODULE_CATEGORIES = {
                 '/cash': 'finance', '/sales': 'finance', '/recurring': 'finance',

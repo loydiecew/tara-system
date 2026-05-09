@@ -115,7 +115,7 @@ def close_year():
     """, (session['user_id'], net_income, f'Net income for fiscal year {year}'))
     
     # Create journal entry for closing
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         # Get account IDs
         cursor.execute("SELECT id FROM chart_of_accounts WHERE code = '3000'")  # Retained Earnings
         retained_account = cursor.fetchone()

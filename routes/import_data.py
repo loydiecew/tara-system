@@ -174,7 +174,7 @@ def import_row(module, row):
             "INSERT INTO transactions (user_id, description, amount, type, category, transaction_date) VALUES (%s,%s,%s,%s,%s,%s)",
             (user_id, desc, amt, tx_type, cat, tx_date))
         tx_id = cursor.lastrowid
-        if session.get('plan') in ['pro', 'enterprise']:
+        if session.get('plan') in ['professional', 'suite']:
             _create_journal_for_cash(cursor, user_id, tx_date, desc, amt, tx_type, cat, tx_id)
     
     elif module == 'sales':
@@ -186,7 +186,7 @@ def import_row(module, row):
             "INSERT INTO sales (user_id, customer_name, amount, sale_date, description) VALUES (%s,%s,%s,%s,%s)",
             (user_id, cust, amt, sale_date, desc))
         sale_id = cursor.lastrowid
-        if session.get('plan') in ['pro', 'enterprise']:
+        if session.get('plan') in ['professional', 'suite']:
             _create_journal_for_sale(cursor, user_id, sale_date, cust, desc, amt, sale_id)
     
     elif module == 'inventory':
@@ -216,7 +216,7 @@ def import_row(module, row):
         cursor.execute(
             "INSERT INTO bills (user_id, supplier_id, bill_number, amount, due_date, description, status) VALUES (%s,%s,%s,%s,%s,%s,'unpaid')",
             (user_id, supplier_id, bill_number, amt, due, desc))
-        if session.get('plan') in ['pro', 'enterprise'] and supplier_id:
+        if session.get('plan') in ['professional', 'suite'] and supplier_id:
             _create_journal_for_bill(cursor, user_id, due, desc, amt, supplier_id, bill_number)
     
     elif module == 'invoices':
@@ -230,7 +230,7 @@ def import_row(module, row):
         cursor.execute(
             "INSERT INTO invoices (user_id, customer_id, invoice_number, amount, due_date, description, status) VALUES (%s,%s,%s,%s,%s,%s,'unpaid')",
             (user_id, customer_id, invoice_number, amt, due, desc))
-        if session.get('plan') in ['pro', 'enterprise'] and customer_id:
+        if session.get('plan') in ['professional', 'suite'] and customer_id:
             _create_journal_for_invoice(cursor, user_id, due, desc, amt, customer_id, invoice_number)
     
     elif module == 'po':
@@ -247,7 +247,7 @@ def import_row(module, row):
         cursor.execute(
             "INSERT INTO opening_balances (user_id, balance_type, reference_name, amount, entry_date) VALUES (%s,%s,%s,%s,%s)",
             (user_id, bal_type, ref_name, amt, entry_date))
-        if session.get('plan') in ['pro', 'enterprise']:
+        if session.get('plan') in ['professional', 'suite']:
             _create_journal_for_opening_balance(cursor, user_id, entry_date, bal_type, ref_name, amt)
     
     db.commit()

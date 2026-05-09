@@ -232,7 +232,7 @@ def add_bill():
     """, (session['user_id'], supplier_id, bill_number, amount, description, due_date, reference_po, bir_2307))
     db.commit()
     
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor2 = db.cursor(dictionary=True)
         cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '2000'")
         ap_account = cursor2.fetchone()
@@ -321,7 +321,7 @@ def record_bill_payment(bill_id):
     ))
     
     # Journal entry for Pro users
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor2 = db.cursor(dictionary=True)
         cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")
         cash_account = cursor2.fetchone()

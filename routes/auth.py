@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, url_fo
 import hashlib
 from datetime import datetime
 import random
+import string
 from models.database import get_db
 
 auth_bp = Blueprint('auth', __name__)
@@ -54,8 +55,7 @@ def login():
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    # Read plan from query string (from landing page CTA links)
-    plan_slug = request.args.get('plan', 'starter')  # default to starter
+    plan_slug = request.args.get('plan', 'starter')
 
     if request.method == 'POST':
         username = request.form['username']
@@ -67,16 +67,18 @@ def register():
         business_password = request.form['business_password']
 
         # Map business_size to plan_id
-        plan_map = {'solo': 1, 'small': 2, 'medium': 3}
+        plan_map = {'solo': 1, 'small': 2, 'growing': 3, 'medium': 4}
         plan_id = plan_map.get(business_size, 1)
 
-        # VAT: solo = non-VAT by default, small/medium = VAT-registered
-        vat_registered = 0 if business_size == 'solo' else 1
+        # Plan slugs for session
+        plan_slug_map = {1: 'starter', 2: 'essentials', 3: 'professional', 4: 'suite'}
+        plan_name_map = {1: 'Starter', 2: 'Essentials', 3: 'Professional', 4: 'Suite'}
+
+        vat_registered = 0 if business_size in ('solo', 'small') else 1
 
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         hashed_business_password = hashlib.sha256(business_password.encode()).hexdigest()
 
-        # Generate unique Business ID
         def generate_business_id():
             chars = string.ascii_uppercase + string.digits
             return f"TARA-{''.join(random.choices(chars, k=4))}-{''.join(random.choices(chars, k=4))}"
@@ -114,17 +116,12 @@ def register():
             session['business_id'] = user['business_id']
             session['business_name'] = user['business_name']
             session['vat_registered'] = bool(user.get('vat_registered', 0))
+            session['plan'] = plan_slug_map.get(plan_id, 'starter')
+            session['plan_name'] = plan_name_map.get(plan_id, 'Starter')
 
-            # Set plan in session based on business_size
-            if business_size == 'solo':
-                session['plan'] = 'basic'
-                session['plan_name'] = 'Starter'
-            elif business_size == 'small':
-                session['plan'] = 'pro'
-                session['plan_name'] = 'Professional'
-            else:
-                session['plan'] = 'enterprise'
-                session['plan_name'] = 'Enterprise'
+            # Suite gets enterprise role templates
+            if plan_id == 4:
+                from routes.permissions import create_enterprise_role_templates
                 create_enterprise_role_templates(business_id, user['id'])
 
             cursor.close()
@@ -142,7 +139,6 @@ def register():
             db.close()
             return render_template('register.html', error=f"Registration failed: {e}", plan=plan_slug)
 
-    # GET request — render the form with the plan context
     return render_template('register.html', plan=plan_slug)
 
 @auth_bp.route('/logout')

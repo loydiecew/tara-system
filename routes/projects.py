@@ -12,7 +12,7 @@ def projects():
 
     if not check_module_access('projects'): return redirect(url_for('dashboard.dashboard'))
 
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Projects are available on Enterprise plan only.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     

@@ -10,6 +10,7 @@ from routes.insights import insights_bp
 from routes.admin import admin_bp
 from routes.plan import plan_bp
 from routes.api import api_bp
+from routes.quick_tap import quick_tap_bp
 from .all_transactions import all_transactions_bp
 from .import_data import import_bp
 from .orders import orders_bp

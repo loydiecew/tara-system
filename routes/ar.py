@@ -249,7 +249,7 @@ def add_invoice():
           payment_terms, reference_po, bir_serial))
     db.commit()
     
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor2 = db.cursor(dictionary=True)
         cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1100'")
         ar_account = cursor2.fetchone()
@@ -339,7 +339,7 @@ def record_payment(invoice_id):
     ))
     
     # Journal entry for Pro users
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor2 = db.cursor(dictionary=True)
         cursor2.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")
         cash_account = cursor2.fetchone()

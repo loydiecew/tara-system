@@ -56,7 +56,7 @@ def sales():
     products = cursor.fetchall()
     
     projects = []
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor.execute("""
             SELECT p.id, p.name FROM projects p JOIN users u ON p.user_id = u.id
             WHERE u.business_id = %s AND p.status = 'active'
@@ -194,7 +194,7 @@ def add_sale():
                 WHERE id = %s AND user_id = %s AND quantity >= %s
             """, (item['qty'], item['product_id'], session['user_id'], item['qty']))
     
-    if session.get('plan') in ['pro', 'enterprise']:
+    if session.get('plan') in ['professional', 'suite']:
         cursor.execute("SELECT id FROM chart_of_accounts WHERE code = '1000'")
         cash_account = cursor.fetchone()
         cursor.execute("SELECT id FROM chart_of_accounts WHERE code = '4000'")
@@ -305,7 +305,7 @@ def receipt(sale_id):
 def convert_sale_to_invoice(sale_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    if session.get('plan') not in ['pro', 'enterprise']:
+    if session.get('plan') not in ['professional', 'suite']:
         flash('AR requires Pro or Enterprise plan.', 'error'); return redirect(url_for('sales.sales'))
     db = get_db()
     cursor = db.cursor(dictionary=True)

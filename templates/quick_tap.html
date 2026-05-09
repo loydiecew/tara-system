@@ -1,0 +1,385 @@
+{% extends "layout.html" %}
+{% block title %}Quick Tap — TARA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qt-wrap { max-width: 520px; margin: 0 auto; }
+
+    /* Streak bar */
+    .streak-bar {
+        display: flex; align-items: center; gap: 10px;
+        padding: 14px 18px; margin-bottom: 14px;
+        background: var(--glass-bg); backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border); border-radius: 18px;
+    }
+    .streak-fire { font-size: 24px; animation: firePulse 1.5s ease-in-out infinite; }
+    @keyframes firePulse {
+        0%,100%{transform:scale(1)} 50%{transform:scale(1.2)}
+    }
+    .streak-count { font-size: 20px; font-weight: 800; color: var(--accent); }
+    .streak-label { font-size: 12px; color: var(--text-secondary); }
+
+    /* Today vs Yesterday */
+    .compare-row {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+    }
+    .compare-card {
+        padding: 14px; text-align: center;
+        background: var(--glass-bg); backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border); border-radius: 16px;
+    }
+    .compare-card .lbl {
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 1px; color: var(--text-tertiary); margin-bottom: 2px;
+    }
+    .compare-card .val { font-size: 22px; font-weight: 800; }
+    .compare-card .chg { font-size: 11px; font-weight: 600; margin-top: 2px; }
+    .chg-up { color: var(--accent); } .chg-down { color: #ef4444; }
+
+    /* Profit pill */
+    .profit-pill {
+        text-align: center; margin-bottom: 16px;
+        padding: 12px; border-radius: 100px;
+        background: var(--glass-bg); border: 1px solid var(--glass-border);
+    }
+    .profit-pill .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); }
+    .profit-pill .val { font-size: 28px; font-weight: 900; }
+
+    /* Button grid */
+    .btn-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
+    }
+    .qt-btn {
+        padding: 14px 8px; background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border);
+        border-radius: 14px; cursor: pointer; text-align: center;
+        transition: all 0.15s; color: var(--text-primary);
+    }
+    .qt-btn:active { transform: scale(0.93); }
+    .qt-btn .nm { font-size: 12px; font-weight: 600; line-height: 1.2; margin-bottom: 3px; }
+    .qt-btn .pr { font-size: 17px; font-weight: 800; color: var(--accent); }
+    .qt-btn.add-new {
+        border-style: dashed; border-color: var(--border-visible);
+        color: var(--text-tertiary); display: flex;
+        flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    }
+    .qt-btn.add-new i { font-size: 18px; }
+
+    /* Quick actions row */
+    .quick-actions {
+        display: flex; gap: 8px; margin-bottom: 14px;
+    }
+    .qa-btn {
+        flex: 1; padding: 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+        border: 1px solid var(--glass-border); cursor: pointer; text-align: center;
+        background: var(--glass-bg); color: var(--text-secondary);
+        transition: all 0.15s;
+    }
+    .qa-btn:active { transform: scale(0.95); }
+    .qa-btn.utang { color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+
+    /* Activity feed */
+    .activity-feed { margin-bottom: 14px; }
+    .act-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px;
+    }
+    .act-badge {
+        font-size: 9px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.8px; padding: 2px 8px; border-radius: 100px;
+    }
+    .act-badge.sale { background: rgba(16,185,129,0.15); color: var(--accent); }
+    .act-badge.expense { background: rgba(239,68,68,0.1); color: #ef4444; }
+    .act-badge.utang { background: rgba(245,158,11,0.12); color: #f59e0b; }
+
+    /* Recon button */
+    .recon-btn {
+        width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
+        border-radius: 14px; border: none; cursor: pointer;
+        background: var(--accent); color: #fff;
+        transition: all 0.2s;
+    }
+    .recon-btn:active { transform: scale(0.97); }
+
+    /* Toast */
+    .qt-toast {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        z-index: 2000; padding: 10px 22px; border-radius: 100px;
+        font-weight: 600; font-size: 14px; pointer-events: none;
+        animation: slideDown 0.25s ease, fadeOut 0.3s ease 1.5s forwards;
+    }
+    .qt-toast.ok { background: var(--accent); color: #fff; }
+    .qt-toast.err { background: #ef4444; color: #fff; }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; } to { opacity: 0; }
+    }
+
+    /* Modal */
+    .qt-modal {
+        display: none; position: fixed; inset: 0; z-index: 1000;
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+        justify-content: center; align-items: center;
+    }
+    .qt-modal.show { display: flex; }
+    .qt-modal-box {
+        background: var(--bg-elevated); border: 1px solid var(--border-visible);
+        border-radius: 20px; padding: 24px; width: 90%; max-width: 380px;
+    }
+    .qt-modal-box h3 { margin-bottom: 16px; font-size: 18px; }
+    .qt-modal-box input {
+        width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 10px;
+        border: 1px solid var(--border-visible); background: rgba(255,255,255,0.03);
+        color: var(--text-primary); font-size: 14px; font-family: 'Inter', sans-serif;
+    }
+    .qt-modal-box .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+    .qt-modal-box .btn-row button { flex: 1; }
+
+    @media (max-width: 400px) {
+        .btn-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qt-wrap">
+
+    <!-- Streak -->
+    <div class="streak-bar">
+        <span class="streak-fire">🔥</span>
+        <span class="streak-count">{{ streak }}</span>
+        <span class="streak-label">day{{ 's' if streak != 1 else '' }} straight</span>
+        {% if best_day %}
+        <span style="margin-left:auto;font-size:11px;color:var(--text-tertiary);">
+            Best: ₱{{ "%.0f"|format(best_day.total) }} ({{ best_day.sale_date.strftime('%b %d') }})
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Today vs Yesterday -->
+    <div class="compare-row">
+        <div class="compare-card">
+            <div class="lbl">Today</div>
+            <div class="val">₱{{ "%.0f"|format(comparison.today) }}</div>
+        </div>
+        <div class="compare-card">
+            <div class="lbl">Yesterday</div>
+            <div class="val">₱{{ "%.0f"|format(comparison.yesterday) }}</div>
+            {% if comparison.yesterday > 0 or comparison.today > 0 %}
+            <div class="chg {% if comparison.is_up %}chg-up{% else %}chg-down{% endif %}">
+                {% if comparison.is_up %}+{% endif %}{{ comparison.pct_change }}%
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Profit -->
+    <div class="profit-pill">
+        <div class="lbl">Today's Profit</div>
+        <div class="val" style="color: {% if summary.profit >= 0 %}var(--accent){% else %}#ef4444{% endif %};">
+            ₱{{ "%.0f"|format(summary.profit) }}
+        </div>
+    </div>
+
+    <!-- Quick Tap Buttons -->
+    <div class="btn-grid" id="btnGrid">
+        {% for p in products %}
+        <button class="qt-btn" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.price }}" onclick="tap(this)">
+            <div class="nm">{{ p.name }}</div>
+            <div class="pr">₱{{ "%.0f"|format(p.price) }}</div>
+        </button>
+        {% endfor %}
+        <button class="qt-btn add-new" onclick="openCustomSale()">
+            <i class="fas fa-plus"></i><span style="font-size:11px;">Other</span>
+        </button>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="qa-btn" onclick="openExpense()">
+            <i class="fas fa-minus-circle"></i> Expense
+        </button>
+        <button class="qa-btn utang" onclick="openUtang()">
+            <i class="fas fa-hand-holding-usd"></i> Utang
+        </button>
+    </div>
+
+    <!-- Activity Feed -->
+    {% if activity %}
+    <div class="card" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:14px;font-weight:700;">Today</h3>
+            <span style="font-size:11px;color:var(--text-secondary);">{{ activity|length }} entries</span>
+        </div>
+        <div class="activity-feed">
+            {% for a in activity %}
+            <div class="act-item">
+                <span style="flex:1;">{{ a.name|truncate(30) }}</span>
+                <span class="act-badge {{ a.type }}">{{ a.type }}</span>
+                <span style="font-weight:600;margin-left:8px;{% if a.type == 'expense' %}color:#ef4444;{% endif %}">
+                    {% if a.type == 'expense' %}-{% endif %}₱{{ "%.0f"|format(a.amount) }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card empty-state" style="padding:32px;">
+        <i class="fas fa-hand-pointer" style="font-size:36px;"></i>
+        <h3 style="font-size:14px;margin-top:8px;">Tap a product to start</h3>
+        <p style="font-size:12px;">Record your first sale of the day</p>
+    </div>
+    {% endif %}
+
+    <!-- End of Day -->
+    <a href="/quick-tap/reconciliation">
+        <button class="recon-btn">
+            <i class="fas fa-cash-register"></i> End of Day — Count Cash
+        </button>
+    </a>
+
+    <div style="text-align:center;margin-top:8px;">
+        <a href="/quick-tap/weekly" style="font-size:12px;color:var(--text-secondary);">
+            <i class="fas fa-chart-bar"></i> Weekly Summary
+        </a>
+    </div>
+</div>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- Custom Sale Modal -->
+<div class="qt-modal" id="saleModal">
+    <div class="qt-modal-box">
+        <h3>Custom Sale</h3>
+        <input type="text" id="saleName" placeholder="Item name">
+        <input type="number" id="saleAmount" placeholder="Amount (₱)" step="0.01" min="0">
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="closeModal('saleModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitCustomSale()">Record</button>
+        </div>
+    </div>
+</div>
+
+<!-- Expense Modal -->
+<div class="qt-modal" id="expenseModal">
+    <div class="qt-modal-box">
+        <h3>Record Expense</h3>
+        <input type="text" id="expenseDesc" placeholder="What did you spend on?">
+        <input type="number" id="expenseAmount" placeholder="Amount (₱)" step="0.01" min="0">
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="closeModal('expenseModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitExpense()">Record</button>
+        </div>
+    </div>
+</div>
+
+<!-- Utang Modal -->
+<div class="qt-modal" id="utangModal">
+    <div class="qt-modal-box">
+        <h3>Record Utang</h3>
+        <input type="text" id="utangName" placeholder="Who owes you?">
+        <input type="text" id="utangItem" placeholder="What did they get? (optional)">
+        <input type="number" id="utangAmount" placeholder="Amount (₱)" step="0.01" min="0">
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="closeModal('utangModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitUtang()">Record</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function tap(btn) {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        const price = parseFloat(btn.dataset.price);
+        btn.style.transform = 'scale(0.93)';
+        setTimeout(() => btn.style.transform = '', 120);
+
+        fetch('/quick-tap/record', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({product_id: id, product_name: name, amount: price, quantity: 1})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                toast(d.message, 'ok');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                toast(d.error, 'err');
+            }
+        });
+    }
+
+    function openCustomSale() { document.getElementById('saleModal').classList.add('show'); document.getElementById('saleName').focus(); }
+    function openExpense() { document.getElementById('expenseModal').classList.add('show'); document.getElementById('expenseDesc').focus(); }
+    function openUtang() { document.getElementById('utangModal').classList.add('show'); document.getElementById('utangName').focus(); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    function submitCustomSale() {
+        const name = document.getElementById('saleName').value || 'Custom Sale';
+        const amount = parseFloat(document.getElementById('saleAmount').value);
+        if (!amount || amount <= 0) { toast('Enter an amount', 'err'); return; }
+
+        fetch('/quick-tap/record', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({product_id: null, product_name: name, amount: amount, quantity: 1})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { closeModal('saleModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 500); }
+            else toast(d.error, 'err');
+        });
+    }
+
+    function submitExpense() {
+        const desc = document.getElementById('expenseDesc').value || 'Expense';
+        const amount = parseFloat(document.getElementById('expenseAmount').value);
+        if (!amount || amount <= 0) { toast('Enter an amount', 'err'); return; }
+
+        fetch('/quick-tap/expense', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({amount: amount, description: desc, category: 'General'})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { closeModal('expenseModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 500); }
+            else toast(d.error, 'err');
+        });
+    }
+
+    function submitUtang() {
+        const name = document.getElementById('utangName').value.trim();
+        const item = document.getElementById('utangItem').value.trim();
+        const amount = parseFloat(document.getElementById('utangAmount').value);
+        if (!name) { toast('Enter a name', 'err'); return; }
+        if (!amount || amount <= 0) { toast('Enter an amount', 'err'); return; }
+
+        fetch('/quick-tap/utang', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({customer_name: name, amount: amount, item: item})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { closeModal('utangModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 500); }
+            else toast(d.error, 'err');
+        });
+    }
+
+    function toast(msg, type) {
+        const existing = document.querySelector('.qt-toast');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.className = 'qt-toast ' + type;
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2000);
+    }
+</script>
+{% endblock %}

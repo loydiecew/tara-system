@@ -23,7 +23,7 @@ def create_payment_link(invoice_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Payment links are available on Enterprise plan only.', 'error')
         return redirect(url_for('ar.ar'))
     
@@ -101,7 +101,7 @@ def email_payment_link(invoice_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['enterprise']:
+    if session.get('plan') not in ['suite']:
         flash('Payment links are available on Enterprise plan only.', 'error')
         return redirect(url_for('ar.ar'))
     
