@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TARA — Philippine Accounting Software | Grow Your Business. We'll Keep Up.</title>
+    <meta name="description" content="TARA is double-entry accounting software built for Philippine businesses — from your first sale to your 50th branch. Start free for 30 days.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-deep: #060608;
+            --bg-surface: #0c0c0f;
+            --bg-elevated: #121216;
+            --bg-glass: rgba(18, 18, 22, 0.6);
+            --bg-glass-hover: rgba(24, 24, 30, 0.7);
+            --text-primary: #f1f1f3;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-visible: rgba(255,255,255,0.1);
+            --accent: #10b981;
+            --accent-dark: #059669;
+            --accent-light: #064e3b;
+            --accent-glow: rgba(16, 185, 129, 0.2);
+            --accent-glow-strong: rgba(16, 185, 129, 0.35);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --max-width: 1200px;
+            --transition-smooth: 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; background: var(--bg-deep); }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        /* ── Ambient background ── */
+        .bg-universe {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.12;
+        }
+        .bg-orb-1 { width: 800px; height: 800px; background: #065f46; top: -200px; left: -200px; animation: orbDrift 25s ease-in-out infinite; }
+        .bg-orb-2 { width: 600px; height: 600px; background: #1e3a5f; bottom: -150px; right: -100px; animation: orbDrift 28s ease-in-out infinite reverse; }
+        .bg-orb-3 { width: 500px; height: 500px; background: #3b1f4e; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: orbDrift 22s ease-in-out infinite; }
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(80px, -50px) scale(1.08); }
+            50% { transform: translate(-40px, 60px) scale(0.94); }
+            75% { transform: translate(-60px, -40px) scale(1.04); }
+        }
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: calc(100% - 48px);
+            max-width: 1100px;
+            padding: 14px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(12,12,18,0.7);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 100px;
+            transition: all 0.3s ease;
+        }
+        nav.scrolled {
+            background: rgba(12,12,18,0.9);
+            box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+        }
+        .nav-logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-logo .logo-mark {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 15px;
+            font-weight: 800;
+        }
+        .nav-links { display: flex; gap: 28px; align-items: center; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: color 0.2s;
+            letter-spacing: -0.2px;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-cta {
+            background: #fff;
+            color: #000 !important;
+            padding: 10px 22px;
+            border-radius: 100px;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+            transition: all 0.25s !important;
+        }
+        .nav-cta:hover {
+            background: #e5e5e5;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(255,255,255,0.1);
+        }
+
+        /* ── Section base ── */
+        section {
+            position: relative;
+            z-index: 2;
+            padding: 100px 32px;
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-size: 44px;
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: 16px;
+        }
+        .section-subtitle {
+            font-size: 17px;
+            color: var(--text-secondary);
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        /* ── Glass card ── */
+        .glass-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            transition: var(--transition-smooth);
+        }
+        .glass-card:hover {
+            background: var(--bg-glass-hover);
+            border-color: var(--border-visible);
+        }
+
+        /* ── Hero ── */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding-top: 120px;
+            gap: 64px;
+        }
+        .hero-copy { flex: 1; }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-light);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 100px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .hero-badge .live-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 8px var(--accent-glow-strong);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.6); }
+        }
+        .hero-copy h1 {
+            font-size: 62px;
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1.04;
+            margin-bottom: 16px;
+        }
+        .hero-copy .highlight {
+            background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-cred-line {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .hero-cred-line span {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hero-cred-line span i { color: var(--accent); font-size: 10px; }
+        .hero-copy p {
+            font-size: 17px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+            margin-bottom: 32px;
+            max-width: 480px;
+        }
+        .hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-size: 14.5px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            letter-spacing: -0.3px;
+        }
+        .btn-primary {
+            background: #fff;
+            color: #000;
+        }
+        .btn-primary:hover {
+            background: #e5e5e5;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255,255,255,0.12);
+        }
+        .btn-glass {
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .btn-glass:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .hero-visual {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .device-frame {
+            width: 280px; height: 560px;
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1.5px solid rgba(255,255,255,0.08);
+            border-radius: 30px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 60px rgba(16,185,129,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 3;
+        }
+        .device-frame .screen-placeholder {
+            width: calc(100% - 14px); height: calc(100% - 14px);
+            border-radius: 24px;
+            background: #0c0c0f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+        .device-frame .screen-placeholder i { font-size: 36px; opacity: 0.3; }
+        .glow-orb-behind {
+            position: absolute;
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            background: var(--accent);
+            filter: blur(100px);
+            opacity: 0.08;
+            z-index: 1;
+        }
+
+        /* ── Growth Map ── */
+        .growth-map-wrap {
+            position: relative;
+            margin-top: 60px;
+        }
+        .growth-track {
+            position: relative;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 40px;
+        }
+        .growth-track::-webkit-scrollbar { display: none; }
+        .growth-stage {
+            flex: 0 0 280px;
+            scroll-snap-align: center;
+            position: relative;
+            padding: 40px 28px;
+            text-align: center;
+            transition: all 0.4s ease;
+            opacity: 0.5;
+            transform: scale(0.92);
+            cursor: default;
+        }
+        .growth-stage.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .growth-stage .stage-icon {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 22px;
+            color: var(--text-tertiary);
+            transition: all 0.4s ease;
+        }
+        .growth-stage.active .stage-icon {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 24px var(--accent-glow);
+        }
+        .growth-stage .stage-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-tertiary);
+            margin-bottom: 6px;
+            transition: color 0.4s;
+        }
+        .growth-stage.active .stage-name { color: var(--accent); }
+        .growth-stage .stage-plan {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .growth-stage .stage-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .growth-line {
+            position: absolute;
+            top: 68px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-subtle);
+            z-index: -1;
+        }
+        .growth-line-fill {
+            height: 100%;
+            background: var(--accent);
+            transition: width 0.5s ease;
+            border-radius: 2px;
+        }
+        .growth-nav-arrows {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .growth-nav-arrows button {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .growth-nav-arrows button:hover {
+            background: var(--bg-glass-hover);
+            color: #fff;
+            border-color: var(--border-visible);
+        }
+
+        /* ── Tier Detail Cards ── */
+        .tier-detail-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 48px;
+        }
+        .tier-detail-card {
+            display: grid;
+            grid-template-columns: 240px 1fr 180px;
+            gap: 32px;
+            padding: 32px;
+            align-items: start;
+            cursor: default;
+        }
+        .tier-detail-card .tier-header-col .tier-plan-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .tier-detail-card .tier-header-col .tier-plan-name {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+        .tier-detail-card .tier-header-col .tier-plan-price {
+            font-size: 32px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            margin-top: 8px;
+        }
+        .tier-detail-card .tier-header-col .tier-plan-price span {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        .tier-detail-card .tier-header-col .tier-users {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+        .tier-detail-card .tier-header-col .tier-trial {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-top: 10px;
+            padding: 4px 10px;
+            border-radius: 100px;
+            background: var(--accent-light);
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+        .tier-detail-card .tier-features-col {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .tier-detail-card .tier-features-col h4 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-tertiary);
+            margin-bottom: 12px;
+        }
+        .tier-detail-card .tier-features-col ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .tier-detail-card .tier-features-col ul li {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            line-height: 1.4;
+        }
+        .tier-detail-card .tier-features-col ul li i {
+            color: var(--accent);
+            font-size: 11px;
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+        .tier-detail-card .tier-action-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+            text-align: right;
+        }
+        .tier-detail-card .tier-action-col .btn {
+            white-space: nowrap;
+        }
+        .tier-detail-card .tier-action-col .addon-hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            line-height: 1.4;
+        }
+        .tier-detail-card.featured-tier-detail {
+            border-color: rgba(16,185,129,0.25);
+            box-shadow: 0 0 40px rgba(16,185,129,0.06), 0 0 0 1px rgba(16,185,129,0.1);
+        }
+
+        /* ── Industry packages ── */
+        .industries-featured {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 40px;
+        }
+        .industry-feature-card {
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        .industry-feature-card .industry-number {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .industry-feature-card h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .industry-feature-card .industry-price {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+        .industry-feature-card .industry-modules {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .industry-feature-card .industry-modules span {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 100px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+        .industry-feature-card .industry-modules span.exclusive {
+            background: var(--accent-light);
+            border-color: rgba(16,185,129,0.25);
+            color: var(--accent);
+        }
+        .industry-feature-card .industry-exclusive-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .industry-feature-card .industry-exclusive-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+        }
+        .industries-upcoming {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .industry-upcoming-chip {
+            padding: 14px 16px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        /* ── Configuration System ── */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 40px;
+        }
+        .config-card {
+            padding: 28px;
+            text-align: center;
+        }
+        .config-card .config-icon {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            background: var(--accent-light);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin: 0 auto 16px;
+        }
+        .config-card h4 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .config-card p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .config-available {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+            padding: 4px 10px;
+            border-radius: 100px;
+        }
+        .config-available.suite { background: rgba(16,185,129,0.1); color: var(--accent); border: 1px solid rgba(16,185,129,0.2); }
+        .config-available.executive { background: rgba(139,92,246,0.1); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
+
+        /* ── Trust ── */
+        .trust-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 40px;
+        }
+        .trust-stat-card {
+            text-align: center;
+            padding: 32px 16px;
+        }
+        .trust-stat-card .trust-number {
+            font-size: 40px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: #fff;
+        }
+        .trust-stat-card .trust-number.accent-num { color: var(--accent); }
+        .trust-stat-card .trust-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* ── CTA ── */
+        .cta-section-wrap {
+            max-width: var(--max-width);
+            margin: 0 auto 80px;
+            padding: 0 32px;
+            position: relative;
+            z-index: 2;
+        }
+        .cta-inner {
+            text-align: center;
+            padding: 80px 48px;
+        }
+        .cta-inner h2 {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+        .cta-inner p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 28px;
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 2;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 48px 32px 32px;
+            border-top: 1px solid var(--border-subtle);
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 32px;
+        }
+        footer .footer-brand {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+        footer .footer-brand p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            font-weight: 400;
+        }
+        footer h4 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-tertiary);
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+        footer a {
+            display: block;
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 9px;
+            transition: color 0.2s;
+        }
+        footer a:hover { color: #fff; }
+        .footer-bottom {
+            position: relative;
+            z-index: 2;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 16px 32px 32px;
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* ── Reveal ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .hero-section { flex-direction: column; text-align: center; padding-top: 100px; gap: 48px; }
+            .hero-copy p, .hero-cred-line { justify-content: center; max-width: 100%; }
+            .hero-ctas { justify-content: center; }
+            .hero-visual { order: -1; }
+            .device-frame { width: 200px; height: 400px; }
+            .tier-detail-card { grid-template-columns: 1fr; gap: 20px; }
+            .tier-detail-card .tier-action-col { align-items: flex-start; text-align: left; }
+            .industries-featured { grid-template-columns: 1fr 1fr; }
+            .industries-upcoming { grid-template-columns: 1fr 1fr; }
+            .config-grid { grid-template-columns: 1fr 1fr; }
+            .trust-grid { grid-template-columns: 1fr 1fr; }
+            footer { grid-template-columns: 1fr 1fr; }
+            .growth-stage { flex: 0 0 220px; }
+        }
+        @media (max-width: 640px) {
+            section { padding: 64px 16px; }
+            .hero-section { padding: 100px 16px 64px; }
+            .hero-copy h1 { font-size: 36px; }
+            .section-title { font-size: 28px; }
+            .industries-featured { grid-template-columns: 1fr; }
+            .industries-upcoming { grid-template-columns: 1fr 1fr; }
+            .config-grid { grid-template-columns: 1fr; }
+            .trust-grid { grid-template-columns: 1fr 1fr; }
+            .cta-inner { padding: 48px 20px; }
+            .cta-inner h2 { font-size: 24px; }
+            footer { grid-template-columns: 1fr; }
+            nav { border-radius: 20px; padding: 12px 16px; }
+            .nav-links a:not(.nav-cta) { display: none; }
+            .growth-stage { flex: 0 0 200px; padding: 24px 16px; }
+            .tier-detail-card .tier-features-col ul { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Ambient -->
+<div class="bg-universe">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+</div>
+<div class="bg-grid"></div>
+
+<!-- Nav -->
+<nav id="navbar">
+    <a href="#" class="nav-logo">
+        <div class="logo-mark">T</div>
+        TARA
+    </a>
+    <div class="nav-links">
+        <a href="#growth">Journey</a>
+        <a href="#tiers">Plans</a>
+        <a href="#industries">Industries</a>
+        <a href="#config">Enterprise</a>
+        <a href="/register" class="nav-cta">Start Free</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero-section">
+    <div class="hero-copy reveal">
+        <div class="hero-badge">
+            <span class="live-dot"></span> Built in the Philippines
+        </div>
+        <h1>Grow your business.<br><span class="highlight">We'll keep up.</span></h1>
+        <div class="hero-cred-line">
+            <span><i class="fas fa-check-circle"></i> Double-entry engine</span>
+            <span><i class="fas fa-check-circle"></i> Real-time financial statements</span>
+            <span><i class="fas fa-check-circle"></i> BIR-ready reports</span>
+        </div>
+        <p>TARA is accounting software for Philippine businesses at every stage — from your first sale to your 50th branch. One system, one login, zero migrations.</p>
+        <div class="hero-ctas">
+            <a href="/register?plan=starter" class="btn btn-primary">Start Free — 30 Days</a>
+            <a href="#tiers" class="btn btn-glass">See Plans <i class="fas fa-arrow-down" style="font-size:10px;"></i></a>
+        </div>
+    </div>
+    <div class="hero-visual reveal">
+        <div class="glow-orb-behind"></div>
+        <div class="device-frame">
+            <div class="screen-placeholder">
+                <i class="fas fa-chart-simple"></i>
+                <span style="font-weight:600;color:var(--text-secondary);">Dashboard</span>
+                <small style="opacity:0.5;">Screenshot after defense</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Growth Map -->
+<section id="growth">
+    <div class="section-label reveal">The Journey</div>
+    <h2 class="section-title reveal">One system. Every stage.</h2>
+    <p class="section-subtitle reveal">Scroll to see how TARA grows with your business — from day one to enterprise scale.</p>
+    <div class="growth-map-wrap reveal">
+        <div class="growth-line">
+            <div class="growth-line-fill" id="growthFill"></div>
+        </div>
+        <div class="growth-track" id="growthTrack">
+            <div class="growth-stage active" data-index="0">
+                <div class="stage-icon"><i class="fas fa-store"></i></div>
+                <div class="stage-name">Stage 1</div>
+                <div class="stage-plan">Starter</div>
+                <div class="stage-desc">Quick Tap sales entry. Daily cash reconciliation. Weekly profit summaries. Free forever.</div>
+            </div>
+            <div class="growth-stage" data-index="1">
+                <div class="stage-icon"><i class="fas fa-receipt"></i></div>
+                <div class="stage-name">Stage 2</div>
+                <div class="stage-plan">Essentials</div>
+                <div class="stage-desc">Professional receipts. Tax reports. Bank reconciliation. Full data import. One user.</div>
+            </div>
+            <div class="growth-stage" data-index="2">
+                <div class="stage-icon"><i class="fas fa-users"></i></div>
+                <div class="stage-name">Stage 3</div>
+                <div class="stage-plan">Professional</div>
+                <div class="stage-desc">Role-based access for your team. Purchase & sales orders. Full audit trail. Up to 3 users.</div>
+            </div>
+            <div class="growth-stage" data-index="3">
+                <div class="stage-icon"><i class="fas fa-building"></i></div>
+                <div class="stage-name">Stage 4</div>
+                <div class="stage-plan">Suite</div>
+                <div class="stage-desc">Multi-branch consolidation. Approval workflows. Custom reports. Up to 10 users.</div>
+            </div>
+            <div class="growth-stage" data-index="4">
+                <div class="stage-icon"><i class="fas fa-globe"></i></div>
+                <div class="stage-name">Stage 5</div>
+                <div class="stage-plan">Executive</div>
+                <div class="stage-desc">Bank feeds. API access. Custom pricing rules. Advanced workflows. Up to 25 users.</div>
+            </div>
+        </div>
+        <div class="growth-nav-arrows">
+            <button onclick="scrollGrowth(-1)" aria-label="Previous"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="scrollGrowth(1)" aria-label="Next"><i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+</section>
+
+<!-- Tier Detail Cards -->
+<section id="tiers">
+    <div class="section-label reveal">Plans & Pricing</div>
+    <h2 class="section-title reveal">Detailed breakdown.</h2>
+    <p class="section-subtitle reveal">All paid plans include a 30-day free trial. No credit card required for Starter. Upgrade anytime — no data migration needed.</p>
+    <div class="tier-detail-grid reveal">
+        
+        <!-- Starter -->
+        <div class="tier-detail-card glass-card featured-tier-detail">
+            <div class="tier-header-col">
+                <div class="tier-plan-label">Starter</div>
+                <div class="tier-plan-name">Free</div>
+                <div class="tier-plan-price">₱0</div>
+                <div class="tier-users">1 user</div>
+                <div class="tier-trial">Free Forever</div>
+            </div>
+            <div class="tier-features-col">
+                <h4>Included</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Quick Tap sales entry — one tap per sale</li>
+                    <li><i class="fas fa-check-circle"></i> Daily Reconciliation — enter cash count, auto-calculate profit</li>
+                    <li><i class="fas fa-check-circle"></i> Weekly profit summary with comparisons</li>
+                    <li><i class="fas fa-check-circle"></i> Customer credit tracking — record who owes you</li>
+                    <li><i class="fas fa-check-circle"></i> Expense entry with industry-specific categories</li>
+                    <li><i class="fas fa-check-circle"></i> Cash management — income & expense tracking</li>
+                    <li><i class="fas fa-check-circle"></i> Local data storage with 60-day rolling window</li>
+                    <li><i class="fas fa-check-circle"></i> CSV export for manual backup</li>
+                </ul>
+            </div>
+            <div class="tier-action-col">
+                <a href="/register?plan=starter" class="btn btn-primary">Start Free</a>
+                <span class="addon-hint">No credit card.<br>No time limit.</span>
+            </div>
+        </div>
+
+        <!-- Essentials -->
+        <div class="tier-detail-card glass-card">
+            <div class="tier-header-col">
+                <div class="tier-plan-label">Essentials</div>
+                <div class="tier-plan-name">Build your stack</div>
+                <div class="tier-plan-price">₱199<span>/mo</span></div>
+                <div class="tier-users">1 user · +₱149/addt'l user</div>
+                <div class="tier-trial">30-Day Free Trial</div>
+            </div>
+            <div class="tier-features-col">
+                <h4>Everything in Starter, plus</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Professional receipt generation — thermal-ready, BIR serial slots</li>
+                    <li><i class="fas fa-check-circle"></i> Full Sales Management with itemized mode</li>
+                    <li><i class="fas fa-check-circle"></i> Business Dashboard with calendar heatmap & drill-down</li>
+                    <li><i class="fas fa-check-circle"></i> Income Statement, Balance Sheet, Trial Balance — real-time</li>
+                    <li><i class="fas fa-check-circle"></i> Bank Reconciliation — match transactions, zero unmatched</li>
+                    <li><i class="fas fa-check-circle"></i> Tax Reports — VAT, Percentage Tax, Withholding Tax</li>
+                    <li><i class="fas fa-check-circle"></i> Full data Import from CSV — 10 data types, with preview</li>
+                    <li><i class="fas fa-check-circle"></i> General Journal — full double-entry view</li>
+                    <li><i class="fas fa-check-circle"></i> Voice Input for transaction descriptions</li>
+                    <li><i class="fas fa-check-circle"></i> Offline Mode — queue transactions locally, auto-sync</li>
+                </ul>
+                <p style="font-size:11px;color:var(--text-tertiary);margin-top:10px;">Industry packages & individual add-ons available: AR (₱149), AP (₱149), Inventory (₱149), Quotations (₱149), Budgeting (₱99), Projects (₱149), Timecards (₱99), Fixed Assets (₱149), Recurring (₱79), Payment Links (₱149), Multi-Currency (₱99), Email Blast (₱99), Attachments (₱79)</p>
+            </div>
+            <div class="tier-action-col">
+                <a href="/register?plan=essentials" class="btn btn-primary">Try Free — 30 Days</a>
+                <span class="addon-hint">No credit card required.</span>
+            </div>
+        </div>
+
+        <!-- Professional -->
+        <div class="tier-detail-card glass-card">
+            <div class="tier-header-col">
+                <div class="tier-plan-label">Professional</div>
+                <div class="tier-plan-name">For your team</div>
+                <div class="tier-plan-price">₱599<span>/mo</span></div>
+                <div class="tier-users">Up to 3 users · +₱149/addt'l user</div>
+                <div class="tier-trial">30-Day Free Trial</div>
+            </div>
+            <div class="tier-features-col">
+                <h4>Everything in Essentials, plus</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Role-Based Access Control — Admin, Manager, Cashier roles</li>
+                    <li><i class="fas fa-check-circle"></i> Purchase Orders — create, send, track against deliveries</li>
+                    <li><i class="fas fa-check-circle"></i> Sales Orders — convert quotes, track fulfillment</li>
+                    <li><i class="fas fa-check-circle"></i> General Ledger — complete double-entry records by account</li>
+                    <li><i class="fas fa-check-circle"></i> Full Audit Log — every change tracked with old/new values</li>
+                    <li><i class="fas fa-check-circle"></i> Cashier Expense Block — cashiers record income only</li>
+                    <li><i class="fas fa-check-circle"></i> BIR-Ready Invoice Fields — serial numbers, payment terms, PO refs</li>
+                </ul>
+                <p style="font-size:11px;color:var(--text-tertiary);margin-top:10px;">Add-on modules discounted: AR (₱99), AP (₱99), Inventory (₱99), Quotations (₱99), Budgeting (₱79), Projects (₱99), Timecards (₱79), Fixed Assets (₱99), Recurring (₱79), Payment Links (₱99), Multi-Currency (₱79), Email Blast (₱79), Attachments (₱79). Industry packages available at the same price as Essentials.</p>
+            </div>
+            <div class="tier-action-col">
+                <a href="/register?plan=professional" class="btn btn-primary">Try Free — 30 Days</a>
+                <span class="addon-hint">No credit card required.</span>
+            </div>
+        </div>
+
+        <!-- Suite -->
+        <div class="tier-detail-card glass-card">
+            <div class="tier-header-col">
+                <div class="tier-plan-label">Suite</div>
+                <div class="tier-plan-name">Multi-location</div>
+                <div class="tier-plan-price">₱1,499<span>/mo</span></div>
+                <div class="tier-users">Up to 10 users · +₱149/addt'l user</div>
+                <div class="tier-trial">30-Day Free Trial</div>
+            </div>
+            <div class="tier-features-col">
+                <h4>Everything in Professional, plus</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Multi-Branch Management — per-branch P&L, consolidated reports</li>
+                    <li><i class="fas fa-check-circle"></i> Two-Step Approval Workflows — expenses, POs above thresholds</li>
+                    <li><i class="fas fa-check-circle"></i> Fiscal Year Closing — automated year-end procedures</li>
+                    <li><i class="fas fa-check-circle"></i> Custom Report Builder — drag-and-drop designer</li>
+                    <li><i class="fas fa-check-circle"></i> Custom Roles — create role presets per branch or function</li>
+                    <li><i class="fas fa-check-circle"></i> Document Templates — customize receipt, invoice, and PO layouts</li>
+                    <li><i class="fas fa-check-circle"></i> Configuration System — custom fields on any form</li>
+                    <li><i class="fas fa-check-circle"></i> All individual add-on modules available for purchase</li>
+                    <li><i class="fas fa-check-circle"></i> Industry packages available for purchase (₱299–₱399/mo each)</li>
+                </ul>
+            </div>
+            <div class="tier-action-col">
+                <a href="/register?plan=suite" class="btn btn-primary">Try Free — 30 Days</a>
+                <span class="addon-hint">No credit card required.</span>
+            </div>
+        </div>
+
+        <!-- Executive -->
+        <div class="tier-detail-card glass-card featured-tier-detail">
+            <div class="tier-header-col">
+                <div class="tier-plan-label">Executive</div>
+                <div class="tier-plan-name">Enterprise scale</div>
+                <div class="tier-plan-price">₱2,999<span>/mo</span></div>
+                <div class="tier-users">Up to 25 users · +₱149/addt'l user</div>
+                <div class="tier-trial">30-Day Free Trial</div>
+            </div>
+            <div class="tier-features-col">
+                <h4>Everything in Suite, plus</h4>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Advanced Multi-Level Approval Workflows — conditional routing by amount, vendor, project</li>
+                    <li><i class="fas fa-check-circle"></i> Bank Feed Auto-Import — daily transaction import with ML categorization</li>
+                    <li><i class="fas fa-check-circle"></i> Credit Limit Enforcement per customer — blocks orders exceeding limits</li>
+                    <li><i class="fas fa-check-circle"></i> Custom Pricing Rules — customer-specific pricing, volume discounts, promos</li>
+                    <li><i class="fas fa-check-circle"></i> Vendor Rating System — scores on delivery time, quality, price accuracy</li>
+                    <li><i class="fas fa-check-circle"></i> Advanced Budgeting — department-level, rolling forecasts, what-if scenarios</li>
+                    <li><i class="fas fa-check-circle"></i> Notification Engine — per-user email & SMS alerts</li>
+                    <li><i class="fas fa-check-circle"></i> API Access — integrate with external systems</li>
+                    <li><i class="fas fa-check-circle"></i> White Label — remove TARA branding, use your logo & domain</li>
+                    <li><i class="fas fa-check-circle"></i> Priority Support — 2-hour response time, dedicated account manager</li>
+                    <li><i class="fas fa-check-circle"></i> Industry packages available for purchase (₱299–₱399/mo each)</li>
+                    <li><i class="fas fa-check-circle"></i> Custom enterprise package — mix modules from any industry</li>
+                </ul>
+            </div>
+            <div class="tier-action-col">
+                <a href="/register?plan=executive" class="btn btn-primary">Try Free — 30 Days</a>
+                <span class="addon-hint">No credit card required.</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Industries -->
+<section id="industries">
+    <div class="section-label reveal">Industry Packages</div>
+    <h2 class="section-title reveal">Built for your trade.</h2>
+    <p class="section-subtitle reveal">12 industries. 5 live now, 7 on the roadmap. Bundle relevant modules at a discount. Available on all paid plans.</p>
+    <div class="industries-featured reveal">
+        <div class="industry-feature-card glass-card">
+            <div class="industry-number">01 · Live Now</div>
+            <h3>Food & Beverage</h3>
+            <div class="industry-price">₱399/mo</div>
+            <div class="industry-modules">
+                <span>Inventory</span><span>Purchase Orders</span><span>Sales Orders</span><span>Recurring</span>
+            </div>
+            <div class="industry-exclusive-label">Exclusive Module</div>
+            <div class="industry-exclusive-name">Recipe & Menu Management</div>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Ingredient lists per menu item · Auto-deduct on sale · Food cost analysis · Combo/promo engine</p>
+        </div>
+        <div class="industry-feature-card glass-card">
+            <div class="industry-number">02 · Live Now</div>
+            <h3>Retail</h3>
+            <div class="industry-price">₱299/mo</div>
+            <div class="industry-modules">
+                <span>Inventory</span><span>Purchase Orders</span><span>Multi-Currency</span>
+            </div>
+            <div class="industry-exclusive-label">Exclusive Module</div>
+            <div class="industry-exclusive-name">POS Mode</div>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Barcode scanner · Customer display · Loyalty points · Price tag printing</p>
+        </div>
+        <div class="industry-feature-card glass-card">
+            <div class="industry-number">03 · Live Now</div>
+            <h3>Professional Services</h3>
+            <div class="industry-price">₱399/mo</div>
+            <div class="industry-modules">
+                <span>Projects</span><span>Timecards</span><span>Quotations</span>
+            </div>
+            <div class="industry-exclusive-label">Exclusive Module</div>
+            <div class="industry-exclusive-name">Client Portal</div>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Clients view invoices · Pay online · Project status tracking · E-signatures</p>
+        </div>
+        <div class="industry-feature-card glass-card">
+            <div class="industry-number">04 · Live Now</div>
+            <h3>Health & Wellness</h3>
+            <div class="industry-price">₱349/mo</div>
+            <div class="industry-modules">
+                <span>Timecards</span><span>Projects</span><span>Attachments</span>
+            </div>
+            <div class="industry-exclusive-label">Exclusive Module</div>
+            <div class="industry-exclusive-name">Patient Management</div>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Patient profiles · Appointment calendar · HMO reconciliation · PhilHealth claims</p>
+        </div>
+        <div class="industry-feature-card glass-card">
+            <div class="industry-number">05 · Live Now</div>
+            <h3>Construction & Real Estate</h3>
+            <div class="industry-price">₱399/mo</div>
+            <div class="industry-modules">
+                <span>Projects</span><span>Fixed Assets</span><span>Quotations</span>
+            </div>
+            <div class="industry-exclusive-label">Exclusive Module</div>
+            <div class="industry-exclusive-name">Subcontractor Management</div>
+            <p style="font-size:11px;color:var(--text-tertiary);margin-top:6px;">Per-project costing · Progress billing · Variation orders · Retention tracking</p>
+        </div>
+        <div class="industry-feature-card glass-card" style="opacity:0.6;">
+            <div class="industry-number" style="color:var(--text-tertiary);">06–12 · Roadmap</div>
+            <h3 style="color:var(--text-secondary);">Coming Next</h3>
+            <div class="industry-price" style="color:var(--text-tertiary);">₱299–₱399/mo</div>
+            <p style="font-size:12px;color:var(--text-tertiary);margin-top:8px;line-height:1.6;">
+                Logistics & Transport · Education · Telecommunications · Automotive · Agriculture · E-Commerce · Printing & Media
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Configuration System -->
+<section id="config">
+    <div class="section-label reveal">Enterprise Power</div>
+    <h2 class="section-title reveal">The Configuration System.</h2>
+    <p class="section-subtitle reveal">Suite and Executive users don't adapt to TARA. TARA adapts to them.</p>
+    <div class="config-grid reveal">
+        <div class="config-card glass-card">
+            <div class="config-icon"><i class="fas fa-plus-circle"></i></div>
+            <h4>Custom Fields</h4>
+            <p>Add fields to any form — text, number, date, or dropdown. Your instance reflects your business.</p>
+            <span class="config-available suite">Suite</span> <span class="config-available executive">Executive</span>
+        </div>
+        <div class="config-card glass-card">
+            <div class="config-icon"><i class="fas fa-check-double"></i></div>
+            <h4>Approval Workflows</h4>
+            <p>Conditional routing — "Expenses above ₱5,000 need manager approval." Multi-level chains.</p>
+            <span class="config-available suite">Suite (2-step)</span> <span class="config-available executive">Executive (multi-level)</span>
+        </div>
+        <div class="config-card glass-card">
+            <div class="config-icon"><i class="fas fa-chart-bar"></i></div>
+            <h4>Report Builder</h4>
+            <p>Drag-and-drop designer. Choose columns, filters, grouping. Schedule auto-delivery via email.</p>
+            <span class="config-available suite">Suite</span> <span class="config-available executive">Executive</span>
+        </div>
+        <div class="config-card glass-card">
+            <div class="config-icon"><i class="fas fa-user-gear"></i></div>
+            <h4>Custom Roles</h4>
+            <p>Create "Branch Accountant" with specific module permissions. Not just 3 presets — unlimited roles.</p>
+            <span class="config-available suite">Suite</span> <span class="config-available executive">Executive</span>
+        </div>
+        <div class="config-card glass-card">
+            <div class="config-icon"><i class="fas fa-file-pen"></i></div>
+            <h4>Document Templates</h4>
+            <p>Customize receipts, invoices, purchase orders. Add your logo, fields, and formatting.</p>
+            <span class="config-available suite">Suite</span> <span class="config-available executive">Executive</span>
+        </div>
+        <div class="config-card glass-card">
+            <div class="config-icon"><i class="fas fa-paint-roller"></i></div>
+            <h4>White Label</h4>
+            <p>Remove TARA branding. Use your logo and domain. Deploy to your franchise network under your brand.</p>
+            <span class="config-available executive">Executive Only</span>
+        </div>
+    </div>
+</section>
+
+<!-- Trust -->
+<section>
+    <div class="section-label reveal">Proof</div>
+    <h2 class="section-title reveal">Built to work. Tested to prove it.</h2>
+    <div class="trust-grid reveal">
+        <div class="trust-stat-card glass-card">
+            <div class="trust-number">31</div>
+            <div class="trust-label">modules built and operational</div>
+        </div>
+        <div class="trust-stat-card glass-card">
+            <div class="trust-number accent-num">₱773,400</div>
+            <div class="trust-label">trial balance — debits equal credits</div>
+        </div>
+        <div class="trust-stat-card glass-card">
+            <div class="trust-number">46/46</div>
+            <div class="trust-label">bank items matched — zero unmatched</div>
+        </div>
+        <div class="trust-stat-card glass-card">
+            <div class="trust-number">10</div>
+            <div class="trust-label">data types importable with journal generation</div>
+        </div>
+    </div>
+    <p style="text-align:center;margin-top:28px;font-size:13px;color:var(--text-secondary);" class="reveal">
+        Built over 4 months by Filipino BSIT and BSAIS students.<br>
+        Tested with a 3-month dataset simulating a 2-branch food business.<br>
+        BIR accreditation in progress. Tax calculations follow current BIR rates.
+    </p>
+</section>
+
+<!-- CTA -->
+<div class="cta-section-wrap reveal">
+    <div class="cta-inner glass-card">
+        <h2>Start free for 30 days.</h2>
+        <p>Starter is free forever. All paid plans include a 30-day trial. No credit card required. Upgrade when your business needs more.</p>
+        <a href="/register?plan=starter" class="btn btn-primary" style="font-size:16px;padding:16px 36px;">Start for Free</a>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer>
+    <div class="footer-brand">
+        TARA<span style="color:var(--accent);">.</span>
+        <p>Double-entry accounting software built in the Philippines, for Philippine businesses.</p>
+    </div>
+    <div>
+        <h4>Product</h4>
+        <a href="#growth">Journey</a>
+        <a href="#tiers">Plans</a>
+        <a href="#industries">Industries</a>
+        <a href="#config">Enterprise</a>
+    </div>
+    <div>
+        <h4>Company</h4>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+    </div>
+    <div>
+        <h4>Support</h4>
+        <a href="#">Help Center</a>
+        <a href="#">Email Support</a>
+    </div>
+</footer>
+<div class="footer-bottom">
+    &copy; 2026 TARA. Built in the Philippines.
+</div>
+
+<script>
+(function() {
+    // ── Navbar scroll ──
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 40));
+
+    // ── Reveal ──
+    const revealObs = new IntersectionObserver((entries) => {
+        entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+    // ── Growth Map ──
+    const track = document.getElementById('growthTrack');
+    const fillLine = document.getElementById('growthFill');
+    const stages = track.querySelectorAll('.growth-stage');
+    const totalStages = stages.length;
+
+    function updateGrowthMap() {
+        const trackRect = track.getBoundingClientRect();
+        const trackCenter = trackRect.left + trackRect.width / 2;
+        let closestIndex = 0;
+        let closestDist = Infinity;
+
+        stages.forEach((stage, i) => {
+            const rect = stage.getBoundingClientRect();
+            const stageCenter = rect.left + rect.width / 2;
+            const dist = Math.abs(trackCenter - stageCenter);
+            if (dist < closestDist) { closestDist = dist; closestIndex = i; }
+        });
+
+        stages.forEach((s, i) => s.classList.toggle('active', i === closestIndex));
+        const pct = ((closestIndex) / (totalStages - 1)) * 100;
+        fillLine.style.width = pct + '%';
+    }
+
+    track.addEventListener('scroll', updateGrowthMap, { passive: true });
+    window.addEventListener('resize', updateGrowthMap);
+    updateGrowthMap();
+
+    window.scrollGrowth = function(dir) {
+        const stageWidth = stages[0]?.offsetWidth || 280;
+        track.scrollBy({ left: dir * stageWidth, behavior: 'smooth' });
+    };
+
+    // ── Smooth scroll anchors ──
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = document.querySelector(link.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+})();
+</script>
+
+</body>
+</html>

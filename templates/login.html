@@ -1,270 +1,324 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TARA - Login</title>
+    <title>Sign In — TARA</title>
+    <meta name="description" content="Sign in to your TARA accounting account.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        /* Light mode (default) */
         :root {
-            --bg-page: #f5f7fc;
-            --bg-card: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border: #e2e8f0;
+            --bg-deep: #060608;
+            --bg-surface: #0c0c0f;
+            --bg-elevated: #121216;
+            --bg-glass: rgba(18, 18, 22, 0.6);
+            --text-primary: #f1f1f3;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-visible: rgba(255,255,255,0.1);
             --accent: #10b981;
             --accent-dark: #059669;
-            --input-bg: #f8fafc;
+            --accent-light: #064e3b;
+            --accent-glow: rgba(16, 185, 129, 0.2);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
         }
 
-        /* Dark mode */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-page: #0f172a;
-                --bg-card: #1e293b;
-                --text-primary: #f1f5f9;
-                --text-secondary: #94a3b8;
-                --border: #334155;
-                --input-bg: #0f172a;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-page);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        .login-container {
+        /* Ambient background */
+        .bg-universe {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.10;
+        }
+        .bg-orb-1 { width: 700px; height: 700px; background: #065f46; top: -150px; left: -150px; animation: orbDrift 22s ease-in-out infinite; }
+        .bg-orb-2 { width: 500px; height: 500px; background: #1e3a5f; bottom: -100px; right: -100px; animation: orbDrift 26s ease-in-out infinite reverse; }
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(60px, -40px) scale(1.06); }
+            66% { transform: translate(-40px, 40px) scale(0.95); }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 2;
             width: 100%;
             max-width: 440px;
         }
 
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--text-secondary); }
+
+        /* Card */
         .login-card {
-            background: var(--bg-card);
-            border-radius: 28px;
-            padding: 40px;
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.1);
+            background: var(--bg-glass);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 44px 40px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
         }
 
-        .logo {
-            text-align: center;
-            margin-bottom: 32px;
+        /* Logo */
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
         }
-
-        .logo-icon {
-            width: 52px;
-            height: 52px;
+        .logo-mark {
+            width: 38px; height: 38px;
+            border-radius: 10px;
             background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 14px;
+            font-size: 18px;
+            font-weight: 800;
+            color: #000;
+            flex-shrink: 0;
         }
-
-        .logo-icon span {
-            font-size: 26px;
-            font-weight: 700;
-            color: white;
-        }
-
-        .logo h1 {
-            font-size: 26px;
-            font-weight: 700;
+        .logo-row h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
             color: var(--text-primary);
         }
+        .logo-row h1 span { color: var(--accent); }
 
-        .logo h1 span {
-            color: var(--accent);
-        }
-
-        .logo p {
+        .login-card > p {
             font-size: 13px;
             color: var(--text-secondary);
-            margin-top: 6px;
+            margin-bottom: 32px;
+            line-height: 1.5;
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        /* Error */
+        .error-banner {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+            font-size: 13px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.4;
         }
+        .error-banner i { margin-top: 2px; flex-shrink: 0; }
+
+        /* Form */
+        .form-group { margin-bottom: 18px; }
 
         .form-group label {
             display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
         }
 
-        .input-group {
+        .input-wrap {
             position: relative;
         }
-
-        .input-group i {
+        .input-wrap i {
             position: absolute;
             left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-secondary);
+            color: var(--text-tertiary);
             font-size: 14px;
+            pointer-events: none;
+            transition: color 0.2s;
         }
-
-        .input-group input {
+        .input-wrap input {
             width: 100%;
-            padding: 12px 14px 12px 42px;
-            border: 1px solid var(--border);
-            border-radius: 14px;
+            padding: 13px 14px 13px 42px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
             font-size: 14px;
             font-family: 'Inter', sans-serif;
-            background: var(--input-bg);
             color: var(--text-primary);
             transition: all 0.2s;
-        }
-
-        .input-group input:focus {
             outline: none;
+        }
+        .input-wrap input::placeholder {
+            color: var(--text-tertiary);
+            opacity: 0.5;
+        }
+        .input-wrap input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(255,255,255,0.05);
+        }
+        .input-wrap input:focus + i,
+        .input-wrap input:focus ~ i { color: var(--accent); }
+        /* fix focus sibling */
+        .input-wrap:focus-within i { color: var(--accent); }
+
+        .field-hint {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-top: 5px;
         }
 
-        .input-group input::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.6;
-        }
-
-        .error-message {
-            background: rgba(239, 68, 68, 0.1);
-            color: #ef4444;
-            padding: 12px 16px;
-            border-radius: 14px;
-            margin-bottom: 24px;
-            font-size: 13px;
-            border-left: 3px solid #ef4444;
-        }
-
-        .btn-login {
+        /* Button */
+        .btn-submit {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            color: white;
+            padding: 14px;
+            background: #fff;
+            color: #000;
             border: none;
-            border-radius: 14px;
+            border-radius: var(--radius-sm);
             font-size: 15px;
             font-weight: 600;
+            font-family: 'Inter', sans-serif;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 8px;
+            margin-top: 12px;
+            letter-spacing: -0.2px;
         }
-
-        .btn-login:hover {
+        .btn-submit:hover {
+            background: #e5e5e5;
             transform: translateY(-1px);
-            box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 12px 28px rgba(255,255,255,0.08);
         }
 
-        .register-link {
+        /* Footer */
+        .card-footer {
             text-align: center;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-subtle);
             font-size: 13px;
             color: var(--text-secondary);
         }
-
-        .register-link a {
+        .card-footer a {
             color: var(--accent);
             text-decoration: none;
             font-weight: 600;
+            transition: color 0.2s;
         }
+        .card-footer a:hover { color: #34d399; }
 
-        .demo-hint {
-            margin-top: 20px;
-            padding: 12px;
-            background: var(--input-bg);
-            border-radius: 14px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-align: center;
-            border: 1px solid var(--border);
+        @media (max-width: 480px) {
+            .login-card { padding: 32px 24px; }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="logo">
-                <div class="logo-icon"><span>T</span></div>
-                <h1>TARA<span>.</span></h1>
-                <p>Total Automated & Reliable Accounting</p>
+
+<div class="bg-universe">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+</div>
+
+<div class="login-wrapper">
+    <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back to TARA</a>
+
+    <div class="login-card">
+        <div class="logo-row">
+            <div class="logo-mark">T</div>
+            <h1>TARA<span>.</span></h1>
+        </div>
+        <p>Sign in to your business account.</p>
+
+        {% if error %}
+        <div class="error-banner">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" placeholder="Enter your username" required autofocus>
+                </div>
             </div>
 
-            {% if error %}
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> {{ error }}
-            </div>
-            {% endif %}
-
-            <form method="POST">
-                <div class="form-group">
-                    <label>Username</label>
-                    <div class="input-group">
-                        <i class="fas fa-user"></i>
-                        <input type="text" name="username" placeholder="your_username" required autofocus>
-                    </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="••••••••" required>
                 </div>
-
-                <div class="form-group">
-                    <label>Password</label>
-                    <div class="input-group">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" name="password" placeholder="••••••••" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Business ID</label>
-                    <div class="input-group">
-                        <i class="fas fa-building"></i>
-                        <input type="text" name="business_id" placeholder="TARA-X7K9-2M4P" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Business Password</label>
-                    <div class="input-group">
-                        <i class="fas fa-key"></i>
-                        <input type="password" name="business_password" placeholder="Business password" required>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-login">
-                    <i class="fas fa-arrow-right-to-bracket"></i> Sign In
-                </button>
-            </form>
-
-            <div class="register-link">
-                Don't have an account? <a href="/register">Create your business</a>
             </div>
 
-            <div class="demo-hint">
-                <i class="fas fa-shield-alt"></i> Business credentials provided by your owner
+            <div class="form-group">
+                <label>Business ID</label>
+                <div class="input-wrap">
+                    <i class="fas fa-building"></i>
+                    <input type="text" name="business_id" placeholder="TARA-X7K9-2M4P" required>
+                </div>
+                <div class="field-hint">Provided when your business was created.</div>
             </div>
+
+            <div class="form-group">
+                <label>Business Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-key"></i>
+                    <input type="password" name="business_password" placeholder="Business password" required>
+                </div>
+                <div class="field-hint">Shared by all team members in your business.</div>
+            </div>
+
+            <button type="submit" class="btn-submit">Sign In</button>
+        </form>
+
+        <div class="card-footer">
+            Don't have a business account? <a href="/register">Create one</a>
         </div>
     </div>
+</div>
+
 </body>
 </html>

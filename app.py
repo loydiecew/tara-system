@@ -1,9 +1,10 @@
 import os
-from flask import Flask, session, redirect, url_for, request
+from flask import Flask, session, redirect, url_for, request, render_template
 from flask_mail import Mail
 from models.database import get_db
 from models.helpers import user_has_feature
 from routes.permissions import create_enterprise_role_templates
+
 # ---------- Import all blueprints ----------
 from routes import (
     auth_bp, dashboard_bp, cash_bp, sales_bp, journal_bp,
@@ -42,9 +43,12 @@ for bp in BLUEPRINTS:
 
 # ---------- Context processors ----------
 @app.context_processor
-def inject_plan():
+def inject_user_context():
+    """Inject user, plan, and permission helpers into all templates."""
     def is_active(endpoint_name):
-        return 'active' if request.endpoint and request.endpoint.endswith(endpoint_name) else ''
+        if not request.endpoint:
+            return ''
+        return 'active' if request.endpoint.endswith(endpoint_name) else ''
 
     def get_branches():
         if 'user_id' not in session:
@@ -71,7 +75,7 @@ def inject_plan():
         db = get_db()
         cursor = db.cursor(dictionary=True)
         cursor.execute("""
-            SELECT can_view FROM role_permissions 
+            SELECT can_view FROM role_permissions
             WHERE role_id = %s AND module = %s
         """, (custom_role_id, module_name))
         result = cursor.fetchone()
@@ -79,37 +83,56 @@ def inject_plan():
         db.close()
         return bool(result and result['can_view'])
 
+    ctx = {
+        'is_active': is_active,
+        'get_branches': get_branches,
+        'user_can_view': user_can_view,
+    }
+
     if 'user_id' in session:
-        return {
+        ctx.update({
             'user_plan': session.get('plan', 'basic'),
             'user_plan_name': session.get('plan_name', 'Basic'),
             'has_feature': lambda feature: user_has_feature(session['user_id'], feature),
-            'is_active': is_active,
-            'get_branches': get_branches,
-            'user_can_view': user_can_view
-        }
-    return {
-        'user_plan': 'basic',
-        'user_plan_name': 'Basic',
-        'has_feature': lambda feature: False,
-        'is_active': is_active,
-        'get_branches': lambda: [],
-        'user_can_view': lambda m: True
-    }
+        })
+    else:
+        ctx.update({
+            'user_plan': 'basic',
+            'user_plan_name': 'Basic',
+            'has_feature': lambda feature: False,
+            'get_branches': lambda: [],
+            'user_can_view': lambda m: True,
+        })
 
-# ---------- Routes ----------
+    return ctx
+
+# ---------- Public routes ----------
 @app.route('/')
 def home():
+    """Landing page for visitors. Logged-in users skip to dashboard."""
     if 'user_id' in session:
         return redirect(url_for('dashboard.dashboard'))
-    return redirect(url_for('auth.login'))
+    return render_template('landing.html')
 
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
+
+@app.route('/terms')
+def terms():
+    return render_template('terms.html')
+
+
+# ---------- Plan upgrade shortcuts (kept for compatibility) ----------
 @app.route('/upgrade_to_pro')
 def upgrade_to_pro():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     _update_plan(2, 'pro', 'Pro')
     return redirect(url_for('plan.plan'))
+
 
 @app.route('/upgrade_to_enterprise')
 def upgrade_to_enterprise():
@@ -119,12 +142,14 @@ def upgrade_to_enterprise():
     create_enterprise_role_templates(session.get('business_id'), session['user_id'])
     return redirect(url_for('plan.plan'))
 
+
 @app.route('/switch_to_basic')
 def switch_to_basic():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     _update_plan(1, 'basic', 'Basic')
     return redirect(url_for('plan.plan'))
+
 
 # ---------- Helpers ----------
 def _update_plan(plan_id, plan_key, plan_name):
@@ -136,6 +161,18 @@ def _update_plan(plan_id, plan_key, plan_name):
     db.close()
     session['plan'] = plan_key
     session['plan_name'] = plan_name
+
+
+# ---------- Error handlers ----------
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template('500.html'), 500
+
 
 # ---------- Run ----------
 if __name__ == '__main__':

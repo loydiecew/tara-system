@@ -6,105 +6,82 @@
 
 {% block content %}
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-title">Total Sales (All Time)</div>
-        <div class="stat-value">₱ {{ "{:,.2f}".format(total_sales|default(0)) }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-title">This Month</div>
-        <div class="stat-value">₱ {{ "{:,.2f}".format(monthly_sales|default(0)) }}</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-title">Total Transactions</div>
-        <div class="stat-value">{{ sales|length }}</div>
-    </div>
+    <div class="stat-card"><div class="stat-title">Total Sales (All Time)</div><div class="stat-value">₱ {{ "{:,.2f}".format(total_sales|default(0)) }}</div></div>
+    <div class="stat-card"><div class="stat-title">This Month</div><div class="stat-value">₱ {{ "{:,.2f}".format(monthly_sales|default(0)) }}</div></div>
+    <div class="stat-card"><div class="stat-title">Total Transactions</div><div class="stat-value">{{ sales|length }}</div></div>
 </div>
 
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-cart-plus"></i> Record New Sale</h2>
     </div>
-    <form method="POST" action="/add_sale">
+    <form method="POST" action="/add_sale" id="saleForm">
         <div class="form-grid">
-            <div class="form-group">
-                <label>Sale Method</label>
-                <select id="saleMethod" name="sale_method" onchange="toggleSaleMethod()">
-                    <option value="inventory">From Inventory</option>
-                    <option value="manual">Manual Entry</option>
-                </select>
-            </div>
-            
-            <div id="inventoryFields">
-                <div class="form-group">
-                    <label>Select Product</label>
-                    <select name="product_id">
-                        <option value="">-- Select Product --</option>
-                        {% for p in products %}
-                        <option value="{{ p.id }}">{{ p.name }} (₱{{ p.price }} | Stock: {{ p.quantity }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Quantity</label>
-                    <input type="number" name="quantity" value="1" min="1">
-                </div>
-            </div>
-            
-            <div id="manualFields" style="display: none;">
-                <div class="form-group">
-                    <label>Amount (₱)</label>
-                    <input type="number" name="amount_manual" step="0.01" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <input type="text" name="description_manual" placeholder="Product or service">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Customer Name</label>
-                <input type="text" name="customer_name" id="customerNameInput" placeholder="Walk-in Customer">
-            </div>
-            <div class="form-group">
-                <label>Sale Date</label>
-                <input type="date" name="sale_date" value="{{ today }}">
-            </div>
-            <div class="form-group">
-                <label>Payment Method</label>
-                <select name="payment_method">
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                    <option value="gcash">GCash</option>
-                    <option value="maya">Maya</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Reference Number</label>
-                <input type="text" name="reference_number" placeholder="Order #, receipt #...">
-            </div>
-            <div class="form-group">
-                <label>Served By</label>
-                <input type="text" name="served_by" placeholder="Staff name">
-            </div>
+            <div class="form-group"><label>Customer Name</label><input type="text" name="customer_name" placeholder="Walk-in Customer"></div>
+            <div class="form-group"><label>Sale Date</label><input type="date" name="sale_date" value="{{ today }}"></div>
+            <div class="form-group"><label>Payment Method</label><select name="payment_method"><option value="cash">Cash</option><option value="card">Card</option><option value="gcash">GCash</option><option value="maya">Maya</option><option value="bank_transfer">Bank Transfer</option></select></div>
+            <div class="form-group"><label>Reference Number</label><input type="text" name="reference_number" placeholder="Order #, receipt #..."></div>
+            <div class="form-group"><label>Served By</label><input type="text" name="served_by" placeholder="Staff name"></div>
             {% if user_can_view('projects') %}
-            <div class="form-group">
-                <label>Project</label>
-                <select name="project_id">
-                    <option value="">No project</option>
-                    {% for p in projects %}
-                    <option value="{{ p.id }}">{{ p.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <div class="form-group"><label>Project</label><select name="project_id"><option value="">No project</option>{% for p in projects %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}</select></div>
             {% endif %}
-            <div class="form-group">
-                <label>&nbsp;</label>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    <i class="fas fa-save"></i> Record Sale
-                </button>
+        </div>
+        
+        <!-- Items -->
+        <div style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Line Items</h3>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addSaleItem()"><i class="fas fa-plus"></i> Add Item</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th style="width:80px;">Type</th><th>Product / Item</th><th style="width:70px;">Qty</th><th style="width:110px;">Unit Price</th><th style="width:55px;">Disc%</th><th style="width:100px;">Amount</th><th style="width:40px;"></th></tr></thead>
+                    <tbody id="saleItemsBody">
+                        <tr class="sale-item-row">
+                            <td>
+                                <select name="item_type[]" class="item-type-select" onchange="toggleItemType(this)" style="width:100%;padding:7px 6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                                    <option value="inventory">Inventory</option><option value="manual">Manual</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="item_product_id[]" class="item-product-select" onchange="autoFillPrice(this)" style="width:100%;padding:7px 8px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                                    <option value="">-- Select Product --</option>
+                                    {% for p in products %}
+                                    <option value="{{ p.id }}" data-price="{{ p.price }}" data-name="{{ p.name }}">{{ p.name }} (₱{{ p.price }} | Stock: {{ p.quantity }})</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="item_name[]" class="item-name-input" placeholder="Item name" style="display:none;width:100%;padding:7px 8px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                            </td>
+                            <td><input type="number" name="item_quantity[]" value="1" min="1" required onchange="updateSaleTotal()" style="width:100%;padding:7px 6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;text-align:center;"></td>
+                            <td><input type="number" name="item_price[]" step="0.01" value="0" required onchange="updateSaleTotal()" style="width:100%;padding:7px 6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;"></td>
+                            <td><input type="number" name="item_discount[]" value="0" min="0" max="100" step="1" onchange="updateSaleTotal()" style="width:100%;padding:7px 4px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;text-align:center;"></td>
+                            <td class="sale-item-amount" style="font-weight:600;font-size:12px;text-align:right;white-space:nowrap;">₱0.00</td>
+                            <td style="text-align:center;"><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updateSaleTotal();" style="width:28px;height:28px;"><i class="fas fa-times" style="font-size:10px;"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+        
+        <!-- Totals row: discount inline + grand total -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 20px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light);">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary);">
+                <label style="white-space:nowrap;font-weight:500;">Discount</label>
+                <select name="discount_type" id="discountType" onchange="updateDiscountFields()" style="padding:6px 10px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                    <option value="none">None</option>
+                    <option value="percent">%</option>
+                    <option value="fixed">₱</option>
+                </select>
+                <input type="number" name="discount_value" id="discountValue" value="0" min="0" step="0.01" onchange="updateSaleTotal()" style="width:80px;padding:6px 8px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;display:none;" placeholder="0">
+                <span id="saleDiscount" style="color:#ef4444;font-weight:600;font-size:13px;">₱0.00</span>
+            </div>
+            <div style="font-size: 18px; font-weight: 700;">
+                <span style="color: var(--text-secondary); font-size: 13px; font-weight: 500;">Total</span>
+                <span id="saleGrandTotal" style="color: #10b981; margin-left: 6px;">₱0.00</span>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-top: 16px;"><i class="fas fa-save"></i> Record Sale</button>
     </form>
 </div>
 
@@ -113,73 +90,40 @@
         <h2><i class="fas fa-history"></i> Sales History</h2>
         <div style="display: flex; gap: 8px;">
             {% if user_can_view('import_data') %}
-            <a href="/import-data?tab=sales" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;">
-                <i class="fas fa-upload"></i> Import
-            </a>
+            <a href="/import-data?tab=sales" class="btn btn-secondary btn-sm" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-upload"></i> Import</a>
             {% endif %}
-            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('salesTable', 'TARA_Sales_{{ today }}')" style="padding: 8px 14px; font-size: 12px;">
-                <i class="fas fa-download"></i> Export CSV
-            </button>
+            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('salesTable', 'TARA_Sales_{{ today }}')" style="padding: 8px 14px; font-size: 12px;"><i class="fas fa-download"></i> Export CSV</button>
         </div>
     </div>
-    
     {% if session.role in ['admin', 'owner', 'manager'] %}
     <div class="filter-bar">
-        <div class="filter-group">
-            <label>Date From</label>
-            <input type="date" id="salesBody_date_from" onchange="filterTable('salesBody','salesNoData')">
-        </div>
-        <div class="filter-group">
-            <label>Date To</label>
-            <input type="date" id="salesBody_date_to" onchange="filterTable('salesBody','salesNoData')">
-        </div>
-        <div class="filter-group" style="flex:1; min-width:150px;">
-            <label>Search</label>
-            <input type="text" id="salesBody_search" placeholder="Customer or description..." oninput="filterTable('salesBody','salesNoData')">
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('salesBody')" style="padding:8px 12px; font-size:11px;">
-            <i class="fas fa-times"></i> Clear
-        </button>
+        <div class="filter-group"><label>Date From</label><input type="date" id="salesBody_date_from" onchange="filterTable('salesBody','salesNoData')"></div>
+        <div class="filter-group"><label>Date To</label><input type="date" id="salesBody_date_to" onchange="filterTable('salesBody','salesNoData')"></div>
+        <div class="filter-group" style="flex:1;min-width:150px;"><label>Search</label><input type="text" id="salesBody_search" placeholder="Customer or description..." oninput="filterTable('salesBody','salesNoData')"></div>
+        <button class="btn btn-secondary btn-sm" onclick="clearFilters('salesBody')" style="padding:8px 12px;font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
     {% endif %}
-    
     <div class="table-wrapper">
-        <table class="data-table" id="salesTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Customer</th>
-                    <th>Description</th>
-                    <th>Amount</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
+        <table class="data-table" id="salesTable" style="max-width:100%;">
+            <thead><tr><th>Date</th><th>Customer</th><th>Description</th><th>Amount</th><th>Actions</th></tr></thead>
             <tbody id="salesBody">
                 {% for s in sales %}
                 <tr data-filter='{"date":"{{ s.sale_date }}","search":"{{ s.customer_name|lower }} {{ s.description|lower }}"}'>
                     <td>{{ s.sale_date }}</td>
                     <td>{{ s.customer_name }}</td>
                     <td>{{ s.description or '-' }}</td>
-                    <td style="color: #10b981;">₱ {{ "{:,.2f}".format(s.amount) }}</td>
-                    <td style="white-space: nowrap;">
-                        <a href="/receipt/{{ s.id }}" class="btn-icon" title="View Receipt" target="_blank">
-                            <i class="fas fa-receipt"></i>
-                        </a>
+                    <td style="color:#10b981;">₱ {{ "{:,.2f}".format(s.amount) }}</td>
+                    <td style="white-space:nowrap;">
+                        <a href="/receipt/{{ s.id }}" class="btn-icon" title="View Receipt" target="_blank"><i class="fas fa-receipt"></i></a>
                         {% if user_can_view('ar') and s.customer_name and s.customer_name != 'Walk-in Customer' %}
-                        <a href="/convert_sale_to_invoice/{{ s.id }}" class="btn-icon" title="Create Invoice from Sale" onclick="return confirm('Create an AR invoice from this sale?')">
-                            <i class="fas fa-file-invoice"></i>
-                        </a>
+                        <a href="/convert_sale_to_invoice/{{ s.id }}" class="btn-icon" title="Create Invoice" onclick="return confirm('Create invoice from this sale?')"><i class="fas fa-file-invoice"></i></a>
                         {% endif %}
-                        <a href="/edit_sale/{{ s.id }}" class="btn-icon" title="Edit">
-                            <i class="fas fa-pen"></i>
-                        </a>
-                        <a href="/delete_sale/{{ s.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete this sale?')">
-                            <i class="fas fa-trash-alt"></i>
-                        </a>
+                        <a href="/edit_sale/{{ s.id }}" class="btn-icon" title="Edit"><i class="fas fa-pen"></i></a>
+                        <a href="/delete_sale/{{ s.id }}" class="btn-icon btn-icon-danger" title="Delete" onclick="return confirm('Delete?')"><i class="fas fa-trash-alt"></i></a>
                     </td>
                 </tr>
                 {% else %}
-                <tr id="salesNoData"><td colspan="5" style="text-align: center;">No sales yet</td></tr>
+                <tr id="salesNoData"><td colspan="5" style="text-align:center;padding:32px;color:var(--text-secondary);">No sales recorded yet</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -187,16 +131,84 @@
 </div>
 
 <script>
-    function toggleSaleMethod() {
-        const methodSelect = document.getElementById('saleMethod');
-        const method = methodSelect ? methodSelect.value : 'inventory';
-        const inventoryFields = document.getElementById('inventoryFields');
-        const manualFields = document.getElementById('manualFields');
-        if (inventoryFields) inventoryFields.style.display = method === 'inventory' ? 'block' : 'none';
-        if (manualFields) manualFields.style.display = method === 'manual' ? 'block' : 'none';
+function addSaleItem() {
+    const tbody = document.getElementById('saleItemsBody');
+    const row = document.createElement('tr');
+    row.className = 'sale-item-row';
+    row.innerHTML = `<td>
+        <select name="item_type[]" class="item-type-select" onchange="toggleItemType(this)" style="width:100%;padding:7px 6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+            <option value="inventory">Inventory</option><option value="manual">Manual</option>
+        </select></td>
+        <td>
+            <select name="item_product_id[]" class="item-product-select" onchange="autoFillPrice(this)" style="width:100%;padding:7px 8px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                <option value="">-- Select Product --</option>
+                {% for p in products %}<option value="{{ p.id }}" data-price="{{ p.price }}" data-name="{{ p.name }}">{{ p.name }} (₱{{ p.price }} | Stock: {{ p.quantity }})</option>{% endfor %}
+            </select>
+            <input type="text" name="item_name[]" class="item-name-input" placeholder="Item name" style="display:none;width:100%;padding:7px 8px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+        </td>
+        <td><input type="number" name="item_quantity[]" value="1" min="1" required onchange="updateSaleTotal()" style="width:100%;padding:7px 6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;text-align:center;"></td>
+        <td><input type="number" name="item_price[]" step="0.01" value="0" required onchange="updateSaleTotal()" style="width:100%;padding:7px 6px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;"></td>
+        <td><input type="number" name="item_discount[]" value="0" min="0" max="100" step="1" onchange="updateSaleTotal()" style="width:100%;padding:7px 4px;border:1px solid var(--border-light);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;text-align:center;"></td>
+        <td class="sale-item-amount" style="font-weight:600;font-size:12px;text-align:right;white-space:nowrap;">₱0.00</td>
+        <td style="text-align:center;"><button type="button" class="btn-icon btn-icon-danger" onclick="this.closest('tr').remove();updateSaleTotal();" style="width:28px;height:28px;"><i class="fas fa-times" style="font-size:10px;"></i></button></td>`;
+    tbody.appendChild(row);
+}
+
+function toggleItemType(select) {
+    const row = select.closest('tr');
+    const productSelect = row.querySelector('.item-product-select');
+    const nameInput = row.querySelector('.item-name-input');
+    if (select.value === 'manual') {
+        productSelect.style.display = 'none'; productSelect.removeAttribute('name');
+        nameInput.style.display = 'block'; nameInput.setAttribute('name', 'item_name[]');
+    } else {
+        productSelect.style.display = 'block'; productSelect.setAttribute('name', 'item_product_id[]');
+        nameInput.style.display = 'none'; nameInput.removeAttribute('name');
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        toggleSaleMethod();
+}
+
+function autoFillPrice(select) {
+    const option = select.options[select.selectedIndex];
+    if (option.dataset.price) {
+        const row = select.closest('tr');
+        row.querySelector('input[name="item_price[]"]').value = option.dataset.price;
+        updateSaleTotal();
+    }
+}
+
+function updateDiscountFields() {
+    const type = document.getElementById('discountType').value;
+    const valueInput = document.getElementById('discountValue');
+    valueInput.style.display = (type === 'percent' || type === 'fixed') ? 'inline-block' : 'none';
+    updateSaleTotal();
+}
+
+function updateSaleTotal() {
+    const rows = document.querySelectorAll('.sale-item-row');
+    let subtotal = 0;
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('input[name="item_quantity[]"]').value) || 0;
+        const price = parseFloat(row.querySelector('input[name="item_price[]"]').value) || 0;
+        const discPct = parseFloat(row.querySelector('input[name="item_discount[]"]').value) || 0;
+        const gross = qty * price;
+        const itemDisc = gross * (discPct / 100);
+        const amt = gross - itemDisc;
+        row.querySelector('.sale-item-amount').textContent = '₱' + amt.toLocaleString(undefined, {minimumFractionDigits: 2});
+        subtotal += amt;
     });
+    
+    let totalDiscount = 0;
+    const discType = document.getElementById('discountType').value;
+    const discValue = parseFloat(document.getElementById('discountValue').value) || 0;
+    if (discType === 'percent' && discValue > 0) {
+        totalDiscount = subtotal * (discValue / 100);
+    } else if (discType === 'fixed' && discValue > 0) {
+        totalDiscount = Math.min(discValue, subtotal);
+    }
+    
+    document.getElementById('saleDiscount').textContent = '-₱' + totalDiscount.toLocaleString(undefined, {minimumFractionDigits: 2});
+    const grandTotal = subtotal - totalDiscount;
+    document.getElementById('saleGrandTotal').textContent = '₱' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+}
 </script>
 {% endblock %}
