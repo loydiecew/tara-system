@@ -440,6 +440,10 @@
         });
     }
 
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('show');
+    }
+
     function openImport() {
         document.getElementById('importModal').classList.add('show');
         document.getElementById('importStatus').innerHTML = '';

@@ -22,7 +22,7 @@ def timecards():
     
     cursor.execute("""
         SELECT t.*, p.name as project_name, p.client_name
-        FROM timecards t
+        FROM timecards t WHERE t.deleted_at IS NULL
         LEFT JOIN projects p ON t.project_id = p.id
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s
@@ -31,7 +31,7 @@ def timecards():
     timecards = cursor.fetchall()
     
     cursor.execute("""
-        SELECT p.id, p.name FROM projects p
+        SELECT p.id, p.name FROM projects p WHERE p.deleted_at IS NULL
         JOIN users u ON p.user_id = u.id
         WHERE u.business_id = %s AND p.status = 'active'
     """, (business_id,))
@@ -89,7 +89,7 @@ def delete_timecard(timecard_id):
     
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM timecards WHERE id = %s AND user_id = %s AND status = 'unbilled'",
+    cursor.execute("UPDATE timecards SET deleted_at = NOW() WHERE id = %s AND user_id = %s AND status = 'unbilled' AND deleted_at IS NULL",
                    (timecard_id, session['user_id']))
     db.commit()
     cursor.close()
@@ -117,7 +117,7 @@ def bill_timecards():
     placeholders = ','.join(['%s'] * len(selected))
     cursor.execute(f"""
         SELECT t.*, p.name as project_name, p.client_name
-        FROM timecards t
+        FROM timecards t WHERE t.deleted_at IS NULL
         LEFT JOIN projects p ON t.project_id = p.id
         WHERE t.id IN ({placeholders}) AND t.user_id = %s AND t.status = 'unbilled'
     """, (*selected, session['user_id']))

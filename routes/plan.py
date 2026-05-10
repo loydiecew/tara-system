@@ -103,9 +103,9 @@ def switch_plan(plan_slug):
         return redirect(url_for('auth.login'))
     
     plan_map = {
-        'basic': 1,
-        'pro': 2,
-        'enterprise': 3
+        'starter': 1,
+        'essentials': 2,
+        'professional': 3
     }
     
     plan_id = plan_map.get(plan_slug, 1)

@@ -34,7 +34,7 @@ def recurring():
     business_id = session.get('business_id', session['user_id'])
     
     cursor.execute("""
-        SELECT r.* FROM recurring_transactions r
+        SELECT r.* FROM recurring_transactions r WHERE r.deleted_at IS NULL
         JOIN users u ON r.user_id = u.id
         WHERE u.business_id = %s
         ORDER BY r.next_date ASC
@@ -85,7 +85,7 @@ def delete_recurring(tx_id):
     
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM recurring_transactions WHERE id = %s AND user_id = %s",
+    cursor.execute("UPDATE recurring_transactions SET deleted_at = NOW() WHERE id = %s AND user_id = %s AND deleted_at IS NULL",
                    (tx_id, session['user_id']))
     db.commit()
     cursor.close()
@@ -106,7 +106,7 @@ def process_recurring():
     cursor = db.cursor(dictionary=True)
     
     cursor.execute("""
-        SELECT * FROM recurring_transactions WHERE next_date <= %s AND is_active = 1
+        SELECT * FROM recurring_transactions WHERE deleted_at IS NULL AND next_date <= %s AND is_active = 1
     """, (today,))
     due = cursor.fetchall()
     

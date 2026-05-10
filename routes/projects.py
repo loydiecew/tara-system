@@ -25,7 +25,7 @@ def projects():
             COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.project_id = p.id AND t.type = 'income' AND t.deleted_at IS NULL), 0) as total_income,
             COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.project_id = p.id AND t.type = 'expense' AND t.deleted_at IS NULL), 0) as total_expense,
             COALESCE((SELECT SUM(s.amount) FROM sales s WHERE s.project_id = p.id), 0) as total_sales
-        FROM projects p
+        FROM projects p WHERE p.deleted_at IS NULL
         JOIN users u ON p.user_id = u.id
         WHERE u.business_id = %s
         ORDER BY p.status ASC, p.created_at DESC
@@ -102,7 +102,7 @@ def delete_project(project_id):
     
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM projects WHERE id = %s AND user_id = %s",
+    cursor.execute("UPDATE projects SET deleted_at = NOW() WHERE id = %s AND user_id = %s AND deleted_at IS NULL",
                    (project_id, session['user_id']))
     db.commit()
     cursor.close()

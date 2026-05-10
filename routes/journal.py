@@ -363,7 +363,7 @@ def balance_sheet():
     cursor.execute("""
         SELECT COALESCE(SUM(a.current_value), 0) as total FROM assets a
         JOIN users u ON a.user_id = u.id
-        WHERE u.business_id = %s AND a.status = 'active'
+        WHERE a.deleted_at IS NULL AND u.business_id = %s AND a.status = 'active'
     """, (business_id,))
     fixed_assets = float(cursor.fetchone()['total'] or 0)
     

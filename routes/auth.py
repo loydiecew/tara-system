@@ -39,7 +39,7 @@ def login():
             cursor.execute("SELECT slug, name FROM plans WHERE id = %s", (plan_id,))
             plan = cursor.fetchone()
             
-            session['plan'] = plan['slug'] if plan else 'basic'
+            session['plan'] = plan['slug'] if plan else 'starter'
             session['plan_name'] = plan['name'] if plan else 'Basic'
             session['vat_registered'] = bool(user.get('vat_registered', 0))
 

@@ -30,7 +30,7 @@ def budgets():
         SELECT 
             b.id, b.category, b.month, b.budget_amount,
             COALESCE(SUM(t.amount), 0) as actual_amount
-        FROM budgets b
+        FROM budgets b WHERE b.deleted_at IS NULL
         JOIN users u ON b.user_id = u.id
         LEFT JOIN transactions t ON t.category = b.category 
             AND MONTH(t.transaction_date) = MONTH(b.month)
@@ -103,7 +103,7 @@ def delete_budget(budget_id):
     
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM budgets WHERE id = %s AND user_id = %s", 
+    cursor.execute("UPDATE budgets SET deleted_at = NOW() WHERE id = %s AND user_id = %s AND deleted_at IS NULL", 
                    (budget_id, session['user_id']))
     db.commit()
     cursor.close()
@@ -129,7 +129,7 @@ def budget_comparison():
         SELECT 
             b.category, b.budget_amount,
             COALESCE(SUM(t.amount), 0) as actual_amount
-        FROM budgets b
+        FROM budgets b WHERE b.deleted_at IS NULL
         LEFT JOIN transactions t ON t.category = b.category 
             AND MONTH(t.transaction_date) = MONTH(%s)
             AND YEAR(t.transaction_date) = YEAR(%s)

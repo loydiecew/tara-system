@@ -178,6 +178,114 @@ def admin_restore():
             ORDER BY p.deleted_at DESC
         """, (business_id,))
         add_items(cursor.fetchall(), 'products', 5, 'Product')
+        # Assets
+        cursor.execute("""
+            SELECT a.id, a.name as description, a.cost as amount, a.purchase_date as date, 'asset' as module
+            FROM assets a JOIN users u ON a.user_id = u.id
+            WHERE u.business_id = %%s AND a.deleted_at IS NOT NULL
+            ORDER BY a.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'assets', 6, 'Asset')
+
+        # Budgets
+        cursor.execute("""
+            SELECT b.id, b.category as description, b.budget_amount as amount, b.month as date, 'budget' as module
+            FROM budgets b JOIN users u ON b.user_id = u.id
+            WHERE u.business_id = %%s AND b.deleted_at IS NOT NULL
+            ORDER BY b.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'budgets', 7, 'Budget')
+
+        # Projects
+        cursor.execute("""
+            SELECT p.id, p.name as description, 0 as amount, p.created_at as date, 'project' as module
+            FROM projects p JOIN users u ON p.user_id = u.id
+            WHERE u.business_id = %%s AND p.deleted_at IS NOT NULL
+            ORDER BY p.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'projects', 8, 'Project')
+
+        # Recurring
+        cursor.execute("""
+            SELECT r.id, r.description, r.amount, r.next_date as date, 'recurring' as module
+            FROM recurring_transactions r JOIN users u ON r.user_id = u.id
+            WHERE u.business_id = %%s AND r.deleted_at IS NOT NULL
+            ORDER BY r.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'recurring_transactions', 9, 'Recurring')
+
+        # Timecards
+        cursor.execute("""
+            SELECT t.id, t.description, 0 as amount, t.date, 'timecard' as module
+            FROM timecards t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %%s AND t.deleted_at IS NOT NULL
+            ORDER BY t.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'timecards', 10, 'Timecard')
+
+        # Quotations
+        cursor.execute("""
+            SELECT q.id, q.description, q.total_amount as amount, q.created_at as date, 'quotation' as module
+            FROM quotations q JOIN users u ON q.user_id = u.id
+            WHERE u.business_id = %%s AND q.deleted_at IS NOT NULL
+            ORDER BY q.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'quotations', 11, 'Quotation')
+
+        # Assets
+        cursor.execute("""
+            SELECT a.id, a.name as description, a.cost as amount, a.purchase_date as date, 'asset' as module
+            FROM assets a JOIN users u ON a.user_id = u.id
+            WHERE u.business_id = %%s AND a.deleted_at IS NOT NULL
+            ORDER BY a.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'assets', 6, 'Asset')
+
+        # Budgets
+        cursor.execute("""
+            SELECT b.id, b.category as description, b.budget_amount as amount, b.month as date, 'budget' as module
+            FROM budgets b JOIN users u ON b.user_id = u.id
+            WHERE u.business_id = %%s AND b.deleted_at IS NOT NULL
+            ORDER BY b.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'budgets', 7, 'Budget')
+
+        # Projects
+        cursor.execute("""
+            SELECT p.id, p.name as description, 0 as amount, p.created_at as date, 'project' as module
+            FROM projects p JOIN users u ON p.user_id = u.id
+            WHERE u.business_id = %%s AND p.deleted_at IS NOT NULL
+            ORDER BY p.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'projects', 8, 'Project')
+
+        # Recurring
+        cursor.execute("""
+            SELECT r.id, r.description, r.amount, r.next_date as date, 'recurring' as module
+            FROM recurring_transactions r JOIN users u ON r.user_id = u.id
+            WHERE u.business_id = %%s AND r.deleted_at IS NOT NULL
+            ORDER BY r.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'recurring_transactions', 9, 'Recurring')
+
+        # Timecards
+        cursor.execute("""
+            SELECT t.id, t.description, 0 as amount, t.date, 'timecard' as module
+            FROM timecards t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %%s AND t.deleted_at IS NOT NULL
+            ORDER BY t.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'timecards', 10, 'Timecard')
+
+        # Quotations
+        cursor.execute("""
+            SELECT q.id, q.description, q.total_amount as amount, q.created_at as date, 'quotation' as module
+            FROM quotations q JOIN users u ON q.user_id = u.id
+            WHERE u.business_id = %%s AND q.deleted_at IS NOT NULL
+            ORDER BY q.deleted_at DESC
+        """, (business_id,))
+        add_items(cursor.fetchall(), 'quotations', 11, 'Quotation')
+
     
     cursor.close()
     db.close()
@@ -187,7 +295,19 @@ def admin_restore():
         'sales': len([i for i in deleted_items if i.get('module') == 'sale']),
         'invoices': len([i for i in deleted_items if i.get('module') == 'invoice']),
         'bills': len([i for i in deleted_items if i.get('module') == 'bill']),
-        'products': len([i for i in deleted_items if i.get('module') == 'product'])
+        'products': len([i for i in deleted_items if i.get('module') == 'product']),
+        'assets': len([i for i in deleted_items if i.get('module') == 'asset']),
+        'budgets': len([i for i in deleted_items if i.get('module') == 'budget']),
+        'projects': len([i for i in deleted_items if i.get('module') == 'project']),
+        'recurring': len([i for i in deleted_items if i.get('module') == 'recurring']),
+        'timecards': len([i for i in deleted_items if i.get('module') == 'timecard']),
+        'quotations': len([i for i in deleted_items if i.get('module') == 'quotation']),
+        'assets': len([i for i in deleted_items if i.get('module') == 'asset']),
+        'budgets': len([i for i in deleted_items if i.get('module') == 'budget']),
+        'projects': len([i for i in deleted_items if i.get('module') == 'project']),
+        'recurring': len([i for i in deleted_items if i.get('module') == 'recurring']),
+        'timecards': len([i for i in deleted_items if i.get('module') == 'timecard']),
+        'quotations': len([i for i in deleted_items if i.get('module') == 'quotation'])
     }
     
     return render_template('admin_restore.html',

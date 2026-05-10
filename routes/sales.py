@@ -58,7 +58,7 @@ def sales():
     projects = []
     if session.get('plan') in ['professional', 'suite']:
         cursor.execute("""
-            SELECT p.id, p.name FROM projects p JOIN users u ON p.user_id = u.id
+            SELECT p.id, p.name FROM projects p ON p.deleted_at IS NULL JOIN users u ON p.user_id = u.id
             WHERE u.business_id = %s AND p.status = 'active'
         """, (business_id,))
         projects = cursor.fetchall()

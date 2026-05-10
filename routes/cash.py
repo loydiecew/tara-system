@@ -48,7 +48,7 @@ def cash():
     projects = []
     if session.get('plan') in ['professional', 'suite']:
         cursor.execute("""
-            SELECT p.id, p.name FROM projects p
+            SELECT p.id, p.name FROM projects p WHERE p.deleted_at IS NULL
             JOIN users u ON p.user_id = u.id
             WHERE u.business_id = %s AND p.status = 'active'
         """, (business_id,))

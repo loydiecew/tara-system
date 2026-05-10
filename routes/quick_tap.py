@@ -1,3 +1,4 @@
+from models.audit import log_audit
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
 from models.database import get_db
 from datetime import date, datetime, timedelta
@@ -244,39 +245,6 @@ def index():
                            heatmap_data=get_heatmap_data(user_id),
                            today=date.today())
 
-@quick_tap_bp.route('/quick-tap/note', methods=['POST'])
-def save_note():
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'error': 'Not logged in'}), 401
-
-    user_id = session['user_id']
-    data = request.get_json()
-    note_text = data.get('note', '').strip()
-
-    if not note_text:
-        return jsonify({'success': False, 'error': 'Write something'}), 400
-
-    db = get_db()
-    cursor = db.cursor()
-    today = date.today()
-
-    try:
-        cursor.execute("""
-            INSERT INTO transactions (user_id, amount, type, description, category, transaction_date, branch_id)
-            VALUES (%s, 0, 'note', %s, 'Note', %s, %s)
-        """, (user_id, note_text, today, session.get('branch_id')))
-        db.commit()
-        cursor.close()
-        db.close()
-
-        return jsonify({'success': True, 'message': 'Note saved'})
-
-    except Exception as e:
-        db.rollback()
-        cursor.close()
-        db.close()
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @quick_tap_bp.route('/quick-tap/record', methods=['POST'])
 def record_sale():
     if 'user_id' not in session:
@@ -330,6 +298,8 @@ def record_sale():
                     cursor.execute("INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit) VALUES (%s, 3, 0, %s)", (cogs_jid, cogs_total))
 
         db.commit()
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'sales', 
+                sale_id, new_values={'product': product_name, 'amount': amount, 'date': str(today)})
         cursor.close()
         db.close()
 
@@ -381,6 +351,8 @@ def record_expense():
         cursor.execute("INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit) VALUES (%s, 1, 0, %s)", (journal_id, amount))
 
         db.commit()
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'transactions', 
+                cursor.lastrowid, new_values={'description': description, 'amount': amount, 'type': 'expense'})
         cursor.close()
         db.close()
 
@@ -431,6 +403,8 @@ def record_credit():
                        (user_id, customer_id, amount, desc))
 
         db.commit()
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'invoices', 
+                cursor.lastrowid, new_values={'customer': customer_name, 'amount': amount, 'type': 'credit'})
         cursor.close()
         db.close()
 
@@ -492,7 +466,8 @@ def pay_credit():
         cursor.execute("UPDATE invoices SET status = %s WHERE id = %s", (new_status, invoice_id))
 
         db.commit()
-        
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'payments', 
+                cursor.lastrowid, new_values={'invoice_id': invoice_id, 'amount': amount})
         customer_name = invoice['customer_name']
         summary = get_today_summary(user_id)
         
@@ -559,6 +534,8 @@ def reconciliation():
             cursor.execute("INSERT INTO journal_lines (journal_entry_id, account_id, debit, credit) VALUES (%s, 1, 0, %s)", (jid, shortfall))
 
         db.commit()
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'reconciliation', 
+                0, new_values={'micro_sales': micro_sales, 'date': str(today)})
         cursor.close()
         db.close()
         return redirect(url_for('quick_tap.index'))
@@ -612,8 +589,10 @@ def add_product():
             INSERT INTO products (user_id, name, price, category, quantity)
             VALUES (%s, %s, %s, %s, %s)
         """, (user_id, name, price, category, quantity if quantity is not None else None))
-        db.commit()
         pid = cursor.lastrowid
+        db.commit()
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'products',
+                  pid, new_values={'name': name, 'price': price})
         cursor.close()
         db.close()
 
@@ -661,6 +640,10 @@ def update_product():
             WHERE id = %s AND user_id = %s
         """, (name, price, category, quantity if quantity is not None else None, product_id, user_id))
         db.commit()
+        log_audit(user_id, session.get('username', ''), 'UPDATE', 'products',
+                  product_id, new_values={'name': name, 'price': price})
+        log_audit(user_id, session.get('username', ''), 'UPDATE', 'products', 
+                product_id, new_values={'name': name, 'price': price})
         cursor.close()
         db.close()
 
@@ -687,6 +670,10 @@ def delete_product():
     try:
         cursor.execute("UPDATE products SET deleted_at = NOW() WHERE id = %s AND user_id = %s", (product_id, user_id))
         db.commit()
+        log_audit(user_id, session.get('username', ''), 'DELETE', 'products',
+                  product_id, old_values={'deleted': True})
+        log_audit(user_id, session.get('username', ''), 'DELETE', 'products', 
+                product_id, old_values={'deleted': True})
         cursor.close()
         db.close()
 
@@ -697,7 +684,6 @@ def delete_product():
         cursor.close()
         db.close()
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 @quick_tap_bp.route('/quick-tap/products/import', methods=['POST'])
 def import_products_csv():
@@ -744,6 +730,43 @@ def import_products_csv():
         return jsonify({'success': True, 'message': f'{imported} products imported', 'count': imported})
 
     except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@quick_tap_bp.route('/quick-tap/note', methods=['POST'])
+def save_note():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Not logged in'}), 401
+
+    user_id = session['user_id']
+    data = request.get_json()
+    note_text = data.get('note', '').strip()
+
+    if not note_text:
+        return jsonify({'success': False, 'error': 'Write something'}), 400
+
+    db = get_db()
+    cursor = db.cursor()
+    today = date.today()
+
+    try:
+        cursor.execute("""
+            INSERT INTO transactions (user_id, amount, type, description, category, transaction_date, branch_id)
+            VALUES (%s, 0, 'note', %s, 'Note', %s, %s)
+        """, (user_id, note_text, today, session.get('branch_id')))
+        db.commit()
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'notes',
+                  cursor.lastrowid, new_values={'note': note_text[:100]})
+        log_audit(user_id, session.get('username', ''), 'CREATE', 'notes', 
+                cursor.lastrowid, new_values={'note': note_text[:100]})
+        cursor.close()
+        db.close()
+
+        return jsonify({'success': True, 'message': 'Note saved'})
+
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        db.close()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ────────────────────────────────────────────────────────────

@@ -22,7 +22,7 @@ def assets():
     business_id = session.get('business_id', session['user_id'])
     
     cursor.execute("""
-        SELECT a.* FROM assets a
+        SELECT a.* FROM assets a WHERE a.deleted_at IS NULL
         JOIN users u ON a.user_id = u.id
         WHERE u.business_id = %s
         ORDER BY a.purchase_date DESC
@@ -112,7 +112,7 @@ def delete_asset(asset_id):
     
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM assets WHERE id = %s AND user_id = %s",
+    cursor.execute("UPDATE assets SET deleted_at = NOW() WHERE id = %s AND user_id = %s AND deleted_at IS NULL",
                    (asset_id, session['user_id']))
     db.commit()
     cursor.close()

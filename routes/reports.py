@@ -114,7 +114,7 @@ def export_pdf(report_type):
         inventory = float(cursor.fetchone()['total'] or 0)
         
         cursor.execute("""
-            SELECT COALESCE(SUM(a.current_value), 0) as total FROM assets a
+            SELECT COALESCE(SUM(a.current_value), 0) as total FROM assets a WHERE a.deleted_at IS NULL
             JOIN users u ON a.user_id = u.id WHERE u.business_id = %s AND a.status = 'active'
         """, (business_id,))
         fixed_assets = float(cursor.fetchone()['total'] or 0)

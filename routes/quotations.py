@@ -24,7 +24,7 @@ def quotations():
     
     cursor.execute("""
         SELECT q.*, c.name as customer_name, c.email as customer_email
-        FROM quotations q
+        FROM quotations q WHERE q.deleted_at IS NULL
         LEFT JOIN customers c ON q.customer_id = c.id
         JOIN users u ON q.user_id = u.id
         WHERE u.business_id = %s
@@ -139,7 +139,7 @@ def update_quote_status(quote_id, status):
     db = get_db()
     cursor = db.cursor(dictionary=True)
     
-    cursor.execute("SELECT * FROM quotations WHERE id = %s AND user_id = %s", 
+    cursor.execute("SELECT * FROM quotations WHERE deleted_at IS NULL AND id = %s AND user_id = %s", 
                    (quote_id, session['user_id']))
     quote = cursor.fetchone()
     
@@ -171,7 +171,7 @@ def convert_quote(quote_id):
     
     cursor.execute("""
         SELECT q.*, c.name as customer_name
-        FROM quotations q
+        FROM quotations q WHERE q.deleted_at IS NULL
         LEFT JOIN customers c ON q.customer_id = c.id
         WHERE q.id = %s AND q.user_id = %s AND q.status = 'accepted'
     """, (quote_id, session['user_id']))
@@ -220,7 +220,7 @@ def delete_quote(quote_id):
     
     db = get_db()
     cursor = db.cursor()
-    cursor.execute("DELETE FROM quotations WHERE id = %s AND user_id = %s AND status = 'draft'",
+    cursor.execute("UPDATE quotations SET deleted_at = NOW() WHERE id = %s AND user_id = %s AND status = 'draft' AND deleted_at IS NULL",
                    (quote_id, session['user_id']))
     log_audit(session['user_id'], session['username'], 'DELETE', 'quotations', 
               quote_id, old_values={'quote_number': quote.get('quote_number', '')})
@@ -242,7 +242,7 @@ def view_quote(quote_id):
     
     cursor.execute("""
         SELECT q.*, c.name as customer_name, c.email as customer_email, c.phone as customer_phone
-        FROM quotations q
+        FROM quotations q WHERE q.deleted_at IS NULL
         LEFT JOIN customers c ON q.customer_id = c.id
         WHERE q.id = %s AND q.user_id = %s
     """, (quote_id, session['user_id']))
@@ -282,7 +282,7 @@ def email_quote(quote_id):
     
     cursor.execute("""
         SELECT q.*, c.name as customer_name, c.email as customer_email
-        FROM quotations q
+        FROM quotations q WHERE q.deleted_at IS NULL
         LEFT JOIN customers c ON q.customer_id = c.id
         WHERE q.id = %s AND q.user_id = %s
     """, (quote_id, session['user_id']))
@@ -322,7 +322,7 @@ def quote_action(quote_id, action):
     
     cursor.execute("""
         SELECT q.*, c.name as customer_name
-        FROM quotations q
+        FROM quotations q WHERE q.deleted_at IS NULL
         LEFT JOIN customers c ON q.customer_id = c.id
         WHERE q.id = %s AND q.status = 'sent'
     """, (quote_id,))
