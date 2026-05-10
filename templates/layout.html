@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#060608">
+    <meta name="apple-mobile-web-app-title" content="TARA">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
     <title>TARA - {% block title %}Accounting System{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -15,6 +21,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
+            --bg-deep: #f0f4f8;
             --bg-primary: #f0f4f8;
             --bg-secondary: rgba(255, 255, 255, 0.72);
             --glass-bg: rgba(255, 255, 255, 0.65);
@@ -24,6 +31,8 @@
             --text-secondary: #64748b;
             --text-muted: #94a3b8;
             --border-light: rgba(226, 232, 240, 0.6);
+            --border-subtle: rgba(226, 232, 240, 0.4);
+            --border-visible: rgba(226, 232, 240, 0.8);
             --sidebar-bg: rgba(15, 23, 42, 0.85);
             --accent: #10b981;
             --accent-dark: #059669;
@@ -34,21 +43,44 @@
             --backdrop-blur: blur(18px) saturate(180%);
         }
 
+        body.semi-dark {
+            --bg-deep: #1a1d23;
+            --bg-primary: #1a1d23;
+            --bg-secondary: rgba(40, 44, 52, 0.7);
+            --glass-bg: rgba(40, 44, 52, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-visible: rgba(255, 255, 255, 0.12);
+            --sidebar-bg: rgba(26, 29, 35, 0.9);
+            --card-shadow: 0 4px 24px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.15);
+            --card-shadow-hover: 0 24px 48px rgba(0,0,0,0.4), 0 8px 16px rgba(0,0,0,0.25);
+            --accent-light: rgba(16, 185, 129, 0.15);
+            --accent-glow: rgba(16, 185, 129, 0.28);
+        }
+
         body.dark {
-            --bg-primary: #0a0f1a;
-            --bg-secondary: rgba(30, 41, 59, 0.65);
-            --glass-bg: rgba(30, 41, 59, 0.6);
-            --glass-border: rgba(51, 65, 85, 0.5);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --border-light: rgba(51, 65, 85, 0.5);
-            --sidebar-bg: rgba(2, 6, 23, 0.9);
-            --card-shadow: 0 4px 16px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.1);
-            --card-shadow-hover: 0 20px 40px rgba(0,0,0,0.4), 0 8px 16px rgba(0,0,0,0.2);
-            --accent-light: rgba(16, 185, 129, 0.18);
-            --accent-glow: rgba(16, 185, 129, 0.35);
+            --bg-deep: #060608;
+            --bg-primary: #060608;
+            --bg-secondary: rgba(18, 18, 22, 0.65);
+            --glass-bg: rgba(18, 18, 22, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.06);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --text-primary: #f1f1f3;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-light: rgba(255, 255, 255, 0.06);
+            --border-subtle: rgba(255, 255, 255, 0.04);
+            --border-visible: rgba(255, 255, 255, 0.1);
+            --sidebar-bg: rgba(12, 12, 15, 0.85);
+            --card-shadow: 0 4px 24px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+            --card-shadow-hover: 0 24px 48px rgba(0,0,0,0.5), 0 8px 16px rgba(0,0,0,0.3);
+            --accent-light: rgba(16, 185, 129, 0.15);
+            --accent-glow: rgba(16, 185, 129, 0.3);
         }
 
         body {
@@ -149,7 +181,7 @@
         .logo { display: flex; align-items: center; gap: 10px; overflow: hidden; }
         .logo-icon {
             width: 38px; height: 38px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             font-size: 18px; font-weight: 800; color: white;
@@ -224,7 +256,7 @@
         .user-info { display: flex; align-items: center; gap: 12px; }
         .user-avatar-sm {
             width: 38px; height: 38px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             color: white; font-weight: 700; flex-shrink: 0;
@@ -411,7 +443,7 @@
         }
         .btn:active::after { width: 300px; height: 300px; }
         .btn-primary {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
             color: white;
             box-shadow: 0 4px 16px rgba(16,185,129,0.3);
         }
@@ -710,17 +742,83 @@
             color: white !important;
             border-color: var(--accent) !important;
             box-shadow: 0 4px 12px var(--accent-glow);
-        }       
+        }     
+        
+        /* ========== PALETTE SYSTEM ========== */
+        body[data-palette="emerald"] {
+            --accent: #10b981;
+            --accent-dark: #059669;
+            --accent-light: rgba(16, 185, 129, 0.15);
+            --accent-glow: rgba(16, 185, 129, 0.3);
+        }
+        body[data-palette="sky"] {
+            --accent: #3b82f6;
+            --accent-dark: #2563eb;
+            --accent-light: rgba(59, 130, 246, 0.15);
+            --accent-glow: rgba(59, 130, 246, 0.3);
+        }
+        body[data-palette="violet"] {
+            --accent: #8b5cf6;
+            --accent-dark: #7c3aed;
+            --accent-light: rgba(139, 92, 246, 0.15);
+            --accent-glow: rgba(139, 92, 246, 0.3);
+        }
+        body[data-palette="rose"] {
+            --accent: #f43f5e;
+            --accent-dark: #e11d48;
+            --accent-light: rgba(244, 63, 94, 0.15);
+            --accent-glow: rgba(244, 63, 94, 0.3);
+        }
+        body[data-palette="amber"] {
+            --accent: #f59e0b;
+            --accent-dark: #d97706;
+            --accent-light: rgba(245, 158, 11, 0.15);
+            --accent-glow: rgba(245, 158, 11, 0.3);
+        }
+
+        /* Palette picker dots */
+        .palette-picker {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .palette-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .palette-dot:hover {
+            transform: scale(1.2);
+        }
+        .palette-dot.active {
+            border-color: #fff;
+            box-shadow: 0 0 10px currentColor;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Ambient Background -->
+    <div class="bg-universe" style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+        <div style="position:absolute;width:700px;height:700px;border-radius:50%;background:#065f46;filter:blur(140px);opacity:0.08;top:-150px;left:-150px;animation:orbDrift 25s ease-in-out infinite;"></div>
+        <div style="position:absolute;width:500px;height:500px;border-radius:50%;background:#1e3a5f;filter:blur(140px);opacity:0.06;bottom:-100px;right:-100px;animation:orbDrift 28s ease-in-out infinite reverse;"></div>
+    </div>
+    <style>
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(60px, -40px) scale(1.06); }
+            50% { transform: translate(-30px, 40px) scale(0.95); }
+            75% { transform: translate(-50px, -20px) scale(1.04); }
+        }
+    </style>
     <!-- Floating Particles -->
     <div class="particles-container" id="particlesContainer"></div>
 
     <div class="app">
-        <aside class="sidebar {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}enterprise-hide{% endif %}">
-        <!-- Fixed Header -->
+        <aside class="sidebar {% if session.plan == 'starter' %}enterprise-hide{% endif %} {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}enterprise-hide{% endif %}">        
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">T</div>
@@ -952,7 +1050,7 @@
                         <i class="fas fa-home"></i>
                     </a>
                     {% else %}
-                    <a href="/profile" style="width: 38px; height: 38px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; text-decoration: none; flex-shrink: 0; box-shadow: 0 4px 12px var(--accent-glow); transition: all 0.3s ease;"
+                    <a href="/profile" style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--accent), var(--accent-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; text-decoration: none; flex-shrink: 0; box-shadow: 0 4px 12px var(--accent-glow); transition: all 0.3s ease;"
                        onmouseover="this.style.transform='scale(1.1)';"
                        onmouseout="this.style.transform='scale(1)';"
                        title="Profile">
@@ -1063,9 +1161,32 @@
             });
         }
 
-        // ========== DARK MODE ==========
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        if (savedTheme === 'dark') document.body.classList.add('dark');
+        // ========== THEME MODE ==========
+        var savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.classList.remove('dark', 'semi-dark');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark');
+        } else if (savedTheme === 'semi-dark') {
+            document.body.classList.add('semi-dark');
+        }
+
+        // ========== PALETTE SYSTEM ==========
+        const savedPalette = localStorage.getItem('palette') || 'emerald';
+        document.body.setAttribute('data-palette', savedPalette);
+        updatePaletteDots();
+
+        function setPalette(name) {
+            document.body.setAttribute('data-palette', name);
+            localStorage.setItem('palette', name);
+            updatePaletteDots();
+        }
+
+        function updatePaletteDots() {
+            const active = document.body.getAttribute('data-palette');
+            document.querySelectorAll('.palette-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.dataset.palette === active);
+            });
+        }
 
         // ========== ENTERPRISE MODE ==========
         {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}
@@ -1394,6 +1515,46 @@
                 document.getElementById('onboardingModal').style.display = 'flex';
             }
         })();
+    </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/sw.js')
+            .then(function(reg) { console.log('SW registered'); })
+            .catch(function(err) { console.log('SW failed:', err); });
+    }
+    </script>
+
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:2000;background:var(--glass-bg);backdrop-filter:var(--backdrop-blur);border:1px solid var(--glass-border);border-radius:16px;padding:16px 20px;text-align:center;box-shadow:var(--card-shadow-hover);max-width:320px;width:90%;">
+        <p style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text-primary);">Install TARA on your phone</p>
+        <button onclick="installPWA()" class="btn btn-primary" style="font-size:12px;padding:8px 20px;">Install</button>
+        <button onclick="dismissPWA()" style="background:none;border:none;color:var(--text-secondary);font-size:11px;margin-left:10px;cursor:pointer;">Dismiss</button>
+    </div>
+
+    <script>
+    var deferredPrompt;
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (!localStorage.getItem('pwaDismissed')) {
+            document.getElementById('pwaInstallBanner').style.display = 'block';
+        }
+    });
+
+    function installPWA() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function(result) {
+                document.getElementById('pwaInstallBanner').style.display = 'none';
+                deferredPrompt = null;
+            });
+        }
+    }
+
+    function dismissPWA() {
+        document.getElementById('pwaInstallBanner').style.display = 'none';
+        localStorage.setItem('pwaDismissed', 'true');
+    }
     </script>
 </body>
 </html>

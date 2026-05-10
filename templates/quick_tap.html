@@ -3,259 +3,734 @@
 
 {% block extra_css %}
 <style>
-    .qt-wrap { max-width: 520px; margin: 0 auto; }
+    .st-shell {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 140px);
+        max-width: 100%;
+        margin: 0;
+        padding: 0 4px;
+    }
 
-    /* Streak bar */
-    .streak-bar {
-        display: flex; align-items: center; gap: 10px;
-        padding: 14px 18px; margin-bottom: 14px;
-        background: var(--glass-bg); backdrop-filter: var(--backdrop-blur);
-        border: 1px solid var(--glass-border); border-radius: 18px;
+    /* ── Top strip ── */
+    .st-top-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+        flex-shrink: 0;
     }
-    .streak-fire { font-size: 24px; animation: firePulse 1.5s ease-in-out infinite; }
-    @keyframes firePulse {
-        0%,100%{transform:scale(1)} 50%{transform:scale(1.2)}
+    .st-streak {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        font-size: 12px;
+        color: var(--text-secondary);
     }
-    .streak-count { font-size: 20px; font-weight: 800; color: var(--accent); }
-    .streak-label { font-size: 12px; color: var(--text-secondary); }
+    .st-streak .dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 6px var(--accent-glow);
+        animation: dotPulse 2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+        0%, 100% { box-shadow: 0 0 6px var(--accent-glow); }
+        50% { box-shadow: 0 0 16px var(--accent-glow); }
+    }
+    .st-streak strong { color: var(--accent); font-weight: 700; }
 
-    /* Today vs Yesterday */
-    .compare-row {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+    /* ── Main two-column ── */
+    .st-main {
+        display: flex;
+        gap: 16px;
+        flex: 1;
+        min-height: 0;
     }
-    .compare-card {
-        padding: 14px; text-align: center;
-        background: var(--glass-bg); backdrop-filter: var(--backdrop-blur);
-        border: 1px solid var(--glass-border); border-radius: 16px;
-    }
-    .compare-card .lbl {
-        font-size: 10px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 1px; color: var(--text-tertiary); margin-bottom: 2px;
-    }
-    .compare-card .val { font-size: 22px; font-weight: 800; }
-    .compare-card .chg { font-size: 11px; font-weight: 600; margin-top: 2px; }
-    .chg-up { color: var(--accent); } .chg-down { color: #ef4444; }
 
-    /* Profit pill */
-    .profit-pill {
-        text-align: center; margin-bottom: 16px;
-        padding: 12px; border-radius: 100px;
-        background: var(--glass-bg); border: 1px solid var(--glass-border);
+    /* ── LEFT COLUMN ── */
+    .st-left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
     }
-    .profit-pill .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); }
-    .profit-pill .val { font-size: 28px; font-weight: 900; }
 
-    /* Button grid */
-    .btn-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
+    /* ── Three number cards ── */
+    .st-numbers {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        flex-shrink: 0;
     }
-    .qt-btn {
-        padding: 14px 8px; background: var(--glass-bg);
-        backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border);
-        border-radius: 14px; cursor: pointer; text-align: center;
-        transition: all 0.15s; color: var(--text-primary);
+    .st-num-card {
+        padding: 12px 10px;
+        text-align: center;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        transition: all 0.3s;
     }
-    .qt-btn:active { transform: scale(0.93); }
-    .qt-btn .nm { font-size: 12px; font-weight: 600; line-height: 1.2; margin-bottom: 3px; }
-    .qt-btn .pr { font-size: 17px; font-weight: 800; color: var(--accent); }
-    .qt-btn.add-new {
-        border-style: dashed; border-color: var(--border-visible);
-        color: var(--text-tertiary); display: flex;
-        flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    .st-num-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(16,185,129,0.3);
     }
-    .qt-btn.add-new i { font-size: 18px; }
+    .st-num-card .lbl {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+        margin-bottom: 2px;
+    }
+    .st-num-card .val {
+        font-size: 20px;
+        font-weight: 800;
+    }
 
-    /* Quick actions row */
-    .quick-actions {
-        display: flex; gap: 8px; margin-bottom: 14px;
+    /* ── Button Grid Wrapper ── */
+    .st-grid-wrap {
+        flex: 1;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
     }
-    .qa-btn {
-        flex: 1; padding: 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
-        border: 1px solid var(--glass-border); cursor: pointer; text-align: center;
-        background: var(--glass-bg); color: var(--text-secondary);
-        transition: all 0.15s;
+    .st-grid-wrap:hover {
+        border-color: rgba(16,185,129,0.2);
     }
-    .qa-btn:active { transform: scale(0.95); }
-    .qa-btn.utang { color: #f59e0b; border-color: rgba(245,158,11,0.3); }
+    .st-grid-scroll {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 4px;
+    }
+    .st-grid-scroll::-webkit-scrollbar { width: 4px; }
+    .st-grid-scroll::-webkit-scrollbar-track { background: transparent; }
+    .st-grid-scroll::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
 
-    /* Activity feed */
-    .activity-feed { margin-bottom: 14px; }
-    .act-item {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 10px 0; border-bottom: 1px solid var(--border-subtle); font-size: 13px;
+    .st-cat-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: var(--text-tertiary);
+        padding: 8px 4px 6px;
     }
-    .act-badge {
-        font-size: 9px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.8px; padding: 2px 8px; border-radius: 100px;
-    }
-    .act-badge.sale { background: rgba(16,185,129,0.15); color: var(--accent); }
-    .act-badge.expense { background: rgba(239,68,68,0.1); color: #ef4444; }
-    .act-badge.utang { background: rgba(245,158,11,0.12); color: #f59e0b; }
+    .st-cat-label:first-child { padding-top: 0; }
 
-    /* Recon button */
-    .recon-btn {
-        width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
-        border-radius: 14px; border: none; cursor: pointer;
-        background: var(--accent); color: #fff;
+    .st-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .st-btn {
+        padding: 16px 10px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        color: var(--text-primary);
+        user-select: none;
+        position: relative;
+        overflow: hidden;
+    }
+    .st-btn::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--accent);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .st-btn:active { transform: scale(0.94); }
+    .st-btn:active::after { opacity: 0.08; }
+    .st-btn:hover {
+        border-color: rgba(16,185,129,0.3);
+        background: rgba(16,185,129,0.04);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .st-btn .nm {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.2;
+        margin-bottom: 4px;
+        position: relative;
+        z-index: 1;
+    }
+    .st-btn .pr {
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--accent);
+        position: relative;
+        z-index: 1;
+    }
+    .st-btn .stk {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        margin-top: 3px;
+        position: relative;
+        z-index: 1;
+    }
+    .st-btn .stk.low { color: #f59e0b; font-weight: 600; }
+    .st-btn.st-add {
+        border-style: dashed;
+        border-color: var(--border-visible);
+        color: var(--text-tertiary);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+    .st-btn.st-add:hover { color: var(--accent); border-color: var(--accent); }
+    .st-btn.st-add i { font-size: 18px; position: relative; z-index: 1; }
+
+    /* ── Action Bar ── */
+    .st-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    .st-act {
+        flex: 1;
+        padding: 11px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        border: 1px solid var(--glass-border);
+        cursor: pointer;
+        text-align: center;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    .st-act:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-light);
+        transform: translateY(-1px);
+    }
+    .st-act:active { transform: scale(0.96); }
+    .st-act.credit-act { color: #f59e0b; border-color: rgba(245,158,11,0.25); }
+    .st-act.credit-act:hover { border-color: #f59e0b; background: rgba(245,158,11,0.08); }
+
+    /* ── RIGHT COLUMN ── */
+    .st-right {
+        width: 340px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* ── Calendar card ── */
+    .st-cal-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(24px);
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        padding: 14px 16px;
+        flex-shrink: 0;
+    }
+    .st-cal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .st-cal-header h3 {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+    }
+    .st-cal-header .st-cal-nav {
+        display: flex;
+        gap: 4px;
+    }
+    .st-cal-header .st-cal-nav button {
+        background: transparent;
+        border: 1px solid var(--border-subtle);
+        color: var(--text-tertiary);
+        cursor: pointer;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 10px;
         transition: all 0.2s;
     }
-    .recon-btn:active { transform: scale(0.97); }
-
-    /* Toast */
-    .qt-toast {
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-        z-index: 2000; padding: 10px 22px; border-radius: 100px;
-        font-weight: 600; font-size: 14px; pointer-events: none;
-        animation: slideDown 0.25s ease, fadeOut 0.3s ease 1.5s forwards;
+    .st-cal-header .st-cal-nav button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
     }
-    .qt-toast.ok { background: var(--accent); color: #fff; }
-    .qt-toast.err { background: #ef4444; color: #fff; }
-    @keyframes slideDown {
+    .st-cal-month-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .st-cal-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .st-cal-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+        text-align: center;
+        font-size: 8px;
+        color: var(--text-tertiary);
+        font-weight: 600;
+    }
+    .st-cal-week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+    }
+    .st-cal-cell {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    .st-cal-cell:hover {
+        transform: scale(1.4);
+        z-index: 2;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .st-cal-cell.empty {
+        background: transparent;
+        cursor: default;
+    }
+    .st-cal-cell.empty:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* ── Activity card (collapsible) ── */
+    .st-activity-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(24px);
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        overflow: hidden;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .st-activity-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-subtle);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.2s;
+    }
+    .st-activity-header:hover {
+        background: rgba(255,255,255,0.02);
+    }
+    .st-activity-header h3 {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+    }
+    .st-activity-header .st-activity-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .st-activity-header .count {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        background: rgba(255,255,255,0.03);
+        padding: 3px 10px;
+        border-radius: 100px;
+    }
+    .st-activity-header .st-chevron {
+        color: var(--text-tertiary);
+        font-size: 10px;
+        transition: transform 0.3s;
+    }
+    .st-activity-card.collapsed .st-activity-header .st-chevron {
+        transform: rotate(-90deg);
+    }
+    .st-feed {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 14px;
+        transition: max-height 0.3s;
+    }
+    .st-activity-card.collapsed .st-feed {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        overflow: hidden;
+    }
+    .st-feed::-webkit-scrollbar { width: 3px; }
+    .st-feed::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+    .st-feed-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-bottom: 1px solid var(--border-subtle);
+        font-size: 12px;
+        animation: fadeIn 0.3s ease forwards;
+        opacity: 0;
+    }
+    .st-feed-item:nth-child(1) { animation-delay: 0.02s; }
+    .st-feed-item:nth-child(2) { animation-delay: 0.04s; }
+    .st-feed-item:nth-child(3) { animation-delay: 0.06s; }
+    .st-feed-item:nth-child(4) { animation-delay: 0.08s; }
+    .st-feed-item:nth-child(5) { animation-delay: 0.10s; }
+    .st-feed-item:nth-child(6) { animation-delay: 0.12s; }
+    .st-feed-item:nth-child(7) { animation-delay: 0.14s; }
+    .st-feed-item:nth-child(8) { animation-delay: 0.16s; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateX(-8px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .st-feed-badge {
+        font-size: 7px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 2px 6px;
+        border-radius: 100px;
+    }
+    .st-feed-badge.sale { background: rgba(16,185,129,0.12); color: var(--accent); }
+    .st-feed-badge.expense { background: rgba(239,68,68,0.08); color: #ef4444; }
+    .st-feed-badge.credit { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .st-feed-empty {
+        text-align: center;
+        padding: 24px 16px;
+        color: var(--text-tertiary);
+        font-size: 12px;
+    }
+
+    /* ── Fixed Bottom Tabs ── */
+    .st-tabs {
+        display: flex;
+        gap: 0;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        overflow: hidden;
+        flex-shrink: 0;
+        margin-top: 10px;
+    }
+    .st-tab {
+        flex: 1;
+        padding: 13px 8px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        transition: all 0.25s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+    .st-tab i { font-size: 15px; transition: transform 0.2s; }
+    .st-tab:hover { background: var(--accent-light); color: var(--accent); }
+    .st-tab:hover i { transform: translateY(-2px); }
+    .st-tab.active { background: var(--accent); color: #fff; }
+
+    /* ── Modal ── */
+    .st-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+    }
+    .st-modal.show { display: flex; }
+    .st-modal-box {
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-visible);
+        border-radius: 20px;
+        padding: 24px;
+        width: 90%;
+        max-width: 380px;
+        animation: modalIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes modalIn {
+        from { opacity: 0; transform: scale(0.92) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .st-modal-box h3 { margin-bottom: 14px; font-size: 17px; font-weight: 700; }
+    .st-modal-box input {
+        width: 100%;
+        padding: 11px 14px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border-visible);
+        background: rgba(255,255,255,0.03);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+    }
+    .st-modal-box input:focus { outline: none; border-color: var(--accent); }
+    .st-modal-box .btn-row { display: flex; gap: 8px; margin-top: 8px; }
+    .st-modal-box .btn-row button { flex: 1; }
+    .st-feed-badge.note { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+
+    /* ── Toast ── */
+    .st-toast {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000;
+        padding: 10px 24px;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 13px;
+        pointer-events: none;
+        animation: toastIn 0.25s cubic-bezier(0.4, 0, 0.2, 1), toastOut 0.3s ease 1.2s forwards;
+        backdrop-filter: blur(12px);
+    }
+    .st-toast.ok { background: rgba(16,185,129,0.9); color: #fff; }
+    .st-toast.err { background: rgba(239,68,68,0.9); color: #fff; }
+    @keyframes toastIn {
         from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
         to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
-    @keyframes fadeOut {
+    @keyframes toastOut {
         from { opacity: 1; } to { opacity: 0; }
     }
 
-    /* Modal */
-    .qt-modal {
-        display: none; position: fixed; inset: 0; z-index: 1000;
-        background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
-        justify-content: center; align-items: center;
+    @media (max-width: 900px) {
+        .st-main { flex-direction: column; }
+        .st-right { width: 100%; }
+        .st-activity-card { max-height: 240px; }
+        .st-grid { grid-template-columns: repeat(3, 1fr); }
     }
-    .qt-modal.show { display: flex; }
-    .qt-modal-box {
-        background: var(--bg-elevated); border: 1px solid var(--border-visible);
-        border-radius: 20px; padding: 24px; width: 90%; max-width: 380px;
-    }
-    .qt-modal-box h3 { margin-bottom: 16px; font-size: 18px; }
-    .qt-modal-box input {
-        width: 100%; padding: 12px; border-radius: 12px; margin-bottom: 10px;
-        border: 1px solid var(--border-visible); background: rgba(255,255,255,0.03);
-        color: var(--text-primary); font-size: 14px; font-family: 'Inter', sans-serif;
-    }
-    .qt-modal-box .btn-row { display: flex; gap: 8px; margin-top: 8px; }
-    .qt-modal-box .btn-row button { flex: 1; }
-
-    @media (max-width: 400px) {
-        .btn-grid { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 500px) {
+        .st-grid { grid-template-columns: repeat(2, 1fr); }
+        .st-tab span { display: none; }
+        .st-tab { padding: 10px 4px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="qt-wrap">
+<div class="st-shell">
 
-    <!-- Streak -->
-    <div class="streak-bar">
-        <span class="streak-fire">🔥</span>
-        <span class="streak-count">{{ streak }}</span>
-        <span class="streak-label">day{{ 's' if streak != 1 else '' }} straight</span>
-        {% if best_day %}
-        <span style="margin-left:auto;font-size:11px;color:var(--text-tertiary);">
-            Best: ₱{{ "%.0f"|format(best_day.total) }} ({{ best_day.sale_date.strftime('%b %d') }})
-        </span>
-        {% endif %}
-    </div>
-
-    <!-- Today vs Yesterday -->
-    <div class="compare-row">
-        <div class="compare-card">
-            <div class="lbl">Today</div>
-            <div class="val">₱{{ "%.0f"|format(comparison.today) }}</div>
-        </div>
-        <div class="compare-card">
-            <div class="lbl">Yesterday</div>
-            <div class="val">₱{{ "%.0f"|format(comparison.yesterday) }}</div>
-            {% if comparison.yesterday > 0 or comparison.today > 0 %}
-            <div class="chg {% if comparison.is_up %}chg-up{% else %}chg-down{% endif %}">
-                {% if comparison.is_up %}+{% endif %}{{ comparison.pct_change }}%
-            </div>
+    <!-- ── Top Strip ── -->
+    <div class="st-top-strip">
+        <div class="st-streak">
+            <span class="dot"></span>
+            <span><strong>{{ streak }}</strong> day{{ 's' if streak != 1 else '' }} straight</span>
+            {% if best_day %}
+            <span style="margin-left:8px;font-size:11px;color:var(--text-tertiary);">
+                Best: <strong style="color:var(--text-primary);">{{ "%.0f"|format(best_day.total) if best_day.total else '0' }}</strong>
+                ({{ best_day.sale_date.strftime('%b %d') }})
+            </span>
             {% endif %}
         </div>
     </div>
 
-    <!-- Profit -->
-    <div class="profit-pill">
-        <div class="lbl">Today's Profit</div>
-        <div class="val" style="color: {% if summary.profit >= 0 %}var(--accent){% else %}#ef4444{% endif %};">
-            ₱{{ "%.0f"|format(summary.profit) }}
-        </div>
-    </div>
+    <!-- ── Two Column Main ── -->
+    <div class="st-main">
 
-    <!-- Quick Tap Buttons -->
-    <div class="btn-grid" id="btnGrid">
-        {% for p in products %}
-        <button class="qt-btn" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.price }}" onclick="tap(this)">
-            <div class="nm">{{ p.name }}</div>
-            <div class="pr">₱{{ "%.0f"|format(p.price) }}</div>
-        </button>
-        {% endfor %}
-        <button class="qt-btn add-new" onclick="openCustomSale()">
-            <i class="fas fa-plus"></i><span style="font-size:11px;">Other</span>
-        </button>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <button class="qa-btn" onclick="openExpense()">
-            <i class="fas fa-minus-circle"></i> Expense
-        </button>
-        <button class="qa-btn utang" onclick="openUtang()">
-            <i class="fas fa-hand-holding-usd"></i> Utang
-        </button>
-    </div>
-
-    <!-- Activity Feed -->
-    {% if activity %}
-    <div class="card" style="margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:14px;font-weight:700;">Today</h3>
-            <span style="font-size:11px;color:var(--text-secondary);">{{ activity|length }} entries</span>
-        </div>
-        <div class="activity-feed">
-            {% for a in activity %}
-            <div class="act-item">
-                <span style="flex:1;">{{ a.name|truncate(30) }}</span>
-                <span class="act-badge {{ a.type }}">{{ a.type }}</span>
-                <span style="font-weight:600;margin-left:8px;{% if a.type == 'expense' %}color:#ef4444;{% endif %}">
-                    {% if a.type == 'expense' %}-{% endif %}₱{{ "%.0f"|format(a.amount) }}
-                </span>
+        <!-- LEFT: Products + Actions -->
+        <div class="st-left">
+            <div class="st-numbers">
+                <div class="st-num-card">
+                    <div class="lbl">Sales</div>
+                    <div class="val" style="color: var(--accent);">{{ "%.0f"|format(summary.sales_total) }}</div>
+                </div>
+                <div class="st-num-card">
+                    <div class="lbl">Expenses</div>
+                    <div class="val" style="color: #ef4444;">{{ "%.0f"|format(summary.expense_total) }}</div>
+                </div>
+                <div class="st-num-card">
+                    <div class="lbl">Profit</div>
+                    <div class="val" style="color: {% if summary.profit >= 0 %}var(--accent){% else %}#ef4444{% endif %};">
+                        {{ "%.0f"|format(summary.profit) }}
+                    </div>
+                </div>
             </div>
-            {% endfor %}
+
+            <div class="st-grid-wrap">
+                <div class="st-grid-scroll">
+                    {% set categories = {} %}
+                    {% for p in products %}
+                        {% set cat = p.category if p.category else 'Others' %}
+                        {% if cat not in categories %}
+                            {% set _ = categories.update({cat: []}) %}
+                        {% endif %}
+                        {% set _ = categories[cat].append(p) %}
+                    {% endfor %}
+
+                    {% for cat, items in categories.items() %}
+                    <div class="st-cat-label">{{ cat }}</div>
+                    <div class="st-grid">
+                        {% for p in items %}
+                        <button class="st-btn" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.price }}" onclick="tap(this)">
+                            <div class="nm">{{ p.name }}</div>
+                            <div class="pr">{{ "%.0f"|format(p.price) }}</div>
+                            {% if p.quantity is not none and p.quantity <= 5 %}
+                            <div class="stk low">{{ p.quantity }} left</div>
+                            {% elif p.quantity is not none %}
+                            <div class="stk">{{ p.quantity }} left</div>
+                            {% endif %}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    {% if not products %}
+                    <div style="text-align:center;padding:32px;color:var(--text-tertiary);">
+                        <i class="fas fa-box" style="font-size:28px;margin-bottom:8px;display:block;opacity:0.4;"></i>
+                        No products yet. Add items in the Products tab.
+                    </div>
+                    {% endif %}
+
+                    <!-- Utility buttons at bottom of grid -->
+                    <div class="st-grid" style="margin-top:4px;">
+                        <button class="st-btn st-add" onclick="openAddFromQT()">
+                            <i class="fas fa-plus"></i>
+                            <span style="font-size:10px;position:relative;z-index:1;">Add Item</span>
+                        </button>
+                        <button class="st-btn st-add" onclick="openCustomSale()">
+                            <i class="fas fa-ellipsis"></i>
+                            <span style="font-size:10px;position:relative;z-index:1;">Other Amount</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="st-actions">
+                <button class="st-act" onclick="openExpense()">
+                    <i class="fas fa-arrow-down"></i> Expense
+                </button>
+                <button class="st-act credit-act" onclick="openCredit()">
+                    <i class="fas fa-hand-holding-usd"></i> Credit
+                </button>
+                <button class="st-act" onclick="openNote()" style="color:#8b5cf6;border-color:rgba(139,92,246,0.2);">
+                    <i class="fas fa-pen"></i> Note
+                </button>
+                <a href="/quick-tap/reconciliation" class="st-act">
+                    <i class="fas fa-cash-register"></i> End of Day
+                </a>
+            </div>
         </div>
-    </div>
-    {% else %}
-    <div class="card empty-state" style="padding:32px;">
-        <i class="fas fa-hand-pointer" style="font-size:36px;"></i>
-        <h3 style="font-size:14px;margin-top:8px;">Tap a product to start</h3>
-        <p style="font-size:12px;">Record your first sale of the day</p>
-    </div>
-    {% endif %}
 
-    <!-- End of Day -->
-    <a href="/quick-tap/reconciliation">
-        <button class="recon-btn">
-            <i class="fas fa-cash-register"></i> End of Day — Count Cash
-        </button>
-    </a>
+        <!-- RIGHT: Calendar + Activity -->
+        <div class="st-right">
+            <!-- Monthly Calendar -->
+            <div class="st-cal-card">
+                <div class="st-cal-header">
+                    <h3>Activity</h3>
+                    <div class="st-cal-nav">
+                        <button onclick="prevCalMonth()"><i class="fas fa-chevron-left"></i></button>
+                        <span class="st-cal-month-label" id="calMonthLabel"></span>
+                        <button onclick="nextCalMonth()"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="st-cal-weekdays">
+                    <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+                </div>
+                <div id="calGrid"></div>
+            </div>
 
-    <div style="text-align:center;margin-top:8px;">
-        <a href="/quick-tap/weekly" style="font-size:12px;color:var(--text-secondary);">
-            <i class="fas fa-chart-bar"></i> Weekly Summary
+            <!-- Activity Feed (Collapsible) -->
+            <div class="st-activity-card" id="activityCard">
+                <div class="st-activity-header" onclick="toggleActivity()">
+                    <h3>Today's Log</h3>
+                    <div class="st-activity-meta">
+                        <span class="count">{{ activity|length if activity else 0 }}</span>
+                        <i class="fas fa-chevron-down st-chevron"></i>
+                    </div>
+                </div>
+                <div class="st-feed">
+                    {% if activity %}
+                        {% for a in activity %}
+                        <div class="st-feed-item">
+                            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px;">{{ a.name }}</span>
+                            <span class="st-feed-badge {{ a.type }}">{{ a.type }}</span>
+                            <span style="font-weight:600;margin-left:6px;white-space:nowrap;{% if a.type == 'expense' %}color:#ef4444;{% endif %}">
+                                {% if a.type == 'expense' %}-{% endif %}{{ "%.0f"|format(a.amount) }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="st-feed-empty">
+                            <i class="fas fa-hand-pointer" style="font-size:20px;margin-bottom:6px;display:block;opacity:0.4;"></i>
+                            Tap a product to start
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Fixed Bottom Tabs ── -->
+    <div class="st-tabs">
+        <a href="/quick-tap" class="st-tab active">
+            <i class="fas fa-bolt"></i><span>Quick Tap</span>
+        </a>
+        <a href="/quick-tap/products" class="st-tab">
+            <i class="fas fa-box"></i><span>Products</span>
+        </a>
+        <a href="/quick-tap/credit" class="st-tab">
+            <i class="fas fa-hand-holding-usd"></i><span>Credit</span>
+        </a>
+        <a href="/quick-tap/weekly" class="st-tab">
+            <i class="fas fa-calendar-week"></i><span>Week</span>
         </a>
     </div>
+
 </div>
 
 <!-- ═══════════ MODALS ═══════════ -->
-
-<!-- Custom Sale Modal -->
-<div class="qt-modal" id="saleModal">
-    <div class="qt-modal-box">
+<div class="st-modal" id="saleModal">
+    <div class="st-modal-box">
         <h3>Custom Sale</h3>
         <input type="text" id="saleName" placeholder="Item name">
-        <input type="number" id="saleAmount" placeholder="Amount (₱)" step="0.01" min="0">
+        <input type="number" id="saleAmount" placeholder="Amount" step="0.01" min="0">
         <div class="btn-row">
             <button class="btn btn-secondary" onclick="closeModal('saleModal')">Cancel</button>
             <button class="btn btn-primary" onclick="submitCustomSale()">Record</button>
@@ -263,12 +738,11 @@
     </div>
 </div>
 
-<!-- Expense Modal -->
-<div class="qt-modal" id="expenseModal">
-    <div class="qt-modal-box">
+<div class="st-modal" id="expenseModal">
+    <div class="st-modal-box">
         <h3>Record Expense</h3>
         <input type="text" id="expenseDesc" placeholder="What did you spend on?">
-        <input type="number" id="expenseAmount" placeholder="Amount (₱)" step="0.01" min="0">
+        <input type="number" id="expenseAmount" placeholder="Amount" step="0.01" min="0">
         <div class="btn-row">
             <button class="btn btn-secondary" onclick="closeModal('expenseModal')">Cancel</button>
             <button class="btn btn-primary" onclick="submitExpense()">Record</button>
@@ -276,28 +750,127 @@
     </div>
 </div>
 
-<!-- Utang Modal -->
-<div class="qt-modal" id="utangModal">
-    <div class="qt-modal-box">
-        <h3>Record Utang</h3>
-        <input type="text" id="utangName" placeholder="Who owes you?">
-        <input type="text" id="utangItem" placeholder="What did they get? (optional)">
-        <input type="number" id="utangAmount" placeholder="Amount (₱)" step="0.01" min="0">
+<div class="st-modal" id="creditModal">
+    <div class="st-modal-box">
+        <h3>Record Credit</h3>
+        <input type="text" id="creditName" placeholder="Who owes you?">
+        <input type="text" id="creditItem" placeholder="What did they get? (optional)">
+        <input type="number" id="creditAmount" placeholder="Amount" step="0.01" min="0">
         <div class="btn-row">
-            <button class="btn btn-secondary" onclick="closeModal('utangModal')">Cancel</button>
-            <button class="btn btn-primary" onclick="submitUtang()">Record</button>
+            <button class="btn btn-secondary" onclick="closeModal('creditModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitCredit()">Record</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item from Quick Tap Modal -->
+<div class="st-modal" id="qtAddModal">
+    <div class="st-modal-box">
+        <h3>Add Item</h3>
+        <input type="text" id="qtAddName" placeholder="Item name (e.g. Yosi, Gupit)">
+        <input type="number" id="qtAddPrice" placeholder="Price" step="0.01" min="0">
+        <input type="text" id="qtAddCategory" placeholder="Category (optional)">
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="closeModal('qtAddModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitQtAdd()">Add</button>
+        </div>
+    </div>
+</div>
+
+<div class="st-modal" id="noteModal">
+    <div class="st-modal-box">
+        <h3>Quick Note</h3>
+        <textarea id="noteText" placeholder="Anything you want to remember..." 
+                  style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border-visible);background:rgba(255,255,255,0.03);color:var(--text-primary);font-size:14px;font-family:'Inter',sans-serif;resize:vertical;min-height:80px;"></textarea>
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="closeModal('noteModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="submitNote()" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed);">Save Note</button>
         </div>
     </div>
 </div>
 
 <script>
-    function tap(btn) {
-        const id = btn.dataset.id;
-        const name = btn.dataset.name;
-        const price = parseFloat(btn.dataset.price);
-        btn.style.transform = 'scale(0.93)';
-        setTimeout(() => btn.style.transform = '', 120);
+    // ── Monthly Calendar ──
+    let calMonth = new Date().getMonth();
+    let calYear = new Date().getFullYear();
+    const heatmapData = {{ heatmap_data|safe if heatmap_data else '[]' }};
 
+    function buildCal() {
+        const salesMap = {};
+        let maxVal = 0;
+        heatmapData.forEach(d => { salesMap[d.date] = d.amount; if (d.amount > maxVal) maxVal = d.amount; });
+        if (maxVal === 0) maxVal = 1;
+
+        function green(val) {
+            if (!val) return 'var(--border-subtle)';
+            const r = val / maxVal;
+            if (r < 0.2) return '#bbf7d0';
+            if (r < 0.4) return '#86efac';
+            if (r < 0.6) return '#4ade80';
+            if (r < 0.8) return '#22c55e';
+            return '#16a34a';
+        }
+
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('calMonthLabel').textContent = months[calMonth] + ' ' + calYear;
+
+        const firstDay = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+        let html = '';
+        let dayCount = 0;
+
+        // Build weeks
+        const totalCells = startOffset + daysInMonth;
+        const numWeeks = Math.ceil(totalCells / 7);
+
+        for (let w = 0; w < numWeeks; w++) {
+            html += '<div class="st-cal-week">';
+            for (let d = 0; d < 7; d++) {
+                const cellIndex = w * 7 + d;
+                if (cellIndex < startOffset || cellIndex >= startOffset + daysInMonth) {
+                    html += '<div class="st-cal-cell empty"></div>';
+                } else {
+                    const dayNum = cellIndex - startOffset + 1;
+                    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+                    const val = salesMap[ds] || 0;
+                    const bg = green(val);
+                    const tc = val > maxVal * 0.5 ? '#fff' : 'var(--text-primary)';
+                    html += `<div class="st-cal-cell" style="background:${bg};color:${tc};" title="${ds}: ${val>0?val.toLocaleString():'No sales'}">${dayNum}</div>`;
+                }
+            }
+            html += '</div>';
+        }
+
+        document.getElementById('calGrid').innerHTML = html;
+    }
+
+    buildCal();
+
+    function prevCalMonth() {
+        if (calMonth === 0) { calMonth = 11; calYear--; }
+        else { calMonth--; }
+        buildCal();
+    }
+    function nextCalMonth() {
+        const now = new Date();
+        if (calYear === now.getFullYear() && calMonth === now.getMonth()) return;
+        if (calMonth === 11) { calMonth = 0; calYear++; }
+        else { calMonth++; }
+        buildCal();
+    }
+
+    // ── Activity Toggle ──
+    function toggleActivity() {
+        document.getElementById('activityCard').classList.toggle('collapsed');
+    }
+
+    // ── Quick Tap ──
+    function tap(btn) {
+        const id = btn.dataset.id, name = btn.dataset.name, price = parseFloat(btn.dataset.price);
+        btn.style.transform = 'scale(0.93)';
+        setTimeout(() => btn.style.transform = '', 100);
         fetch('/quick-tap/record', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -305,25 +878,20 @@
         })
         .then(r => r.json())
         .then(d => {
-            if (d.success) {
-                toast(d.message, 'ok');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                toast(d.error, 'err');
-            }
+            if (d.success) { toast(d.message, 'ok'); setTimeout(() => location.reload(), 350); }
+            else toast(d.error, 'err');
         });
     }
 
     function openCustomSale() { document.getElementById('saleModal').classList.add('show'); document.getElementById('saleName').focus(); }
     function openExpense() { document.getElementById('expenseModal').classList.add('show'); document.getElementById('expenseDesc').focus(); }
-    function openUtang() { document.getElementById('utangModal').classList.add('show'); document.getElementById('utangName').focus(); }
+    function openCredit() { document.getElementById('creditModal').classList.add('show'); document.getElementById('creditName').focus(); }
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 
     function submitCustomSale() {
         const name = document.getElementById('saleName').value || 'Custom Sale';
         const amount = parseFloat(document.getElementById('saleAmount').value);
         if (!amount || amount <= 0) { toast('Enter an amount', 'err'); return; }
-
         fetch('/quick-tap/record', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -331,7 +899,7 @@
         })
         .then(r => r.json())
         .then(d => {
-            if (d.success) { closeModal('saleModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 500); }
+            if (d.success) { closeModal('saleModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 350); }
             else toast(d.error, 'err');
         });
     }
@@ -340,7 +908,6 @@
         const desc = document.getElementById('expenseDesc').value || 'Expense';
         const amount = parseFloat(document.getElementById('expenseAmount').value);
         if (!amount || amount <= 0) { toast('Enter an amount', 'err'); return; }
-
         fetch('/quick-tap/expense', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -348,38 +915,87 @@
         })
         .then(r => r.json())
         .then(d => {
-            if (d.success) { closeModal('expenseModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 500); }
+            if (d.success) { closeModal('expenseModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 350); }
             else toast(d.error, 'err');
         });
     }
 
-    function submitUtang() {
-        const name = document.getElementById('utangName').value.trim();
-        const item = document.getElementById('utangItem').value.trim();
-        const amount = parseFloat(document.getElementById('utangAmount').value);
+    function submitCredit() {
+        const name = document.getElementById('creditName').value.trim();
+        const item = document.getElementById('creditItem').value.trim();
+        const amount = parseFloat(document.getElementById('creditAmount').value);
         if (!name) { toast('Enter a name', 'err'); return; }
         if (!amount || amount <= 0) { toast('Enter an amount', 'err'); return; }
-
-        fetch('/quick-tap/utang', {
+        fetch('/quick-tap/credit', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({customer_name: name, amount: amount, item: item})
         })
         .then(r => r.json())
         .then(d => {
-            if (d.success) { closeModal('utangModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 500); }
+            if (d.success) { closeModal('creditModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 350); }
             else toast(d.error, 'err');
         });
     }
 
+    function openNote() { document.getElementById('noteModal').classList.add('show'); document.getElementById('noteText').focus(); }
+
+    function submitNote() {
+        const text = document.getElementById('noteText').value.trim();
+        if (!text) { toast('Write something first', 'err'); return; }
+        fetch('/quick-tap/note', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({note: text})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { closeModal('noteModal'); toast(d.message, 'ok'); setTimeout(() => location.reload(), 350); }
+            else toast(d.error, 'err');
+        });
+    }
+
+        function openAddFromQT() {
+        document.getElementById('qtAddModal').classList.add('show');
+        document.getElementById('qtAddName').value = '';
+        document.getElementById('qtAddPrice').value = '';
+        document.getElementById('qtAddCategory').value = '';
+        document.getElementById('qtAddName').focus();
+    }
+
+    function submitQtAdd() {
+        const name = document.getElementById('qtAddName').value.trim();
+        const price = parseFloat(document.getElementById('qtAddPrice').value);
+        const category = document.getElementById('qtAddCategory').value.trim();
+
+        if (!name) { toast('Enter a name', 'err'); return; }
+        if (!price || price <= 0) { toast('Enter a valid price', 'err'); return; }
+
+        fetch('/quick-tap/products/add', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name: name, price: price, category: category || null, stock: null})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                closeModal('qtAddModal');
+                toast(d.message, 'ok');
+                setTimeout(() => location.reload(), 350);
+            } else {
+                toast(d.error, 'err');
+            }
+        });
+    }
+    
     function toast(msg, type) {
-        const existing = document.querySelector('.qt-toast');
+        const existing = document.querySelector('.st-toast');
         if (existing) existing.remove();
         const el = document.createElement('div');
-        el.className = 'qt-toast ' + type;
+        el.className = 'st-toast ' + type;
         el.textContent = msg;
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 2000);
+        setTimeout(() => el.remove(), 1600);
     }
 </script>
 {% endblock %}

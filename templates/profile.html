@@ -14,8 +14,8 @@
     .profile-nav-link:hover { background: rgba(16,185,129,0.08); color: #10b981; }
     .profile-nav-link.active { background: rgba(16,185,129,0.12); color: #10b981; }
     .profile-nav-link i { width: 20px; font-size: 14px; }
-    .profile-content { flex: 1; min-width: 500px; height: calc(100vh - 160px); overflow: hidden; background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px; display: flex; flex-direction: column; }
-    .profile-content-inner { flex: 1; overflow-y: auto; padding-right: 4px; }
+    .profile-content { flex: 1; min-width: 500px; min-height: calc(100vh - 160px); background: var(--bg-secondary); border-radius: 24px; border: 1px solid var(--border-light); padding: 32px; }
+    .profile-content-inner { padding-right: 4px; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     .theme-toggle-switch { position: relative; display: inline-block; width: 60px; height: 30px; }
@@ -198,12 +198,65 @@
             <!-- TAB: Appearance -->
             <div id="tab-appearance" class="tab-content">
                 <h2 style="font-size: 22px; margin-bottom: 8px;">Appearance</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 28px;">Choose your preferred theme</p>
-                <div style="background: var(--bg-primary); border-radius: 20px; padding: 28px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between;">
-                        <div><h3 style="margin-bottom: 4px;">Dark Mode</h3><p style="color: var(--text-secondary); font-size: 13px;">Switch between light and dark theme</p></div>
-                        <label class="theme-toggle-switch"><input type="checkbox" id="themeToggleCheckbox"><span class="theme-toggle-slider"></span></label>
+                <p style="color: var(--text-secondary); margin-bottom: 28px;">Customize how TARA looks</p>
+                
+                <!-- Theme Mode -->
+                <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 28px; margin-bottom: 20px;">
+                    <h3 style="margin-bottom: 4px;">Theme</h3>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">Choose your preferred appearance</p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <div onclick="setTheme('light')" id="theme-light" style="flex:1;min-width:100px;padding:20px 14px;border-radius:16px;background:rgba(255,255,255,0.8);border:2px solid rgba(0,0,0,0.1);cursor:pointer;text-align:center;transition:all 0.25s;">
+                            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#f0f4f8 50%,#fff 50%);border:1px solid #e2e8f0;margin:0 auto 10px;"></div>
+                            <span style="font-size:12px;font-weight:600;color:#1e293b;">Light</span>
+                        </div>
+                        <div onclick="setTheme('semi-dark')" id="theme-semi-dark" style="flex:1;min-width:100px;padding:20px 14px;border-radius:16px;background:rgba(40,44,52,0.6);border:2px solid rgba(255,255,255,0.08);cursor:pointer;text-align:center;transition:all 0.25s;">
+                            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a1d23 50%,#282c34 50%);border:1px solid rgba(255,255,255,0.1);margin:0 auto 10px;"></div>
+                            <span style="font-size:12px;font-weight:600;color:#e4e4e7;">Semi-Dark</span>
+                        </div>
+                        <div onclick="setTheme('dark')" id="theme-dark" style="flex:1;min-width:100px;padding:20px 14px;border-radius:16px;background:rgba(18,18,22,0.8);border:2px solid rgba(255,255,255,0.06);cursor:pointer;text-align:center;transition:all 0.25s;">
+                            <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#060608 50%,#121216 50%);border:1px solid rgba(255,255,255,0.06);margin:0 auto 10px;"></div>
+                            <span style="font-size:12px;font-weight:600;color:#f1f1f3;">Dark</span>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Accent Color -->
+                <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 28px;">
+                    <h3 style="margin-bottom: 4px;">Accent Color</h3>
+                    <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 24px;">Choose your preferred accent color for the interface</p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <div onclick="setPalette('emerald')" id="pal-emerald" style="flex:1;min-width:100px;padding:16px 12px;border-radius:16px;background:rgba(16,185,129,0.1);border:2px solid rgba(16,185,129,0.2);cursor:pointer;text-align:center;transition:all 0.25s;"
+                             onmouseover="this.style.background='rgba(16,185,129,0.18)';this.style.borderColor='rgba(16,185,129,0.4)';"
+                             onmouseout="updatePaletteButtons()">
+                            <div style="width:32px;height:32px;border-radius:50%;background:#10b981;margin:0 auto 8px;"></div>
+                            <span style="font-size:11px;font-weight:600;color:var(--text-primary);">Emerald</span>
+                        </div>
+                        <div onclick="setPalette('sky')" id="pal-sky" style="flex:1;min-width:100px;padding:16px 12px;border-radius:16px;background:rgba(59,130,246,0.1);border:2px solid rgba(59,130,246,0.2);cursor:pointer;text-align:center;transition:all 0.25s;"
+                             onmouseover="this.style.background='rgba(59,130,246,0.18)';this.style.borderColor='rgba(59,130,246,0.4)';"
+                             onmouseout="updatePaletteButtons()">
+                            <div style="width:32px;height:32px;border-radius:50%;background:#3b82f6;margin:0 auto 8px;"></div>
+                            <span style="font-size:11px;font-weight:600;color:var(--text-primary);">Sky</span>
+                        </div>
+                        <div onclick="setPalette('violet')" id="pal-violet" style="flex:1;min-width:100px;padding:16px 12px;border-radius:16px;background:rgba(139,92,246,0.1);border:2px solid rgba(139,92,246,0.2);cursor:pointer;text-align:center;transition:all 0.25s;"
+                             onmouseover="this.style.background='rgba(139,92,246,0.18)';this.style.borderColor='rgba(139,92,246,0.4)';"
+                             onmouseout="updatePaletteButtons()">
+                            <div style="width:32px;height:32px;border-radius:50%;background:#8b5cf6;margin:0 auto 8px;"></div>
+                            <span style="font-size:11px;font-weight:600;color:var(--text-primary);">Violet</span>
+                        </div>
+                        <div onclick="setPalette('rose')" id="pal-rose" style="flex:1;min-width:100px;padding:16px 12px;border-radius:16px;background:rgba(244,63,94,0.1);border:2px solid rgba(244,63,94,0.2);cursor:pointer;text-align:center;transition:all 0.25s;"
+                             onmouseover="this.style.background='rgba(244,63,94,0.18)';this.style.borderColor='rgba(244,63,94,0.4)';"
+                             onmouseout="updatePaletteButtons()">
+                            <div style="width:32px;height:32px;border-radius:50%;background:#f43f5e;margin:0 auto 8px;"></div>
+                            <span style="font-size:11px;font-weight:600;color:var(--text-primary);">Rose</span>
+                        </div>
+                        <div onclick="setPalette('amber')" id="pal-amber" style="flex:1;min-width:100px;padding:16px 12px;border-radius:16px;background:rgba(245,158,11,0.1);border:2px solid rgba(245,158,11,0.2);cursor:pointer;text-align:center;transition:all 0.25s;"
+                             onmouseover="this.style.background='rgba(245,158,11,0.18)';this.style.borderColor='rgba(245,158,11,0.4)';"
+                             onmouseout="updatePaletteButtons()">
+                            <div style="width:32px;height:32px;border-radius:50%;background:#f59e0b;margin:0 auto 8px;"></div>
+                            <span style="font-size:11px;font-weight:600;color:var(--text-primary);">Amber</span>
+                        </div>
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -211,9 +264,9 @@
             {% if session.role == 'admin' %}
             <div id="tab-restore" class="tab-content">
                 <h2 style="font-size: 22px; margin-bottom: 8px;">Restore Deleted Items</h2>
-                <p style="color: var(--text-secondary); margin-bottom: 28px;">Recover accidentally deleted records</p>
-                <div id="restoreContainer" style="background: var(--bg-primary); border-radius: 20px; padding: 24px;">
-                    <p style="color: var(--text-secondary);">Loading deleted items...</p>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Recover accidentally deleted records</p>
+                <div id="restoreContainer" style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; overflow-x: auto;">
+                    <p style="color: var(--text-secondary); text-align: center;">Loading deleted items...</p>
                 </div>
             </div>
             {% endif %}
@@ -224,65 +277,180 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const tabs = document.querySelectorAll('.profile-nav-link');
-    const contents = document.querySelectorAll('.tab-content');
+    var tabs = document.querySelectorAll('.profile-nav-link');
+    var contents = document.querySelectorAll('.tab-content');
 
-    tabs.forEach(tab => {
+    tabs.forEach(function(tab) {
         if (tab.getAttribute('href') === '/logout') return;
         tab.addEventListener('click', function (e) {
             e.preventDefault();
-            const targetTab = this.dataset.tab;
-            tabs.forEach(t => t.classList.remove('active'));
-            contents.forEach(c => c.classList.remove('active'));
+            var targetTab = this.dataset.tab;
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            contents.forEach(function(c) { c.classList.remove('active'); });
             this.classList.add('active');
-            const activeContent = document.getElementById(`tab-${targetTab}`);
+            var activeContent = document.getElementById('tab-' + targetTab);
             if (activeContent) activeContent.classList.add('active');
             localStorage.setItem('profileTab', targetTab);
             if (targetTab === 'restore') loadRestoreData();
         });
     });
 
-    const savedTab = localStorage.getItem('profileTab');
+    var savedTab = localStorage.getItem('profileTab');
     if (savedTab) {
-        const targetNav = document.querySelector(`.profile-nav-link[data-tab="${savedTab}"]`);
+        var targetNav = document.querySelector('.profile-nav-link[data-tab="' + savedTab + '"]');
         if (targetNav) targetNav.click();
     }
 
-    window.loadRestoreData = function () {
-        const container = document.getElementById('restoreContainer');
-        if (!container) return;
-        container.innerHTML = 'Loading...';
-        fetch('/admin/restore/data?filter=all')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.items || !data.items.length) { container.innerHTML = '<p>No deleted items found.</p>'; return; }
-                let html = `<table style="width:100%;"><thead><tr><th>Type</th><th>Description</th><th>Amount</th><th>Date</th><th>Action</th></tr></thead><tbody>`;
-                data.items.forEach(item => {
-                    html += `<tr><td>${item.module_type||'-'}</td><td>${item.description||'-'}</td><td>₱${parseFloat(item.amount).toFixed(2)}</td><td>${item.date||'-'}</td><td><a href="/admin/restore/${item.type_code}/${item.id}" class="btn btn-primary btn-sm" onclick="return confirm('Restore?')">Restore</a></td></tr>`;
-                });
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            })
-            .catch(() => container.innerHTML = '<p>Error loading restore data.</p>');
-    };
+    // ── Theme mode ──
+    function setTheme(mode) {
+        document.body.classList.remove('dark', 'semi-dark');
+        if (mode === 'dark') {
+            document.body.classList.add('dark');
+        } else if (mode === 'semi-dark') {
+            document.body.classList.add('semi-dark');
+        }
+        localStorage.setItem('theme', mode);
+        updateThemeButtons();
+    }
 
-    // Dark mode
-    const themeCheckbox = document.getElementById('themeToggleCheckbox');
-    const setLight = () => { document.body.classList.remove('dark'); localStorage.setItem('theme', 'light'); if (themeCheckbox) themeCheckbox.checked = false; };
-    const setDark = () => { document.body.classList.add('dark'); localStorage.setItem('theme', 'dark'); if (themeCheckbox) themeCheckbox.checked = true; };
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    if (savedTheme === 'dark') { if (themeCheckbox) themeCheckbox.checked = true; document.body.classList.add('dark'); }
-    else { if (themeCheckbox) themeCheckbox.checked = false; document.body.classList.remove('dark'); }
-    if (themeCheckbox) themeCheckbox.addEventListener('change', function(e) { if (e.target.checked) setDark(); else setLight(); });
+    function updateThemeButtons() {
+        var active = localStorage.getItem('theme') || 'dark';
+        ['light', 'semi-dark', 'dark'].forEach(function(m) {
+            var btn = document.getElementById('theme-' + m);
+            if (btn) {
+                if (m === active) {
+                    btn.style.borderColor = 'var(--accent)';
+                    btn.style.boxShadow = '0 0 20px var(--accent-glow)';
+                    btn.style.transform = 'scale(1.03)';
+                } else {
+                    btn.style.borderColor = '';
+                    btn.style.boxShadow = 'none';
+                    btn.style.transform = 'scale(1)';
+                }
+            }
+        });
+    }
+
+    // Init theme
+    var savedTheme = localStorage.getItem('theme') || 'dark';
+    document.body.classList.remove('dark', 'semi-dark');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark');
+    } else if (savedTheme === 'semi-dark') {
+        document.body.classList.add('semi-dark');
+    }
+    updateThemeButtons();
+
+    // Expose setTheme globally
+    window.setTheme = setTheme;
+
+    // ── Palette ──
+    function setPalette(name) {
+        document.body.setAttribute('data-palette', name);
+        localStorage.setItem('palette', name);
+        updatePaletteButtons();
+    }
+
+    function updatePaletteButtons() {
+        var active = document.body.getAttribute('data-palette') || 'emerald';
+        ['emerald', 'sky', 'violet', 'rose', 'amber'].forEach(function(p) {
+            var btn = document.getElementById('pal-' + p);
+            if (btn) {
+                if (p === active) {
+                    btn.style.borderColor = '#fff';
+                    btn.style.boxShadow = '0 0 20px ' + getComputedStyle(btn.querySelector('div')).backgroundColor;
+                    btn.style.transform = 'scale(1.03)';
+                } else {
+                    btn.style.borderColor = '';
+                    btn.style.boxShadow = 'none';
+                    btn.style.transform = 'scale(1)';
+                    btn.style.background = '';
+                }
+            }
+        });
+    }
+
+    // Init palette
+    var savedPalette = localStorage.getItem('palette') || 'emerald';
+    document.body.setAttribute('data-palette', savedPalette);
+    updatePaletteButtons();
+
+    // Expose setPalette globally
+    window.setPalette = setPalette;
 });
 
+// Restore data loader
+window.loadRestoreData = function () {
+    var container = document.getElementById('restoreContainer');
+    if (!container) return;
+    container.innerHTML = '<p style="text-align:center;color:var(--text-secondary);">Loading...</p>';
+    fetch('/admin/restore/data?filter=all')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (!data.items || !data.items.length) {
+                container.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-secondary);">No deleted items found.</p>';
+                return;
+            }
+            var html = '<div style="overflow-x:auto;"><table style="width:100%;min-width:600px;"><thead><tr><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Type</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Description</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Amount</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Date</th><th style="text-align:left;padding:10px 8px;font-size:11px;color:var(--text-secondary);border-bottom:2px solid var(--border-light);">Action</th></tr></thead><tbody>';
+            data.items.forEach(function(item) {
+                html += '<tr id="restore-row-' + item.id + '"><td style="padding:8px;">' + (item.module_type || '-') + '</td><td style="padding:8px;">' + (item.description || '-') + '</td><td style="padding:8px;">₱' + parseFloat(item.amount || 0).toFixed(2) + '</td><td style="padding:8px;">' + (item.date || '-') + '</td><td style="padding:8px;"><button class="btn btn-primary btn-sm" style="font-size:11px;padding:6px 12px;" onclick="restoreItem(\'' + item.type_code + '\', ' + item.id + ')">Restore</button></td></tr>';
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        })
+        .catch(function() {
+            container.innerHTML = '<p style="text-align:center;color:#ef4444;padding:20px;">Error loading data. Please try again.</p>';
+        });
+};
+
+window.restoreItem = function(typeCode, itemId) {
+    if (!confirm('Restore this item?')) return;
+    var row = document.getElementById('restore-row-' + itemId);
+    if (row) row.style.opacity = '0.4';
+    
+    fetch('/admin/restore/' + typeCode + '/' + itemId)
+        .then(function(res) { 
+            if (!res.ok) throw new Error('Server error');
+            return res.json(); 
+        })
+        .then(function(data) {
+            if (data.success) {
+                if (row) {
+                    row.style.transition = 'opacity 0.3s';
+                    row.style.opacity = '0';
+                    setTimeout(function() { row.remove(); }, 300);
+                }
+                if (typeof showToast === 'function') {
+                    showToast('Item restored', 'success');
+                }
+                // Reload the restore list after a short delay
+                setTimeout(function() { loadRestoreData(); }, 500);
+            } else {
+                if (row) row.style.opacity = '1';
+                alert('Failed to restore');
+            }
+        })
+        .catch(function(err) {
+            if (row) row.style.opacity = '1';
+            alert('Error: ' + err.message);
+        });
+};
+
+// Copy Business ID
 function copyBusinessId() {
-    const input = document.querySelector('input[value="{{ session.business_id }}"]');
-    if (input) { navigator.clipboard.writeText(input.value); showToast ? showToast('Business ID copied!', 'success') : alert('Business ID copied!'); }
+    var input = document.querySelector('input[value="{{ session.business_id }}"]');
+    if (input) {
+        navigator.clipboard.writeText(input.value);
+        if (typeof showToast === 'function') {
+            showToast('Business ID copied!', 'success');
+        } else {
+            alert('Business ID copied!');
+        }
+    }
 }
 
 // Industry cascading
-const profileSubcategories = {
+var profileSubcategories = {
     'food_beverage': [{value:'restaurant',label:'Restaurant'},{value:'cafe',label:'Cafe'},{value:'bakery',label:'Bakery'},{value:'catering',label:'Catering'},{value:'food_cart',label:'Food Cart'}],
     'retail': [{value:'retail',label:'Retail Store'},{value:'sari_sari',label:'Sari-Sari Store'},{value:'pharmacy',label:'Pharmacy'},{value:'hardware',label:'Hardware'},{value:'bookstore',label:'Bookstore'}],
     'health_wellness': [{value:'gym',label:'Gym'},{value:'salon',label:'Salon'},{value:'spa',label:'Spa'},{value:'dental',label:'Dental Clinic'},{value:'medical',label:'Medical Clinic'}],
@@ -295,20 +463,33 @@ const profileSubcategories = {
     'creative_media': [{value:'photography',label:'Photography'},{value:'graphic_design',label:'Graphic Design'},{value:'video_production',label:'Video Production'}],
     'other': [{value:'other',label:'Other'}]
 };
-const subToCategory = {};
-for (const [cat, subs] of Object.entries(profileSubcategories)) { subs.forEach(s => { subToCategory[s.value] = cat; }); }
-const currentIndustry = '{{ user.industry }}';
+
+var subToCategory = {};
+for (var cat in profileSubcategories) {
+    if (profileSubcategories.hasOwnProperty(cat)) {
+        profileSubcategories[cat].forEach(function(s) {
+            subToCategory[s.value] = cat;
+        });
+    }
+}
+
+var currentIndustry = '{{ user.industry }}';
 
 function updateProfileSubcategories() {
-    const category = document.getElementById('industryCategoryProfile').value;
-    const subGroup = document.getElementById('subcategoryGroupProfile');
-    const subSelect = document.getElementById('industrySubcategoryProfile');
+    var category = document.getElementById('industryCategoryProfile').value;
+    var subGroup = document.getElementById('subcategoryGroupProfile');
+    var subSelect = document.getElementById('industrySubcategoryProfile');
     subSelect.innerHTML = '<option value="">Select specific industry...</option>';
     if (category && profileSubcategories[category]) {
-        profileSubcategories[category].forEach(sub => { subSelect.innerHTML += `<option value="${sub.value}">${sub.label}</option>`; });
+        profileSubcategories[category].forEach(function(sub) {
+            subSelect.innerHTML += '<option value="' + sub.value + '">' + sub.label + '</option>';
+        });
         subGroup.style.display = 'block';
-    } else { subGroup.style.display = 'none'; }
+    } else {
+        subGroup.style.display = 'none';
+    }
 }
+
 if (currentIndustry && subToCategory[currentIndustry]) {
     document.getElementById('industryCategoryProfile').value = subToCategory[currentIndustry];
     updateProfileSubcategories();

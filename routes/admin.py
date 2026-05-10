@@ -198,7 +198,7 @@ def admin_restore():
                          module_counts=module_counts)
 
 @admin_bp.route('/admin/restore/<int:type_code>/<int:record_id>')
-def admin_restore_item(type_code, record_id):
+def restore_item(type_code, record_id):
     if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('auth.login'))
     
@@ -218,7 +218,7 @@ def admin_restore_item(type_code, record_id):
     cursor.close()
     db.close()
     
-    return redirect(url_for('admin.admin_restore'))
+    return jsonify({'success': True, 'message': 'Item restored'})
 
 @admin_bp.route('/admin/audit')
 def admin_audit():

@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block title %}Server Error — TARA{% endblock %}
+{% block content %}
+<div class="card empty-state" style="text-align:center;padding:60px 24px;">
+    <i class="fas fa-exclamation-triangle" style="font-size:48px;color:#f59e0b;"></i>
+    <h3>Something Went Wrong</h3>
+    <p>An unexpected error occurred. Please try again.</p>
+    <a href="/dashboard" class="btn btn-primary" style="margin-top:16px;">Go Home</a>
+</div>
+{% endblock %}

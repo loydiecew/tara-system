@@ -1,0 +1,234 @@
+{% extends "layout.html" %}
+{% block title %}Weekly Summary — TARA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .st-shell {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 0 8px;
+    }
+
+    .st-header {
+        margin-bottom: 14px;
+    }
+    .st-header h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .st-header .range {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+    }
+
+    /* ── Hero card ── */
+    .st-hero {
+        text-align: center;
+        padding: 24px;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        margin-bottom: 14px;
+    }
+    .st-hero .lbl {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--text-tertiary);
+        margin-bottom: 4px;
+    }
+    .st-hero .val {
+        font-size: 40px;
+        font-weight: 900;
+        letter-spacing: -1.5px;
+    }
+    .st-hero .sub {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    /* ── Stat cards ── */
+    .st-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+    .st-stat {
+        padding: 16px;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+    }
+    .st-stat .lbl {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+        margin-bottom: 4px;
+    }
+    .st-stat .val {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+    .st-stat .sub {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-top: 2px;
+    }
+
+    /* ── Highlight card ── */
+    .st-highlight {
+        padding: 16px;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        margin-bottom: 8px;
+    }
+    .st-highlight .lbl {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+        margin-bottom: 2px;
+    }
+    .st-highlight .val {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    /* ── Tab bar ── */
+    .st-tabs {
+        display: flex;
+        gap: 0;
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .st-tab {
+        flex: 1;
+        padding: 12px 8px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+    .st-tab i { font-size: 15px; }
+    .st-tab:hover {
+        background: var(--accent-light);
+        color: var(--accent);
+    }
+    .st-tab.active {
+        background: var(--accent);
+        color: #fff;
+    }
+
+    @media (max-width: 600px) {
+        .st-stats { grid-template-columns: 1fr; }
+        .st-tab span { display: none; }
+        .st-tab { padding: 10px 4px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="st-shell">
+
+    <!-- Header -->
+    <div class="st-header">
+        <h2>Weekly Summary</h2>
+        <div class="range">
+            {{ weekly.week_start.strftime('%b %d') }} &ndash; {{ weekly.week_end.strftime('%b %d') }}
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <div class="st-hero">
+        <div class="lbl">Profit This Week</div>
+        <div class="val" style="color: {% if weekly.profit >= 0 %}var(--accent){% else %}#ef4444{% endif %};">
+            {{ "%.0f"|format(weekly.profit) }}
+        </div>
+        <div class="sub">
+            {% if weekly.last_week_sales > 0 %}
+            vs {{ "%.0f"|format(weekly.last_week_sales) }} last week
+            {% else %}
+            First week tracking
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="st-stats">
+        <div class="st-stat">
+            <div class="lbl">Total Sales</div>
+            <div class="val">{{ "%.0f"|format(weekly.total_sales) }}</div>
+            <div class="sub">{{ weekly.transaction_count }} transactions</div>
+        </div>
+        <div class="st-stat">
+            <div class="lbl">Total Expenses</div>
+            <div class="val" style="color:#ef4444;">{{ "%.0f"|format(weekly.total_expenses) }}</div>
+        </div>
+    </div>
+
+    <!-- Highlights -->
+    {% if weekly.best_product %}
+    <div class="st-highlight">
+        <div class="lbl">Top Product</div>
+        <div class="val">{{ weekly.best_product }} — {{ "%.0f"|format(weekly.best_product_amount) }}</div>
+    </div>
+    {% endif %}
+
+    {% if weekly.best_day %}
+    <div class="st-highlight">
+        <div class="lbl">Best Day</div>
+        <div class="val">
+            {{ weekly.best_day.sale_date.strftime('%A, %b %d') if weekly.best_day.sale_date else '—' }}
+            — {{ "%.0f"|format(weekly.best_day.total) if weekly.best_day.total else '0' }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not weekly.best_product and not weekly.best_day %}
+    <div class="st-highlight">
+        <div class="lbl">No Data</div>
+        <div class="val" style="color:var(--text-secondary);">Record sales to see weekly highlights.</div>
+    </div>
+    {% endif %}
+
+    <!-- Tab Bar -->
+    <div class="st-tabs">
+        <a href="/quick-tap" class="st-tab">
+            <i class="fas fa-bolt"></i><span>Quick Tap</span>
+        </a>
+        <a href="/quick-tap/products" class="st-tab">
+            <i class="fas fa-box"></i><span>Products</span>
+        </a>
+        <a href="/quick-tap/credit" class="st-tab">
+            <i class="fas fa-hand-holding-usd"></i><span>Credit</span>
+        </a>
+        <a href="/quick-tap/weekly" class="st-tab active">
+            <i class="fas fa-calendar-week"></i><span>Week</span>
+        </a>
+    </div>
+
+</div>
+{% endblock %}

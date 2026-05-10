@@ -1,0 +1,369 @@
+{% extends "layout.html" %}
+{% block title %}Welcome — TARA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .onb-wrap {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 0 8px;
+    }
+
+    .onb-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 40px 32px;
+        text-align: center;
+        transition: all 0.3s;
+    }
+
+    .onb-step-indicator {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 32px;
+    }
+    .onb-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border-visible);
+        transition: all 0.3s;
+    }
+    .onb-dot.active {
+        background: var(--accent);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .onb-dot.done {
+        background: var(--accent);
+    }
+
+    .onb-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: var(--accent-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 32px;
+        color: var(--accent);
+    }
+
+    .onb-card h2 {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 8px;
+    }
+    .onb-card p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    /* Step 1: Product form */
+    .onb-form {
+        text-align: left;
+        max-width: 360px;
+        margin: 0 auto 20px;
+    }
+    .onb-form label {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-tertiary);
+        margin-bottom: 4px;
+        margin-top: 10px;
+    }
+    .onb-form input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border-visible);
+        background: rgba(255,255,255,0.03);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+    }
+    .onb-form input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+
+    .onb-product-list {
+        text-align: left;
+        max-width: 360px;
+        margin: 0 auto;
+    }
+    .onb-product-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+    .onb-product-item .pr {
+        font-weight: 700;
+        color: var(--accent);
+    }
+    .onb-product-item .rm {
+        color: var(--text-tertiary);
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+    .onb-product-item .rm:hover {
+        color: #ef4444;
+    }
+
+    .onb-btn-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .onb-skip {
+        display: block;
+        text-align: center;
+        margin-top: 16px;
+        font-size: 12px;
+        color: var(--text-tertiary);
+        text-decoration: none;
+    }
+    .onb-skip:hover {
+        color: var(--text-secondary);
+    }
+
+    /* Toast */
+    .st-toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000;
+        padding: 10px 22px;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 13px;
+        pointer-events: none;
+        animation: stSlideDown 0.2s ease, stFadeOut 0.3s ease 1.4s forwards;
+    }
+    .st-toast.ok { background: var(--accent); color: #fff; }
+    .st-toast.err { background: #ef4444; color: #fff; }
+    @keyframes stSlideDown {
+        from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes stFadeOut {
+        from { opacity: 1; } to { opacity: 0; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onb-wrap">
+
+    <!-- Step Indicator -->
+    <div class="onb-step-indicator">
+        <div class="onb-dot active" id="dot1"></div>
+        <div class="onb-dot" id="dot2"></div>
+        <div class="onb-dot" id="dot3"></div>
+    </div>
+
+    <!-- ═══════════ STEP 1: Add Products ═══════════ -->
+    <div class="onb-card" id="step1">
+        <div class="onb-icon"><i class="fas fa-box"></i></div>
+        <h2>What do you sell?</h2>
+        <p>Add your most common items. These become your Quick Tap buttons — one tap, one sale.</p>
+
+        <div class="onb-form">
+            <label>Item Name</label>
+            <input type="text" id="onbName" placeholder="e.g. Yosi, Gupit, Load">
+            <label>Price</label>
+            <input type="number" id="onbPrice" placeholder="0.00" step="0.01" min="0">
+            <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="addOnbProduct()">
+                <i class="fas fa-plus"></i> Add Item
+            </button>
+        </div>
+
+        <div class="onb-product-list" id="onbProductList"></div>
+
+        <div class="onb-btn-row" style="margin-top:16px;">
+            <button class="btn btn-primary" onclick="goToStep(2)" id="btnStep1Next">
+                Continue <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+        <a href="/quick-tap?skip_onboarding=1" class="onb-skip">Skip setup, go to Quick Tap</a>
+    </div>
+
+    <!-- ═══════════ STEP 2: Import or Continue ═══════════ -->
+    <div class="onb-card" id="step2" style="display:none;">
+        <div class="onb-icon"><i class="fas fa-upload"></i></div>
+        <h2>Got a list already?</h2>
+        <p>If you have your products in Excel or a CSV file, upload it now. Otherwise, you can add more later.</p>
+
+        <div style="border: 2px dashed var(--border-visible); border-radius: 14px; padding: 24px; margin-bottom: 16px; cursor: pointer; transition: all 0.2s;"
+             onclick="document.getElementById('onbCsvFile').click()"
+             onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-light)';"
+             onmouseout="this.style.borderColor='var(--border-visible)';this.style.background='transparent';">
+            <i class="fas fa-cloud-upload-alt" style="font-size:28px;color:var(--text-tertiary);margin-bottom:8px;display:block;"></i>
+            <span style="font-size:12px;color:var(--text-secondary);">Click to upload CSV</span>
+            <input type="file" id="onbCsvFile" accept=".csv" style="display:none;" onchange="handleOnbCsv(this)">
+        </div>
+        <div id="onbImportStatus" style="text-align:center;font-size:12px;margin-bottom:12px;"></div>
+
+        <div class="onb-btn-row">
+            <button class="btn btn-secondary" onclick="goToStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="btn btn-primary" onclick="goToStep(3)">Continue <i class="fas fa-arrow-right"></i></button>
+        </div>
+        <a href="/quick-tap?skip_onboarding=1" class="onb-skip">Skip setup, go to Quick Tap</a>
+    </div>
+
+    <!-- ═══════════ STEP 3: Ready ═══════════ -->
+    <div class="onb-card" id="step3" style="display:none;">
+        <div class="onb-icon" style="background: rgba(16,185,129,0.15);">
+            <i class="fas fa-check-circle" style="color:var(--accent);"></i>
+        </div>
+        <h2>You're all set.</h2>
+        <p>
+            Your products are now Quick Tap buttons.<br>
+            Tap to record a sale. Count cash at end of day.<br>
+            We'll track your profit automatically.
+        </p>
+        <p style="font-size:11px;color:var(--text-tertiary);">
+            <i class="fas fa-lightbulb" style="color:#f59e0b;"></i>
+            Tip: Come back every day to build your streak.
+        </p>
+
+        <div class="onb-btn-row">
+            <a href="/quick-tap?skip_onboarding=1" class="btn btn-primary">
+                <i class="fas fa-bolt"></i> Start Using Quick Tap
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let onbProducts = [];
+
+    function updateDots(step) {
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById('dot' + i);
+            dot.classList.remove('active', 'done');
+            if (i < step) dot.classList.add('done');
+            if (i === step) dot.classList.add('active');
+        }
+    }
+
+    function goToStep(step) {
+        document.getElementById('step1').style.display = step === 1 ? '' : 'none';
+        document.getElementById('step2').style.display = step === 2 ? '' : 'none';
+        document.getElementById('step3').style.display = step === 3 ? '' : 'none';
+        updateDots(step);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function addOnbProduct() {
+        const name = document.getElementById('onbName').value.trim();
+        const price = parseFloat(document.getElementById('onbPrice').value);
+
+        if (!name) { toast('Enter a name', 'err'); return; }
+        if (!price || price <= 0) { toast('Enter a valid price', 'err'); return; }
+
+        // Add to local list
+        onbProducts.push({ name: name, price: price });
+
+        // Save to server immediately
+        fetch('/quick-tap/products/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, price: price, stock: null })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                toast(d.message, 'ok');
+            }
+        });
+
+        // Update UI
+        renderOnbProducts();
+
+        // Clear inputs
+        document.getElementById('onbName').value = '';
+        document.getElementById('onbPrice').value = '';
+        document.getElementById('onbName').focus();
+    }
+
+    function renderOnbProducts() {
+        const container = document.getElementById('onbProductList');
+        if (onbProducts.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:16px;font-size:12px;color:var(--text-tertiary);">No items added yet</div>';
+            return;
+        }
+        container.innerHTML = onbProducts.map((p, i) => `
+            <div class="onb-product-item">
+                <span>${p.name}</span>
+                <span class="pr">${p.price.toFixed(0)}</span>
+                <span class="rm" onclick="removeOnbProduct(${i})">Remove</span>
+            </div>
+        `).join('');
+    }
+
+    function removeOnbProduct(index) {
+        onbProducts.splice(index, 1);
+        renderOnbProducts();
+    }
+
+    function handleOnbCsv(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        document.getElementById('onbImportStatus').innerHTML = 'Uploading...';
+
+        const formData = new FormData();
+        formData.append('csv_file', file);
+
+        fetch('/quick-tap/products/import', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                document.getElementById('onbImportStatus').innerHTML =
+                    `<span style="color:var(--accent);">${d.message}</span>`;
+            } else {
+                document.getElementById('onbImportStatus').innerHTML =
+                    `<span style="color:#ef4444;">${d.error}</span>`;
+            }
+        });
+    }
+
+    function toast(msg, type) {
+        const existing = document.querySelector('.st-toast');
+        if (existing) existing.remove();
+        const el = document.createElement('div');
+        el.className = 'st-toast ' + type;
+        el.textContent = msg;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1800);
+    }
+
+    // Initialize
+    renderOnbProducts();
+</script>
+{% endblock %}

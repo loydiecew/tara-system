@@ -38,9 +38,9 @@
         <div style="padding:6px 0;display:flex;justify-content:space-between;font-weight:700;">
             <span>Expected Cash</span><span>₱{{ "%.0f"|format(summary.sales_total - summary.expense_total) }}</span>
         </div>
-        {% if summary.utang_outstanding > 0 %}
+        {% if summary.credit_outstanding > 0 %}
         <div style="padding:6px 0;display:flex;justify-content:space-between;color:#f59e0b;">
-            <span>Outstanding Utang</span><span>₱{{ "%.0f"|format(summary.utang_outstanding) }}</span>
+            <span>Outstanding Utang</span><span>₱{{ "%.0f"|format(summary.credit_outstanding) }}</span>
         </div>
         {% endif %}
     </div>
