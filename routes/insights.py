@@ -6,14 +6,6 @@ from models.helpers import get_week_range
 
 insights_bp = Blueprint('insights', __name__)
 
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
-from datetime import date, timedelta
-import json
-from models.database import get_db
-from models.helpers import get_week_range
-
-insights_bp = Blueprint('insights', __name__)
-
 @insights_bp.route('/insights')
 def insights():
     if 'user_id' not in session:
@@ -991,3 +983,347 @@ def stats_detail(stat_type):
             item['date'] = item['date'].isoformat()
     
     return jsonify({'title': title, 'items': items})
+
+# ═══════════════════════════════════════════
+# SMART FEATURES — Anomaly Detection + Insights
+# ═══════════════════════════════════════════
+
+@insights_bp.route('/api/anomalies')
+def api_anomalies():
+    """Detect unusual spending patterns across categories."""
+    if 'user_id' not in session:
+        return jsonify([]), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id', session['user_id'])
+    today = date.today()
+    four_weeks_ago = today - timedelta(days=28)
+    
+    # Get this week's spending per category
+    cursor.execute("""
+        SELECT t.category, SUM(t.amount) as this_week
+        FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense'
+          AND t.transaction_date >= %s AND t.deleted_at IS NULL
+        GROUP BY t.category
+    """, (business_id, four_weeks_ago + timedelta(days=21)))
+    this_week = {row['category']: float(row['this_week'] or 0) for row in cursor.fetchall()}
+    
+    # Get 4-week average per category
+    cursor.execute("""
+        SELECT t.category, SUM(t.amount) / 4 as weekly_avg
+        FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense'
+          AND t.transaction_date >= %s AND t.deleted_at IS NULL
+        GROUP BY t.category
+    """, (business_id, four_weeks_ago))
+    averages = {row['category']: float(row['weekly_avg'] or 0) for row in cursor.fetchall()}
+    
+    anomalies = []
+    for category, amount in this_week.items():
+        avg = averages.get(category, 0)
+        if avg > 0 and amount > avg * 2.5:
+            anomalies.append({
+                'category': category,
+                'this_week': round(amount, 2),
+                'average': round(avg, 2),
+                'multiplier': round(amount / avg, 1),
+                'severity': 'high' if amount > avg * 4 else 'medium'
+            })
+    
+    cursor.close()
+    db.close()
+    return jsonify(sorted(anomalies, key=lambda x: x['multiplier'], reverse=True))
+
+
+@insights_bp.route('/api/insights')
+def api_insights():
+    """Generate plain-language business insights."""
+    if 'user_id' not in session:
+        return jsonify([]), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id', session['user_id'])
+    today = date.today()
+    first_of_month = today.replace(day=1)
+    last_month_start = (first_of_month - timedelta(days=1)).replace(day=1)
+    insights = []
+    
+    # 1. Profit margin comparison
+    cursor.execute("""
+        SELECT SUM(amount) as total FROM (
+            SELECT t.amount FROM transactions t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date >= %s
+            UNION ALL
+            SELECT s.amount FROM sales s JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date >= %s
+        ) AS revenue
+    """, (business_id, first_of_month, business_id, first_of_month))
+    this_month_revenue = float(cursor.fetchone()['total'] or 0)
+    
+    cursor.execute("""
+        SELECT SUM(t.amount) as total FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date >= %s AND t.deleted_at IS NULL
+    """, (business_id, first_of_month))
+    this_month_expenses = float(cursor.fetchone()['total'] or 0)
+    
+    cursor.execute("""
+        SELECT SUM(t.amount) as total FROM transactions t JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s AND t.type = 'expense' AND t.transaction_date >= %s 
+        AND t.transaction_date < %s AND t.deleted_at IS NULL
+    """, (business_id, last_month_start, first_of_month))
+    last_month_expenses = float(cursor.fetchone()['total'] or 0)
+    
+    this_margin = (this_month_revenue - this_month_expenses) / this_month_revenue * 100 if this_month_revenue > 0 else 0
+    last_month_revenue_query = cursor.execute("""
+        SELECT SUM(amount) as total FROM (
+            SELECT t.amount FROM transactions t JOIN users u ON t.user_id = u.id
+            WHERE u.business_id = %s AND t.type = 'income' AND t.transaction_date >= %s AND t.transaction_date < %s
+            UNION ALL
+            SELECT s.amount FROM sales s JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date >= %s AND s.sale_date < %s
+        ) AS revenue
+    """, (business_id, last_month_start, first_of_month, business_id, last_month_start, first_of_month))
+    last_month_revenue = float(cursor.fetchone()['total'] or 0)
+    last_margin = (last_month_revenue - last_month_expenses) / last_month_revenue * 100 if last_month_revenue > 0 else 0
+    
+    if this_margin < last_margin - 5 and this_month_revenue > 0:
+        insights.append({
+            'type': 'margin_drop',
+            'icon': 'fa-arrow-trend-down',
+            'color': '#ef4444',
+            'message': f'Your profit margin dropped from {last_margin:.0f}% to {this_margin:.0f}% this month.',
+            'detail': 'Review your biggest expense categories for increases.'
+        })
+    elif this_margin > last_margin + 5:
+        insights.append({
+            'type': 'margin_gain',
+            'icon': 'fa-arrow-trend-up',
+            'color': '#10b981',
+            'message': f'Your profit margin improved from {last_margin:.0f}% to {this_margin:.0f}% this month.',
+            'detail': 'Whatever you are doing, keep doing it.'
+        })
+    
+    # 2. Best sales day
+    cursor.execute("""
+        SELECT DAYNAME(sale_date) as day_name, AVG(daily_total) as avg_total
+        FROM (
+            SELECT sale_date, SUM(amount) as daily_total
+            FROM sales s JOIN users u ON s.user_id = u.id
+            WHERE u.business_id = %s AND s.sale_date >= %s AND s.deleted_at IS NULL
+            GROUP BY sale_date
+        ) AS daily GROUP BY DAYNAME(sale_date) ORDER BY avg_total DESC LIMIT 1
+    """, (business_id, today - timedelta(days=90)))
+    best_day = cursor.fetchone()
+    
+    if best_day:
+        insights.append({
+            'type': 'best_day',
+            'icon': 'fa-calendar-star',
+            'color': '#f59e0b',
+            'message': f'{best_day["day_name"]}s are your best sales day — averaging ₱{float(best_day["avg_total"]):,.0f}.',
+            'detail': 'Schedule promotions or restocks before this day.'
+        })
+    
+    # 3. Overdue customers
+    cursor.execute("""
+        SELECT c.name, i.amount, i.due_date, 
+               DATEDIFF(%s, i.due_date) as days_overdue,
+               COALESCE(SUM(p.amount), 0) as paid
+        FROM invoices i JOIN customers c ON i.customer_id = c.id
+        JOIN users u ON i.user_id = u.id
+        LEFT JOIN payments p ON i.id = p.invoice_id
+        WHERE u.business_id = %s AND i.status IN ('unpaid', 'partially_paid')
+          AND i.due_date < %s AND i.deleted_at IS NULL
+        GROUP BY i.id ORDER BY days_overdue DESC LIMIT 3
+    """, (today, business_id, today))
+    overdue = cursor.fetchall()
+    
+    if overdue:
+        names = [o['name'] for o in overdue]
+        total_overdue = sum(float(o['amount'] - o['paid']) for o in overdue)
+        insights.append({
+            'type': 'collections',
+            'icon': 'fa-exclamation-circle',
+            'color': '#ef4444',
+            'message': f'{len(overdue)} customer(s) with overdue payments: {", ".join(names[:2])}.',
+            'detail': f'Total outstanding: ₱{total_overdue:,.0f}. Send payment reminders.'
+        })
+    
+    # 4. Top product this month
+    cursor.execute("""
+        SELECT si.product_name, SUM(si.amount) as total
+        FROM sale_items si JOIN sales s ON si.sale_id = s.id
+        JOIN users u ON s.user_id = u.id
+        WHERE u.business_id = %s AND s.sale_date >= %s AND s.deleted_at IS NULL
+        GROUP BY si.product_name ORDER BY total DESC LIMIT 1
+    """, (business_id, first_of_month))
+    top_product = cursor.fetchone()
+    
+    if top_product:
+        insights.append({
+            'type': 'top_product',
+            'icon': 'fa-star',
+            'color': '#8b5cf6',
+            'message': f'"{top_product["product_name"]}" is your best seller this month — ₱{float(top_product["total"]):,.0f} in sales.',
+            'detail': 'Make sure this item is always in stock.'
+        })
+    
+    # 5. Low stock warning
+    cursor.execute("""
+        SELECT COUNT(*) as count FROM products p JOIN users u ON p.user_id = u.id
+        WHERE u.business_id = %s AND p.quantity < p.reorder_level AND p.deleted_at IS NULL
+    """, (business_id,))
+    low_stock = cursor.fetchone()
+    
+    if low_stock and low_stock['count'] > 0:
+        insights.append({
+            'type': 'low_stock',
+            'icon': 'fa-box-open',
+            'color': '#f59e0b',
+            'message': f'{low_stock["count"]} product(s) are running low on stock.',
+            'detail': 'Create purchase orders before you run out.'
+        })
+    
+    cursor.close()
+    db.close()
+    return jsonify(insights)
+
+
+# ═══════════════════════════════════════════
+# SCRATCHPAD / SMART ENTRY PARSER
+# ═══════════════════════════════════════════
+
+@insights_bp.route('/api/parse_scratchpad', methods=['POST'])
+def parse_scratchpad():
+    """Parse natural language into transaction preview."""
+    if 'user_id' not in session:
+        return jsonify([]), 401
+    
+    import re
+    from datetime import date, timedelta
+    
+    text = request.get_json().get('text', '').strip()
+    if not text:
+        return jsonify([])
+    
+    text_lower = text.lower()
+    today = date.today()
+    entries = []
+    
+    # Date detection
+    detected_date = today
+    if 'yesterday' in text_lower:
+        detected_date = today - timedelta(days=1)
+    elif 'today' in text_lower:
+        detected_date = today
+    elif 'last monday' in text_lower:
+        days_since_monday = today.weekday()
+        detected_date = today - timedelta(days=days_since_monday + 7)
+    elif 'last sunday' in text_lower:
+        days_since_sunday = today.weekday() + 1 if today.weekday() < 6 else 0
+        detected_date = today - timedelta(days=days_since_sunday + 7)
+    
+    # Try month-day pattern: "May 4", "jan 15"
+    month_match = re.search(r'(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})', text_lower)
+    if month_match:
+        months = {'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
+        m = month_match.group(1)[:3]
+        d = int(month_match.group(2))
+        detected_date = date(today.year, months[m], d)
+        if detected_date > today:
+            detected_date = date(today.year - 1, months[m], d)
+    
+    # Pattern 1: "sold X Y at Z each" or "sold X Y for Z each"
+    sale_match = re.search(r'sold\s+(\d+)\s+(.+?)\s+(?:at|for)\s+([\d,.]+)\s*(?:each)?', text_lower)
+    if sale_match:
+        qty = int(sale_match.group(1))
+        item = sale_match.group(2).strip().title()
+        price = float(sale_match.group(3).replace(',', ''))
+        entries.append({
+            'date': str(detected_date),
+            'type': 'sale',
+            'description': item,
+            'quantity': qty,
+            'unit_price': price,
+            'total': qty * price
+        })
+    
+    # Pattern 2: "bought X Y for Z"
+    expense_match = re.search(r'bought\s+(.+?)\s+for\s+([\d,.]+)', text_lower)
+    if expense_match and not entries:
+        item = expense_match.group(1).strip().title()
+        amount = float(expense_match.group(2).replace(',', ''))
+        entries.append({
+            'date': str(detected_date),
+            'type': 'expense',
+            'description': item,
+            'quantity': 1,
+            'unit_price': amount,
+            'total': amount
+        })
+    
+    # Pattern 3: "paid Z for X"
+    paid_match = re.search(r'paid\s+([\d,.]+)\s+for\s+(.+)', text_lower)
+    if paid_match and not entries:
+        amount = float(paid_match.group(1).replace(',', ''))
+        item = paid_match.group(2).strip().title()
+        entries.append({
+            'date': str(detected_date),
+            'type': 'expense',
+            'description': item,
+            'quantity': 1,
+            'unit_price': amount,
+            'total': amount
+        })
+    
+    # Pattern 4: "received Z from [name]"
+    received_match = re.search(r'received\s+([\d,.]+)\s+from\s+(.+)', text_lower)
+    if received_match and not entries:
+        amount = float(received_match.group(1).replace(',', ''))
+        name = received_match.group(2).strip().title()
+        entries.append({
+            'date': str(detected_date),
+            'type': 'income',
+            'description': f'Payment from {name}',
+            'quantity': 1,
+            'unit_price': amount,
+            'total': amount
+        })
+    
+    # Pattern 5: "spent Z on X"
+    spent_match = re.search(r'spent\s+([\d,.]+)\s+on\s+(.+)', text_lower)
+    if spent_match and not entries:
+        amount = float(spent_match.group(1).replace(',', ''))
+        item = spent_match.group(2).strip().title()
+        entries.append({
+            'date': str(detected_date),
+            'type': 'expense',
+            'description': item,
+            'quantity': 1,
+            'unit_price': amount,
+            'total': amount
+        })
+    
+    # If no patterns matched, try to extract any amount and description
+    if not entries:
+        numbers = re.findall(r'([\d,.]+)', text)
+        if numbers:
+            amount = float(numbers[0].replace(',', ''))
+            desc = text
+            for n in numbers:
+                desc = desc.replace(n, '')
+            desc = desc.strip().title() or 'Entry'
+            t = 'income' if amount > 0 else 'expense'
+            entries.append({
+                'date': str(detected_date),
+                'type': t,
+                'description': desc,
+                'quantity': 1,
+                'unit_price': abs(amount),
+                'total': abs(amount)
+            })
+    
+    return jsonify(entries)

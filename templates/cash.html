@@ -110,6 +110,109 @@
     </form>
 </div>
 
+<!-- Scratchpad / Smart Entry -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header" style="cursor:pointer;" onclick="document.getElementById('scratchpadBody').classList.toggle('collapsed');">
+        <h2><i class="fas fa-pen-to-square"></i> Quick Entry (Beta)</h2>
+        <i class="fas fa-chevron-down" style="color:var(--text-tertiary);font-size:12px;transition:transform 0.3s;" id="scratchpadChevron"></i>
+    </div>
+    <div id="scratchpadBody">
+        <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Type what happened naturally. TARA will figure out the details.</p>
+        <textarea id="scratchpadText" placeholder="e.g., sold 5 lattes 800 each yesterday&#10;or: bought supplies for 500&#10;or: received 1500 from Juan" 
+                  style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border-visible);background:rgba(255,255,255,0.03);color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;resize:vertical;min-height:70px;"></textarea>
+        <button class="btn btn-secondary" style="margin-top:8px;font-size:11px;" onclick="parseScratchpad()">
+            <i class="fas fa-wand-magic-sparkles"></i> Preview
+        </button>
+        <div id="scratchpadPreview" style="margin-top:12px;"></div>
+    </div>
+</div>
+
+<style>
+#scratchpadBody.collapsed { display: none; }
+#scratchpadBody.collapsed ~ .card-header #scratchpadChevron { transform: rotate(-90deg); }
+</style>
+
+<script>
+function parseScratchpad() {
+    var text = document.getElementById('scratchpadText').value.trim();
+    if (!text) return;
+    
+    var preview = document.getElementById('scratchpadPreview');
+    preview.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-secondary);">Analyzing...</div>';
+    
+    fetch('/api/parse_scratchpad', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: text})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(entries) {
+        if (!entries || !entries.length) {
+            preview.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-tertiary);">Could not understand. Try: "sold 5 items 100 each" or "bought supplies for 500"</div>';
+            return;
+        }
+        
+        var html = '<div style="overflow-x:auto;"><table style="width:100%;font-size:11px;"><thead><tr>';
+        html += '<th>Date</th><th>Type</th><th>Description</th><th>Qty</th><th>Price</th><th>Total</th>';
+        html += '</tr></thead><tbody>';
+        
+        var grandTotal = 0;
+        entries.forEach(function(e) {
+            html += '<tr>';
+            html += '<td>' + e.date + '</td>';
+            html += '<td><span class="badge ' + (e.type === 'sale' || e.type === 'income' ? 'badge-success' : 'badge-danger') + '">' + e.type + '</span></td>';
+            html += '<td>' + e.description + '</td>';
+            html += '<td>' + e.quantity + '</td>';
+            html += '<td>' + e.unit_price.toFixed(2) + '</td>';
+            html += '<td style="font-weight:600;">' + e.total.toFixed(2) + '</td>';
+            html += '</tr>';
+            grandTotal += e.total;
+        });
+        html += '<tr style="font-weight:700;border-top:2px solid var(--border-visible);"><td colspan="5">Total</td><td>' + grandTotal.toFixed(2) + '</td></tr>';
+        html += '</tbody></table></div>';
+        html += '<div style="display:flex;gap:8px;margin-top:10px;">';
+        html += '<button class="btn btn-primary" style="font-size:11px;" onclick="window._scratchEntries = ' + JSON.stringify(entries) + '; saveScratchpad()"><i class="fas fa-save"></i> Save All</button>';
+        html += '<button class="btn btn-secondary" style="font-size:11px;" onclick="document.getElementById('scratchpadPreview').innerHTML='';document.getElementById('scratchpadText').value='';">Clear</button>';
+        html += '</div>';
+        preview.innerHTML = html;
+    });
+}
+
+function saveScratchpad() {
+    var entries = window._scratchEntries || [];
+    if (!entries.length) return;
+    var saved = 0;
+    
+    function saveNext(index) {
+        if (index >= entries.length) {
+            if (typeof showToast === 'function') showToast(saved + ' transaction(s) saved', 'success');
+            document.getElementById('scratchpadPreview').innerHTML = '';
+            document.getElementById('scratchpadText').value = '';
+            setTimeout(function() { location.reload(); }, 600);
+            return;
+        }
+        
+        var e = entries[index];
+        var formData = new FormData();
+        formData.append('description', e.description);
+        formData.append('amount', e.total);
+        formData.append('type', e.type === 'expense' ? 'expense' : 'income');
+        formData.append('category', 'General');
+        formData.append('date', e.date);
+        formData.append('payment_method', 'cash');
+        
+        fetch('/add_transaction', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function() { saved++; saveNext(index + 1); })
+        .catch(function() { saveNext(index + 1); });
+    }
+    
+    saveNext(0);
+}
+</script>
+
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Transaction History</h2>
