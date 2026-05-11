@@ -100,7 +100,7 @@
                 {% for inv in invoices %}
                 <tr class="invoice-row" onclick="togglePaymentHistory({{ inv.id }}, this)" data-filter='{"date":"{{ inv.due_date }}","status":"{{ inv.status }}","search":"{{ (inv.customer_name or '')|lower }} {{ (inv.invoice_number or '')|lower }}"}'>
                     <td><strong>{{ inv.invoice_number or 'INV-' + inv.id|string }}</strong></td>
-                    <td>{{ inv.customer_name }}</td>
+                    <td>{{ inv.customer_name }}{% if inv.visit_count and inv.visit_count > 0 %} <span style="font-size:9px;color:var(--text-tertiary);">({{ inv.visit_count }} visit{{ 's' if inv.visit_count != 1 else '' }})</span>{% endif %}</td>
                     <td>₱ {{ "{:,.2f}".format(inv.amount) }}</td>
                     <td>₱ {{ "{:,.2f}".format(inv.paid_amount) }}</td>
                     <td class="{% if inv.remaining <= 0 %}remaining-zero{% else %}remaining-positive{% endif %}">₱ {{ "{:,.2f}".format(inv.remaining) }}</td>

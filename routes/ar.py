@@ -42,6 +42,15 @@ def ar():
     """, (business_id,))
     invoices = cursor.fetchall()
     
+    # Add visit count per customer
+    customer_ids = list(set(inv["customer_id"] for inv in invoices))
+    if customer_ids:
+        placeholders = ",".join(["%s"] * len(customer_ids))
+        cursor.execute(f"SELECT customer_id, COUNT(*) as visit_count FROM invoices WHERE customer_id IN ({placeholders}) AND deleted_at IS NULL GROUP BY customer_id", customer_ids)
+        visit_counts = {row["customer_id"]: row["visit_count"] for row in cursor.fetchall()}
+        for inv in invoices:
+            inv["visit_count"] = visit_counts.get(inv["customer_id"], 0)
+    
     # Calculate remaining balance for each invoice and update status/aging
     today = date.today()
     for inv in invoices:

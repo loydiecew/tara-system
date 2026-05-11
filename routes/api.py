@@ -33,6 +33,66 @@ def api_categories():
     result = {trans_type: categories}
     return jsonify(result)
 
+
+@api_bp.route('/api/suggest_category', methods=['POST'])
+def suggest_category():
+    """Suggest a category based on past transaction descriptions."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    data = request.get_json()
+    description = data.get('description', '').strip().lower()
+    
+    if not description or len(description) < 2:
+        return jsonify({'category': None, 'confidence': 0})
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    business_id = session.get('business_id', session['user_id'])
+    
+    # Extract keywords (words > 2 chars)
+    keywords = [w for w in description.split() if len(w) > 2]
+    
+    if not keywords:
+        cursor.close()
+        db.close()
+        return jsonify({'category': None, 'confidence': 0})
+    
+    # Build LIKE conditions for each keyword
+    like_clauses = ' OR '.join(['t.description LIKE %s' for _ in keywords])
+    params = tuple(['%' + kw + '%' for kw in keywords])
+    
+    cursor.execute(f"""
+        SELECT t.category, COUNT(*) as count
+        FROM transactions t
+        JOIN users u ON t.user_id = u.id
+        WHERE u.business_id = %s 
+        AND t.type = 'expense'
+        AND ({like_clauses})
+        AND t.category IS NOT NULL
+        AND t.category != ''
+        AND t.deleted_at IS NULL
+        GROUP BY t.category
+        ORDER BY count DESC
+        LIMIT 1
+    """, (business_id,) + params)
+    
+    result = cursor.fetchone()
+    cursor.close()
+    db.close()
+    
+    if result and result['count'] > 0:
+        # Calculate confidence based on match count vs total
+        confidence = min(result['count'] / 10, 1.0)  # Cap at 1.0
+        return jsonify({
+            'category': result['category'],
+            'confidence': round(confidence, 2),
+            'matches': result['count']
+        })
+    
+    return jsonify({'category': None, 'confidence': 0})
+
+
 @api_bp.route('/api/sync_offline', methods=['POST'])
 def sync_offline():
     if 'user_id' not in session:

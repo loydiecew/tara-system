@@ -858,6 +858,7 @@
         @keyframes micPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     </style>
 
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -1608,7 +1609,58 @@
             if (status) status.style.display = 'none';
         };
     };
+
+    // ========== SMART CATEGORY SUGGESTION ==========
+    window.initSmartCategory = function(descInputId, categorySelectId) {
+        var descInput = document.getElementById(descInputId);
+        var catSelect = document.getElementById(categorySelectId);
+        if (!descInput || !catSelect) return;
+        
+        var suggestionEl = document.createElement("span");
+        suggestionEl.className = "category-suggestion";
+        suggestionEl.id = "suggest_" + descInputId;
+        suggestionEl.style.display = "none";
+        descInput.parentNode.appendChild(suggestionEl);
+        
+        var timeout;
+        descInput.addEventListener("input", function() {
+            clearTimeout(timeout);
+            var val = descInput.value.trim();
+            if (val.length < 3) {
+                suggestionEl.style.display = "none";
+                return;
+            }
+            
+            timeout = setTimeout(function() {
+                fetch("/api/suggest_category", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({description: val})
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.category && data.confidence > 0.2) {
+                        suggestionEl.innerHTML = "<span class=\"sg-icon\"><i class=\"fas fa-lightbulb\"></i></span><span class=\"sg-text\">Use <strong>" + data.category + "</strong></span><span class=\"sg-confidence\">" + Math.round(data.confidence * 100) + "% match</span>";
+                        suggestionEl.style.display = "inline-block";
+                        suggestionEl.onclick = function() {
+                            for (var i = 0; i < catSelect.options.length; i++) {
+                                if (catSelect.options[i].value === data.category) {
+                                    catSelect.value = data.category;
+                                    break;
+                                }
+                            }
+                            suggestionEl.style.display = "none";
+                        };
+                    } else {
+                        suggestionEl.style.display = "none";
+                    }
+                });
+            }, 500);
+        });
+    };
+
     </script>
+
 
     {% block extra_js %}{% endblock %}
         <!-- ========== ONBOARDING MODAL ========== -->

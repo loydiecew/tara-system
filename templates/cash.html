@@ -211,6 +211,7 @@
         updateCategoryDropdown();
         const typeSelect = document.getElementById('transactionType');
         if (typeSelect) typeSelect.addEventListener('change', updateCategoryDropdown);
+        initSmartCategory('cashDesc', 'transactionCategory');
     });
     const form = document.querySelector('form');
     if (form) {
@@ -233,5 +234,6 @@
             }
         });
     }
+
 </script>
 {% endblock %}
