@@ -34,9 +34,9 @@ def recurring():
     business_id = session.get('business_id', session['user_id'])
     
     cursor.execute("""
-        SELECT r.* FROM recurring_transactions r WHERE r.deleted_at IS NULL
+        SELECT r.* FROM recurring_transactions r
         JOIN users u ON r.user_id = u.id
-        WHERE u.business_id = %s
+        WHERE r.deleted_at IS NULL AND u.business_id = %s
         ORDER BY r.next_date ASC
     """, (business_id,))
     transactions = cursor.fetchall()

@@ -14,31 +14,25 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Description</label>
-                <input type="text" name="description" value="{{ transaction.description }}" required>
+                <input name="description" type="text" required value="{{ transaction.description or "" }}">
             </div>
             <div class="form-group">
-                <label>Amount (₱)</label>
-                <input type="number" name="amount" step="0.01" value="{{ transaction.amount }}" required>
-            </div>
-            <div class="form-group">
-                <label>Type</label>
-                <select name="type" id="transactionType">
-                    <option value="income" {% if transaction.type == 'income' %}selected{% endif %}>💰 Income</option>
-                    <option value="expense" {% if transaction.type == 'expense' %}selected{% endif %}>💸 Expense</option>
-                </select>
+                <label>Amount</label>
+                <input name="amount" type="number" step="0.01" required value="{{ transaction.amount or "" }}">
             </div>
             <div class="form-group">
                 <label>Category</label>
-                <input type="text" name="category" value="{{ transaction.category or '' }}" placeholder="e.g., Rent, Supplies">
+                <input name="category" type="text"  value="{{ transaction.category or "" }}">
             </div>
             <div class="form-group">
                 <label>Date</label>
-                <input type="date" name="transaction_date" value="{{ transaction.transaction_date }}" required>
+                <input name="transaction_date" type="date" required value="{{ transaction.transaction_date or "" }}">
             </div>
+
             <div class="form-group">
                 <label>&nbsp;</label>
                 <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
                     <a href="/cash" class="btn btn-secondary">Cancel</a>
                 </div>
             </div>
@@ -46,13 +40,18 @@
     </form>
 </div>
 
-<div class="card" style="background: #fef2f2; border: 1px solid #fee2e2;">
+<div class="card" style="background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.15);">
     <div class="card-header">
-        <h2><i class="fas fa-trash"></i> Danger Zone</h2>
+        <h2><i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i> Danger Zone</h2>
     </div>
-    <p style="margin-bottom: 15px;">Once deleted, this transaction can be restored by an admin.</p>
-    <a href="/delete_transaction/{{ transaction.id }}" class="btn btn-danger" onclick="return confirm('Delete this transaction? You can restore it later.')">
+    <p style="margin-bottom: 15px; font-size: 13px; color: var(--text-secondary);">Once deleted, this record can be restored by an admin from the Restore page.</p>
+    <a href="/delete_transaction/{{ transaction.id }}" class="btn" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2);" onclick="return confirm('Delete this transaction? You can restore it later.')">
         <i class="fas fa-trash"></i> Delete Transaction
     </a>
 </div>
+
+<!-- Notes & Tasks -->
+{% set module_type = 'cash' %}
+{% set record_id = transaction.id %}
+{% include 'components/notes_panel.html' %}
 {% endblock %}

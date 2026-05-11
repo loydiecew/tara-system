@@ -2,8 +2,8 @@ import os
 from flask import Flask, session, redirect, url_for, request, render_template
 from flask_mail import Mail
 from models.database import get_db
-from models.helpers import user_has_feature
 from routes.permissions import create_enterprise_role_templates
+from models.helpers import user_has_feature, user_has_addon
 
 # ---------- Import all blueprints ----------
 from routes import (
@@ -12,7 +12,7 @@ from routes import (
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
     budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp, planner_bp,
     branches_bp, payments_bp, recurring_bp, bank_rec_bp,
-    fiscal_bp, tax_bp, currencies_bp, permissions_bp
+    fiscal_bp, tax_bp, currencies_bp, permissions_bp, tasks_bp 
 )
 
 # ---------- App setup ----------
@@ -31,6 +31,7 @@ mail = Mail(app)
 
 # ---------- Register blueprints ----------
 BLUEPRINTS = [
+    tasks_bp,
     auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
@@ -94,12 +95,14 @@ def inject_user_context():
             'user_plan': session.get('plan', 'starter'),
             'user_plan_name': session.get('plan_name', 'Starter'),
             'has_feature': lambda feature: user_has_feature(session['user_id'], feature),
+            'user_has_addon': lambda module: user_has_addon(module),
         })
     else:
         ctx.update({
             'user_plan': 'starter',
             'user_plan_name': 'Starter',
             'has_feature': lambda feature: False,
+            'user_has_addon': lambda module: False,
             'get_branches': lambda: [],
             'user_can_view': lambda m: True,
         })

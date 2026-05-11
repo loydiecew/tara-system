@@ -1,128 +1,389 @@
 {% extends "layout.html" %}
 
-{% block title %}Plans & Modules{% endblock %}
-{% block page_title %}Plans & Modules{% endblock %}
-{% block page_subtitle %}Choose your plan or purchase add-ons{% endblock %}
+{% block title %}Plans & Pricing — TARA{% endblock %}
+{% block page_title %}Plans & Pricing{% endblock %}
+{% block page_subtitle %}Choose the right plan for your business{% endblock %}
+
+{% block extra_css %}
+<style>
+    .plan-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .plan-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 20px;
+        padding: 28px 20px;
+        text-align: center;
+        transition: all 0.3s;
+        position: relative;
+    }
+    .plan-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--card-shadow-hover);
+        border-color: var(--accent);
+    }
+    .plan-card.current {
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 24px var(--accent-glow);
+    }
+    .plan-card .plan-badge {
+        position: absolute;
+        top: -10px;
+        right: 20px;
+        background: var(--accent);
+        color: #fff;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+    .plan-card h3 {
+        font-size: 20px;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+    .plan-card .plan-price {
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--accent);
+        margin: 8px 0;
+    }
+    .plan-card .plan-price span {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    .plan-card .plan-users {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-bottom: 14px;
+    }
+    .plan-card ul {
+        text-align: left;
+        list-style: none;
+        padding: 0;
+        margin: 16px 0;
+        font-size: 12px;
+    }
+    .plan-card ul li {
+        padding: 5px 0;
+        color: var(--text-secondary);
+    }
+    .plan-card ul li i {
+        color: var(--accent);
+        margin-right: 8px;
+        font-size: 10px;
+    }
+    .plan-card ul li.muted {
+        color: var(--text-tertiary);
+        opacity: 0.6;
+    }
+    .plan-card ul li.muted i {
+        color: var(--text-tertiary);
+    }
+    .addon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+    }
+    .addon-card {
+        background: var(--glass-bg);
+        backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    .addon-card:hover {
+        border-color: var(--accent);
+    }
+    .addon-card h4 {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .addon-card .addon-price {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--accent);
+        margin: 6px 0;
+    }
+    .addon-card p {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-bottom: 10px;
+    }
+    .billing-toggle {
+        display: flex;
+        gap: 4px;
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 4px;
+        margin-bottom: 24px;
+        width: fit-content;
+    }
+    .billing-toggle button {
+        padding: 8px 18px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        background: transparent;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+    .billing-toggle button.active {
+        background: var(--accent);
+        color: #fff;
+    }
+    @media (max-width: 900px) {
+        .plan-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+        .plan-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- Current Plan Banner -->
-<div class="card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-align: center;">
-    <h2 style="color: white;">Current Plan: {{ current_plan.name if current_plan else 'Basic' }}</h2>
-    <p style="margin-top: 8px; opacity: 0.9;">
-        {% if current_plan and current_plan.slug == 'basic' %}
-        Upgrade to Pro for AR, AP, Inventory, and more
-        {% elif current_plan and current_plan.slug == 'pro' %}
-        Upgrade to Enterprise for advanced features
-        {% else %}
-        You have access to all features
-        {% endif %}
-    </p>
+<!-- Billing Toggle -->
+<div class="billing-toggle" id="billingToggle">
+    <button class="active" onclick="switchBilling('monthly', this)">Monthly</button>
+    <button onclick="switchBilling('semiannual', this)">Semi-Annual</button>
+    <button onclick="switchBilling('annual', this)">Annual (2 months free)</button>
 </div>
 
-<!-- Plan Options -->
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-    <!-- Basic Plan -->
-    <div class="stat-card" style="text-align: center; {% if current_plan and current_plan.slug == 'basic' %}border: 2px solid #10b981;{% endif %}">
-        <h3>Basic</h3>
-        <div class="stat-value">₱500</div>
-        <div style="font-size: 12px; margin-bottom: 16px;">/month</div>
-        <ul style="text-align: left; margin: 16px 0; padding-left: 20px;">
-            <li>✅ Cash Management</li>
-            <li>✅ Sales Management</li>
-            <li>✅ General Journal</li>
-            <li>✅ Business Insights</li>
-            <li>❌ Accounts Receivable</li>
-            <li>❌ Accounts Payable</li>
-            <li>❌ Inventory</li>
+<!-- Plan Cards -->
+<div class="plan-grid">
+    <!-- Starter -->
+    <div class="plan-card {% if current_plan_slug == 'starter' %}current{% endif %}">
+        {% if current_plan_slug == 'starter' %}<div class="plan-badge">Current</div>{% endif %}
+        <h3>Starter</h3>
+        <p style="font-size:11px;color:var(--text-secondary);">Did I make money today?</p>
+        <div class="plan-price">Free</div>
+        <div class="plan-users">1 user</div>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> Quick Tap Mode</li>
+            <li><i class="fas fa-check-circle"></i> Daily Reconciliation</li>
+            <li><i class="fas fa-check-circle"></i> Customer Credit Tracking</li>
+            <li><i class="fas fa-check-circle"></i> Weekly Summary</li>
+            <li><i class="fas fa-check-circle"></i> Income & Balance Sheet</li>
+            <li><i class="fas fa-check-circle"></i> CSV Export</li>
+            <li class="muted"><i class="fas fa-minus-circle"></i> No cloud sync</li>
+            <li class="muted"><i class="fas fa-minus-circle"></i> No add-ons</li>
         </ul>
-        {% if current_plan and current_plan.slug == 'basic' %}
-        <button class="btn btn-secondary" disabled>✓ Current Plan</button>
+        {% if current_plan_slug == 'starter' %}
+        <button class="btn btn-secondary" disabled style="width:100%;">Current Plan</button>
         {% else %}
-        <a href="/upgrade_plan/1" class="btn btn-primary">Switch to Basic</a>
+        <a href="/switch_plan/starter" class="btn btn-secondary" style="width:100%;">Switch</a>
         {% endif %}
     </div>
 
-    <!-- Pro Plan -->
-    <div class="stat-card" style="text-align: center; {% if current_plan and current_plan.slug == 'pro' %}border: 2px solid #10b981;{% endif %}">
-        <h3>Pro</h3>
-        <div class="stat-value">₱1,500</div>
-        <div style="font-size: 12px; margin-bottom: 16px;">/month</div>
-        <ul style="text-align: left; margin: 16px 0; padding-left: 20px;">
-            <li>✅ All Basic features</li>
-            <li>✅ Accounts Receivable</li>
-            <li>✅ Accounts Payable</li>
-            <li>✅ Inventory Management</li>
-            <li>✅ Multi-user (up to 10)</li>
-            <li>✅ Audit Log</li>
-            <li>✅ Double-Entry Journal</li>
+    <!-- Essentials -->
+    <div class="plan-card {% if current_plan_slug == 'essentials' %}current{% endif %}">
+        {% if current_plan_slug == 'essentials' %}<div class="plan-badge">Current</div>{% endif %}
+        <h3>Essentials</h3>
+        <p style="font-size:11px;color:var(--text-secondary);">Run one business properly</p>
+        <div class="plan-price">
+            <span class="price-monthly">₱199</span>
+            <span class="price-semiannual" style="display:none;">₱174</span>
+            <span class="price-annual" style="display:none;">₱149</span>
+            <span style="font-size:13px;">/mo</span>
+        </div>
+        <div class="plan-users">1 user · +₱99/add'l</div>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> Everything in Starter</li>
+            <li><i class="fas fa-check-circle"></i> Cloud Sync & Multi-Device</li>
+            <li><i class="fas fa-check-circle"></i> Cash & Sales Management</li>
+            <li><i class="fas fa-check-circle"></i> Bank Reconciliation</li>
+            <li><i class="fas fa-check-circle"></i> Tax Reports</li>
+            <li><i class="fas fa-check-circle"></i> Professional Receipts</li>
+            <li><i class="fas fa-check-circle"></i> Business Insights</li>
+            <li><i class="fas fa-check-circle"></i> Add-ons Available</li>
         </ul>
-        {% if current_plan and current_plan.slug == 'pro' %}
-        <button class="btn btn-secondary" disabled>✓ Current Plan</button>
+        {% if current_plan_slug == 'essentials' %}
+        <button class="btn btn-secondary" disabled style="width:100%;">Current Plan</button>
+        {% elif current_plan_slug == 'starter' %}
+        <a href="/switch_plan/essentials" class="btn btn-primary" style="width:100%;">Upgrade</a>
         {% else %}
-        <a href="/upgrade_plan/2" class="btn btn-primary">Upgrade to Pro</a>
+        <a href="/switch_plan/essentials" class="btn btn-secondary" style="width:100%;">Switch</a>
         {% endif %}
     </div>
 
-    <!-- Enterprise Plan -->
-    <div class="stat-card" style="text-align: center; {% if current_plan and current_plan.slug == 'enterprise' %}border: 2px solid #10b981;{% endif %}">
-        <h3>Enterprise</h3>
-        <div class="stat-value">₱5,000</div>
-        <div style="font-size: 12px; margin-bottom: 16px;">/month</div>
-        <ul style="text-align: left; margin: 16px 0; padding-left: 20px;">
-            <li>✅ All Pro features</li>
-            <li>✅ Multi-branch</li>
-            <li>✅ API Access</li>
-            <li>✅ BIR Integration</li>
-            <li>✅ Priority Support</li>
+    <!-- Professional -->
+    <div class="plan-card {% if current_plan_slug == 'professional' %}current{% endif %}">
+        {% if current_plan_slug == 'professional' %}<div class="plan-badge">Current</div>{% endif %}
+        <h3>Professional</h3>
+        <p style="font-size:11px;color:var(--text-secondary);">Manage team + operations</p>
+        <div class="plan-price">
+            <span class="price-monthly">₱499</span>
+            <span class="price-semiannual" style="display:none;">₱436</span>
+            <span class="price-annual" style="display:none;">₱374</span>
+            <span style="font-size:13px;">/mo</span>
+        </div>
+        <div class="plan-users">3 users · +₱149/add'l</div>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> Everything in Essentials</li>
+            <li><i class="fas fa-check-circle"></i> Purchase & Sales Orders</li>
+            <li><i class="fas fa-check-circle"></i> General Ledger + Audit Log</li>
+            <li><i class="fas fa-check-circle"></i> Role-Based Access</li>
+            <li><i class="fas fa-check-circle"></i> Approval Workflows</li>
+            <li><i class="fas fa-check-circle"></i> Add-ons at 30% off</li>
+            <li><i class="fas fa-check-circle"></i> Industry Packages Available</li>
         </ul>
-        {% if current_plan and current_plan.slug == 'enterprise' %}
-        <button class="btn btn-secondary" disabled>✓ Current Plan</button>
+        {% if current_plan_slug == 'professional' %}
+        <button class="btn btn-secondary" disabled style="width:100%;">Current Plan</button>
+        {% elif current_plan_slug in ['starter', 'essentials'] %}
+        <a href="/switch_plan/professional" class="btn btn-primary" style="width:100%;">Upgrade</a>
         {% else %}
-        <a href="/upgrade_plan/3" class="btn btn-primary">Upgrade to Enterprise</a>
+        <a href="/switch_plan/professional" class="btn btn-secondary" style="width:100%;">Switch</a>
+        {% endif %}
+    </div>
+
+    <!-- Suite -->
+    <div class="plan-card {% if current_plan_slug == 'suite' %}current{% endif %}">
+        {% if current_plan_slug == 'suite' %}<div class="plan-badge">Current</div>{% endif %}
+        <h3>Suite</h3>
+        <p style="font-size:11px;color:var(--text-secondary);">Multi-location control</p>
+        <div class="plan-price">
+            <span class="price-monthly">₱1,299</span>
+            <span class="price-semiannual" style="display:none;">₱1,136</span>
+            <span class="price-annual" style="display:none;">₱974</span>
+            <span style="font-size:13px;">/mo</span>
+        </div>
+        <div class="plan-users">10 users · +₱299/5 add'l</div>
+        <ul>
+            <li><i class="fas fa-check-circle"></i> Everything in Professional</li>
+            <li><i class="fas fa-check-circle"></i> Multi-Branch Management</li>
+            <li><i class="fas fa-check-circle"></i> All Add-ons Included</li>
+            <li><i class="fas fa-check-circle"></i> Industry Packages Included</li>
+            <li><i class="fas fa-check-circle"></i> Fiscal Year Closing</li>
+            <li><i class="fas fa-check-circle"></i> Branch Scorecards</li>
+            <li><i class="fas fa-check-circle"></i> Automated Month-End Close</li>
+        </ul>
+        {% if current_plan_slug == 'suite' %}
+        <button class="btn btn-secondary" disabled style="width:100%;">Current Plan</button>
+        {% else %}
+        <a href="/switch_plan/suite" class="btn btn-primary" style="width:100%;">Upgrade</a>
         {% endif %}
     </div>
 </div>
 
-<!-- Add-on Modules -->
+<!-- Add-ons Section (only for Essentials and Professional) -->
+{% if current_plan_slug in ['essentials', 'professional'] %}
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-puzzle-piece"></i> Add-on Modules</h2>
+        <span style="font-size:11px;color:var(--text-secondary);">
+            {% if current_plan_slug == 'professional' %}30% discount applied{% else %}14-day free trial on all{% endif %}
+        </span>
     </div>
-    <p style="margin-bottom: 20px;">Purchase individual modules to add to your current plan</p>
-
-    {% if available_modules %}
-    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
-        {% for module in available_modules %}
-        <div class="stat-card">
-            <h3>{{ module.name|replace('_', ' ')|title }}</h3>
-            <p style="font-size: 13px; color: var(--text-secondary);">{{ module.description }}</p>
-            <div class="stat-value" style="font-size: 24px;">₱{{ module.price }}</div>
-            <div style="font-size: 12px; margin-bottom: 16px;">one-time</div>
-            <a href="/purchase_module/{{ module.id }}" class="btn btn-primary" style="width: 100%;" onclick="return confirm('Purchase {{ module.name }}? (Demo - no charge)')">Add to Plan</a>
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
+        Add individual modules to your plan. All add-ons include a 14-day free trial. No credit card required.
+    </p>
+    <div class="addon-grid">
+        {% set addons = [
+            {'name': 'Accounts Receivable', 'icon': 'fa-hand-holding-usd', 'price': '149', 'pro_price': '99', 'desc': 'Full AR: aging, reminders, statements'},
+            {'name': 'Accounts Payable', 'icon': 'fa-truck-fast', 'price': '149', 'pro_price': '99', 'desc': 'Full AP: vendor bills, payments'},
+            {'name': 'Inventory Management', 'icon': 'fa-boxes-stacked', 'price': '149', 'pro_price': '99', 'desc': 'Stock tracking, reorder alerts'},
+            {'name': 'Quotations', 'icon': 'fa-file-contract', 'price': '99', 'pro_price': '69', 'desc': 'Create and send price quotes'},
+            {'name': 'Budgeting', 'icon': 'fa-chart-pie', 'price': '79', 'pro_price': '55', 'desc': 'Set and monitor budgets'},
+            {'name': 'Projects', 'icon': 'fa-folder-tree', 'price': '99', 'pro_price': '69', 'desc': 'Project tracking, costs'},
+            {'name': 'Timecards', 'icon': 'fa-clock', 'price': '79', 'pro_price': '55', 'desc': 'Staff hour tracking'},
+            {'name': 'Fixed Assets', 'icon': 'fa-building', 'price': '99', 'pro_price': '69', 'desc': 'Depreciation, asset register'},
+            {'name': 'Payment Links', 'icon': 'fa-link', 'price': '99', 'pro_price': '69', 'desc': 'Online payment collection'},
+            {'name': 'Multi-Currency', 'icon': 'fa-dollar-sign', 'price': '79', 'pro_price': '55', 'desc': 'Multi-currency support'},
+            {'name': 'Email Blast', 'icon': 'fa-envelope', 'price': '79', 'pro_price': '55', 'desc': 'Bulk customer emails'},
+        ] %}
+        {% for addon in addons %}
+        <div class="addon-card">
+            <i class="fas {{ addon.icon }}" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>{{ addon.name }}</h4>
+            <div class="addon-price">
+                {% if current_plan_slug == 'professional' %}
+                ₱{{ addon.pro_price }}<span style="font-size:11px;">/mo</span>
+                {% else %}
+                ₱{{ addon.price }}<span style="font-size:11px;">/mo</span>
+                {% endif %}
+            </div>
+            <p>{{ addon.desc }}</p>
+            <button class="btn btn-primary" style="width:100%;font-size:11px;" onclick="startAddonTrial('{{ addon.name }}', '{{ addon.price }}')">
+                <i class="fas fa-play"></i> Start Free Trial
+            </button>
         </div>
         {% endfor %}
     </div>
-    {% else %}
-    <p style="text-align: center; padding: 20px; color: var(--text-secondary);">No add-on modules available at this time.</p>
-    {% endif %}
+</div>
+{% endif %}
 
-    {% if purchased_modules %}
-    <hr style="margin: 24px 0;">
-    <h3>Your Purchased Modules</h3>
-    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-        {% for module in purchased_modules %}
-        <div class="stat-card" style="background: #f0fdf4;">
-            <i class="fas fa-check-circle" style="color: #10b981;"></i>
-            <strong>{{ module.name|replace('_', ' ')|title }}</strong>
-            <div style="font-size: 11px; color: #10b981;">Purchased</div>
-        </div>
-        {% endfor %}
+<!-- Industry Packages (all paid plans) -->
+{% if current_plan_slug != 'starter' %}
+<div class="card" style="margin-top:16px;">
+    <div class="card-header">
+        <h2><i class="fas fa-layer-group"></i> Industry Packages</h2>
+        <span style="font-size:11px;color:var(--text-secondary);">Save 30-34% vs individual</span>
     </div>
-    {% endif %}
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">
+        Bundles of add-ons tailored for your industry. {% if current_plan_slug == 'suite' %}All included in your plan.{% endif %}
+    </p>
+    <div class="addon-grid">
+        <div class="addon-card">
+            <i class="fas fa-utensils" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>Food & Beverage</h4>
+            <div class="addon-price">₱299<span style="font-size:11px;">/mo</span></div>
+            <p>AR + Inventory + Recurring + Recipe Mgmt</p>
+        </div>
+        <div class="addon-card">
+            <i class="fas fa-store" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>Retail</h4>
+            <div class="addon-price">₱299<span style="font-size:11px;">/mo</span></div>
+            <p>AR + Inventory + Multi-Currency + POS Mode</p>
+        </div>
+        <div class="addon-card">
+            <i class="fas fa-briefcase" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>Professional Services</h4>
+            <div class="addon-price">₱189<span style="font-size:11px;">/mo</span></div>
+            <p>Projects + Timecards + Quotations</p>
+        </div>
+        <div class="addon-card">
+            <i class="fas fa-heart-pulse" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>Health & Wellness</h4>
+            <div class="addon-price">₱229<span style="font-size:11px;">/mo</span></div>
+            <p>AR + Timecards + Projects + Attachments</p>
+        </div>
+        <div class="addon-card">
+            <i class="fas fa-hard-hat" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>Construction</h4>
+            <div class="addon-price">₱199<span style="font-size:11px;">/mo</span></div>
+            <p>Projects + Fixed Assets + Quotations</p>
+        </div>
+        <div class="addon-card">
+            <i class="fas fa-truck" style="font-size:24px;color:var(--accent);margin-bottom:8px;"></i>
+            <h4>Logistics</h4>
+            <div class="addon-price">₱229<span style="font-size:11px;">/mo</span></div>
+            <p>Fixed Assets + Multi-Currency + Projects</p>
+        </div>
+    </div>
 </div>
+{% endif %}
 
-<div class="card" style="background: #f0fdf4; text-align: center;">
-    <p><i class="fas fa-info-circle"></i> This is a demo. No actual payment required. Click to instantly add modules.</p>
-</div>
+<script>
+function switchBilling(period, btn) {
+    document.querySelectorAll('#billingToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.price-monthly, .price-semiannual, .price-annual').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.price-' + period).forEach(el => el.style.display = 'inline');
+}
+</script>
 {% endblock %}

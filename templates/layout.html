@@ -268,6 +268,47 @@
         .sidebar.collapsed .user-details { display: none; }
         .sidebar.collapsed .user-info { justify-content: center; }
 
+        /* Locked add-on modules */
+        .nav-item.locked {
+            opacity: 0.55;
+            cursor: pointer;
+        }
+        .nav-item.locked:hover {
+            opacity: 0.85;
+            background: rgba(245, 158, 11, 0.06);
+            color: #f59e0b;
+        }
+        .nav-item.locked .lock-icon {
+            font-size: 10px;
+            margin-left: auto;
+            color: #f59e0b;
+        }
+        .nav-item.locked .price-tag {
+            font-size: 9px;
+            font-weight: 700;
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+        .nav-section-collapsible .nav-label {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-section-collapsible .nav-label .toggle-icon {
+            font-size: 8px;
+            transition: transform 0.3s;
+        }
+        .nav-section-collapsible.collapsed .nav-item {
+            display: none;
+        }
+        .nav-section-collapsible.collapsed .nav-label .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
         /* ========== MAIN CONTENT ========== */
         .main-content {
             flex: 1; margin-left: 280px; padding: 0 20px;
@@ -879,17 +920,17 @@
                         <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                     </a>
 
-                    {% if session.plan in ['professional', 'suite'] and user_can_view('recurring') %}
+                    {% if session.plan in ['essentials', 'professional', 'suite'] and user_can_view('recurring') %}
                     <a href="/recurring" class="nav-item {{ is_active('recurring') }}">
                         <i class="fas fa-redo-alt"></i><span>Recurring Transaction</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['professional', 'suite'] and user_can_view('bank_reconciliation') %}
+                    {% if session.plan in ['essentials', 'professional', 'suite'] and user_can_view('bank_reconciliation') %}
                     <a href="/bank-reconciliation" class="nav-item {{ is_active('bank_reconciliation') }}">
                         <i class="fas fa-university"></i><span>Bank Reconciliation</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['professional', 'suite'] and user_can_view('tax') %}
+                    {% if session.plan in ['essentials', 'professional', 'suite'] and user_can_view('tax') %}
                     <a href="/tax" class="nav-item {{ is_active('tax') }}">
                         <i class="fas fa-file-invoice"></i><span>Tax Reports</span>
                     </a>
@@ -1021,6 +1062,35 @@
                     </a>
                     {% endif %}
                 </div>
+                <!-- ═══════ ADD-ONS (Essentials & Professional only) ═══════ -->
+                {% if session.plan in ['essentials', 'professional'] %}
+                <div class="nav-section nav-section-collapsible" id="addonsSection">
+                    <div class="nav-label" onclick="document.getElementById('addonsSection').classList.toggle('collapsed')">
+                        ADD-ONS <i class="fas fa-chevron-down toggle-icon"></i>
+                    </div>
+                    
+                    {% set addon_modules = [
+                        {'name': 'Quotations', 'icon': 'fa-file-contract', 'price': '99', 'module': 'quotations'},
+                        {'name': 'Budgeting', 'icon': 'fa-chart-pie', 'price': '79', 'module': 'budgets'},
+                        {'name': 'Projects', 'icon': 'fa-folder-tree', 'price': '99', 'module': 'projects'},
+                        {'name': 'Timecards', 'icon': 'fa-clock', 'price': '79', 'module': 'timecards'},
+                        {'name': 'Fixed Assets', 'icon': 'fa-building', 'price': '99', 'module': 'assets'},
+                        {'name': 'Payment Links', 'icon': 'fa-link', 'price': '99', 'module': 'payment_links'},
+                        {'name': 'Multi-Currency', 'icon': 'fa-dollar-sign', 'price': '79', 'module': 'currencies'},
+                        {'name': 'Email Blast', 'icon': 'fa-envelope', 'price': '79', 'module': 'email_blast'},
+                    ] %}
+                    
+                    {% for addon in addon_modules %}
+                        {% if not user_has_addon(addon.module) %}
+                        <div class="nav-item locked" onclick="showAddonTrial('{{ addon.name }}', '{{ addon.price }}', '{{ addon.module }}')" title="14-day free trial available">
+                            <i class="fas {{ addon.icon }}"></i><span>{{ addon.name }}</span>
+                            <span class="price-tag">₱{{ addon.price }}</span>
+                            <i class="fas fa-lock lock-icon"></i>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
                 {% endif %}
             </div>
 
@@ -1076,6 +1146,10 @@
                            onmouseover="this.style.color='var(--accent)'; this.style.background='var(--accent-light)';"
                            onmouseout="this.style.color='var(--text-secondary)'; this.style.background='transparent';">
                             <i class="fas fa-circle-question"></i> Help
+                        </a>
+                        <a href="/tasks" id="taskBell" style="position:relative;color:var(--text-secondary);text-decoration:none;padding:8px;" title="Tasks">
+                            <i class="fas fa-bell"></i>
+                            <span id="taskCount" style="display:none;position:absolute;top:2px;right:2px;background:#ef4444;color:#fff;font-size:10px;width:16px;height:16px;border-radius:50%;text-align:center;line-height:16px;">0</span>
                         </a>
                     </div>
                 </div>
@@ -1555,6 +1629,69 @@
         document.getElementById('pwaInstallBanner').style.display = 'none';
         localStorage.setItem('pwaDismissed', 'true');
     }
+
+        // ========== ADD-ON TRIAL ==========
+        var currentAddon = null;
+
+        function showAddonTrial(name, price, module) {
+            currentAddon = { name: name, price: price, module: module };
+            document.getElementById('addonTrialTitle').textContent = 'Unlock ' + name;
+            document.getElementById('addonTrialPrice').textContent = '₱' + price;
+            document.getElementById('addonTrialModal').style.display = 'flex';
+        }
+
+        function closeAddonModal() {
+            document.getElementById('addonTrialModal').style.display = 'none';
+            currentAddon = null;
+        }
+
+        function startAddonTrial() {
+            if (!currentAddon) return;
+            fetch('/plan/start_trial/' + currentAddon.module, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success) {
+                    closeAddonModal();
+                    showToast('14-day trial started for ' + currentAddon.name + '!', 'success');
+                    setTimeout(function() { location.reload(); }, 1000);
+                } else {
+                    showToast(d.error || 'Could not start trial', 'error');
+                }
+            });
+        }
+        
+fetch('/api/tasks/count')
+    .then(r => r.json())
+    .then(d => {
+        var badge = document.getElementById('taskCount');
+        if (d.count > 0) {
+            badge.style.display = 'block';
+            badge.textContent = d.count;
+        }
+    });
     </script>
+
+<!-- Add-on Trial Modal -->
+<div id="addonTrialModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:420px;text-align:center;">
+        <div style="font-size:40px;margin-bottom:12px;">🔓</div>
+        <h3 id="addonTrialTitle" style="margin-bottom:8px;">Unlock [Module]</h3>
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">
+            <span id="addonTrialPrice"></span>/month · 14-day free trial
+        </p>
+        <p style="color:var(--text-secondary);font-size:12px;margin-bottom:20px;">
+            No credit card required. Cancel anytime.<br>
+            Your data stays even if you cancel.
+        </p>
+        <div style="display:flex;gap:8px;justify-content:center;">
+            <button class="btn btn-secondary" onclick="closeAddonModal()">Not Now</button>
+            <button class="btn btn-primary" onclick="startAddonTrial()">Start Free Trial</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

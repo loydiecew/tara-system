@@ -1,0 +1,182 @@
+{% extends "layout.html" %}
+{% block title %}Tasks — TARA{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tasks-wrap { max-width: 900px; margin: 0 auto; }
+    .tasks-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .task-card {
+        background: var(--glass-bg); backdrop-filter: var(--backdrop-blur);
+        border: 1px solid var(--glass-border); border-radius: 16px;
+        padding: 16px 20px; margin-bottom: 10px;
+        transition: all 0.2s;
+    }
+    .task-card:hover { border-color: var(--accent); }
+    .task-card.urgent { border-left: 3px solid #ef4444; }
+    .task-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: var(--text-tertiary); margin-top: 8px; }
+    .task-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .status-badge {
+        display: inline-block; padding: 3px 10px; border-radius: 100px;
+        font-size: 10px; font-weight: 700; text-transform: uppercase;
+    }
+    .status-open { background: rgba(239,68,68,0.1); color: #ef4444; }
+    .status-in_progress { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .status-done { background: rgba(16,185,129,0.1); color: var(--accent); }
+    .filter-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .filter-tab {
+        padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600;
+        text-decoration: none; color: var(--text-secondary);
+        background: var(--glass-bg); border: 1px solid var(--glass-border);
+        transition: all 0.2s;
+    }
+    .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tasks-wrap">
+    <div class="tasks-header">
+        <h2 style="font-size:20px;">Tasks & Notes</h2>
+        <button class="btn btn-primary" onclick="openNewTask()">
+            <i class="fas fa-plus"></i> New Task
+        </button>
+    </div>
+
+    <div class="filter-tabs">
+        <a href="/tasks" class="filter-tab {{ 'active' if not status_filter or status_filter == 'open' else '' }}">Open</a>
+        <a href="/tasks?status=in_progress" class="filter-tab {{ 'active' if status_filter == 'in_progress' else '' }}">In Progress</a>
+        <a href="/tasks?status=done" class="filter-tab {{ 'active' if status_filter == 'done' else '' }}">Done</a>
+    </div>
+
+    {% if tasks %}
+        {% for task in tasks %}
+        <div class="task-card {{ 'urgent' if task.priority == 'urgent' else '' }}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;">
+                    <span class="status-badge status-{{ task.status }}">{{ task.status|replace('_', ' ') }}</span>
+                    <span style="font-size:10px;color:var(--text-tertiary);margin-left:8px;">{{ task.module_type|upper }} {% if task.record_id %}#{{ task.record_id }}{% endif %}</span>
+                    <p style="margin-top:8px;font-size:14px;color:var(--text-primary);">{{ task.note_text }}</p>
+                </div>
+            </div>
+            <div class="task-meta">
+                <span><i class="fas fa-user"></i> From: {{ task.created_by_name }}</span>
+                {% if task.assigned_to_name %}
+                <span><i class="fas fa-arrow-right"></i> To: {{ task.assigned_to_name }}</span>
+                {% endif %}
+                <span><i class="fas fa-clock"></i> {{ task.created_at.strftime('%b %d, %I:%M %p') if task.created_at else '' }}</span>
+            </div>
+            {% if task.status != 'done' %}
+            <div class="task-actions">
+                {% if task.status == 'open' %}
+                <button class="btn btn-secondary" style="font-size:11px;padding:6px 14px;" onclick="updateStatus({{ task.id }}, 'in_progress')">Start</button>
+                {% endif %}
+                <button class="btn btn-primary" style="font-size:11px;padding:6px 14px;" onclick="updateStatus({{ task.id }}, 'done')">Mark Done</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card empty-state" style="padding:40px;">
+            <i class="fas fa-check-circle" style="font-size:36px;"></i>
+            <h3>No tasks</h3>
+            <p>All clear. Create a task to assign work to your team.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- New Task Modal -->
+<div class="modal" id="newTaskModal">
+    <div class="modal-content" style="max-width:480px;">
+        <h3 style="margin-bottom:16px;">New Task</h3>
+        <div class="form-group">
+            <label>Module</label>
+            <select id="taskModule">
+                <option value="general">General</option>
+                <option value="ar">Accounts Receivable</option>
+                <option value="ap">Accounts Payable</option>
+                <option value="inventory">Inventory</option>
+                <option value="cash">Cash Management</option>
+                <option value="sales">Sales</option>
+                <option value="projects">Projects</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Note</label>
+            <textarea id="taskNote" rows="3" placeholder="What needs to be done?"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Assign To (optional)</label>
+            <select id="taskAssignee">
+                <option value="">Unassigned</option>
+                {% for member in team %}
+                <option value="{{ member.id }}">{{ member.username }} ({{ member.role }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Priority</label>
+            <select id="taskPriority">
+                <option value="normal">Normal</option>
+                <option value="urgent">Urgent</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px;">
+            <button class="btn btn-secondary" onclick="closeNewTask()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitTask()">Create Task</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openNewTask() {
+        document.getElementById('newTaskModal').style.display = 'flex';
+    }
+    function closeNewTask() {
+        document.getElementById('newTaskModal').style.display = 'none';
+    }
+    function submitTask() {
+        var module = document.getElementById('taskModule').value;
+        var note = document.getElementById('taskNote').value.trim();
+        var assignee = document.getElementById('taskAssignee').value;
+        var priority = document.getElementById('taskPriority').value;
+        
+        if (!note) { showToast('Enter a note', 'error'); return; }
+        
+        fetch('/tasks/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                module_type: module,
+                note_text: note,
+                assigned_to: assignee || null,
+                priority: priority
+            })
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                closeNewTask();
+                showToast(d.message, 'success');
+                setTimeout(() => location.reload(), 500);
+            } else {
+                showToast(d.error, 'error');
+            }
+        });
+    }
+    function updateStatus(id, status) {
+        fetch('/tasks/' + id + '/status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: status})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                showToast(d.message, 'success');
+                setTimeout(() => location.reload(), 400);
+            }
+        });
+    }
+</script>
+{% endblock %}

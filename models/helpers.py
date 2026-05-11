@@ -1,3 +1,4 @@
+from flask import session
 from models.database import get_db
 from datetime import timedelta
 
@@ -89,3 +90,20 @@ def get_week_range(date_obj):
     start_of_week = date_obj - timedelta(days=date_obj.weekday())
     end_of_week = start_of_week + timedelta(days=6)
     return start_of_week, end_of_week
+
+def user_has_addon(module_code):
+    """Check if user has active add-on or trial."""
+    if 'user_id' not in session:
+        return False
+    user_id = session['user_id']
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT id FROM user_addons 
+        WHERE user_id = %s AND module_code = %s 
+        AND (status = 'active' OR (status = 'trial' AND trial_ends_at > NOW()))
+    """, (user_id, module_code))
+    result = cursor.fetchone()
+    cursor.close()
+    db.close()
+    return bool(result)

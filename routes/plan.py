@@ -8,42 +8,10 @@ def plan():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
-    
-    # Get all plans
-    cursor.execute("SELECT * FROM plans ORDER BY price_monthly ASC")
-    all_plans = cursor.fetchall()
-    
-    # Get current user's plan
-    cursor.execute("SELECT p.* FROM users u JOIN plans p ON u.plan_id = p.id WHERE u.id = %s", (session['user_id'],))
-    current_plan = cursor.fetchone()
-    
-    # Get ALL add-on modules
-    cursor.execute("SELECT * FROM modules ORDER BY price ASC")
-    all_modules = cursor.fetchall()
-    
-    # Get purchased module IDs for this user
-    cursor.execute("""
-        SELECT module_id FROM user_modules 
-        WHERE user_id = %s AND is_active = 1
-    """, (session['user_id'],))
-    purchased = cursor.fetchall()
-    purchased_ids = [p['module_id'] for p in purchased]
-    
-    # Separate available vs purchased
-    available_modules = [m for m in all_modules if m['id'] not in purchased_ids]
-    purchased_modules = [m for m in all_modules if m['id'] in purchased_ids]
-    
-    cursor.close()
-    db.close()
+    current_plan_slug = session.get('plan', 'starter')
     
     return render_template('plan.html', 
-                         username=session['username'],
-                         plans=all_plans,
-                         current_plan=current_plan,
-                         available_modules=available_modules,
-                         purchased_modules=purchased_modules)
+                         current_plan_slug=current_plan_slug)
 
 @plan_bp.route('/purchase_module/<int:module_id>')
 def purchase_module(module_id):
@@ -125,3 +93,35 @@ def switch_plan(plan_slug):
     db.close()
     
     return redirect(url_for('plan.plan'))
+
+@plan_bp.route('/plan/start_trial/<module_code>', methods=['POST'])
+def start_trial(module_code):
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Not logged in'}), 401
+    
+    if session.get('plan') not in ['essentials', 'professional']:
+        return jsonify({'success': False, 'error': 'Trials available on Essentials and Professional plans'}), 403
+    
+    user_id = session['user_id']
+    db = get_db()
+    cursor = db.cursor()
+    
+    # Check if already trialed
+    cursor.execute("SELECT id FROM user_addons WHERE user_id = %s AND module_code = %s", (user_id, module_code))
+    existing = cursor.fetchone()
+    if existing:
+        cursor.close()
+        db.close()
+        return jsonify({'success': False, 'error': 'You have already used the trial for this module'}), 400
+    
+    # Start trial
+    trial_end = datetime.now() + timedelta(days=14)
+    cursor.execute("""
+        INSERT INTO user_addons (user_id, module_code, status, trial_ends_at, created_at)
+        VALUES (%s, %s, 'trial', %s, NOW())
+    """, (user_id, module_code, trial_end))
+    db.commit()
+    cursor.close()
+    db.close()
+    
+    return jsonify({'success': True, 'message': 'Trial started! 14 days free.'})

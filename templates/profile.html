@@ -71,7 +71,7 @@
                                 <button type="button" class="btn btn-secondary" onclick="copyBusinessId()" style="padding: 8px 16px;"><i class="fas fa-copy"></i> Copy</button>
                             </div>
                         </div>
-                        {% if session.plan == 'enterprise' %}
+                        {% if session.plan == 'suite' %}
                         <div class="form-group">
                             <label>Active Branch</label>
                             <form method="POST" action="/set_branch" style="display: flex; gap: 8px;">
@@ -142,55 +142,96 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                         <div>
                             <h3 style="font-size: 20px; margin-bottom: 4px;">{{ session.plan_name }} Plan</h3>
-                            <p style="color: var(--text-secondary);">Active • <span>{% if session.plan == 'basic' %}₱500{% elif session.plan == 'pro' %}₱1,500{% else %}₱5,000{% endif %}</span>/month</p>
+                            <p style="color: var(--text-secondary);">Active • <span>{% if session.plan == 'starter' %}Free{% elif session.plan == 'essentials' %}₱199{% elif session.plan == 'professional' %}₱499{% else %}₱1,299{% endif %}</span>/month</p>
                         </div>
                         <span class="badge" style="background: #10b981; color: white; padding: 6px 16px;">Current Plan</span>
                     </div>
                     <div style="margin-top: 20px;">
                         <h4 style="margin-bottom: 12px;">Features included:</h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Cash Management</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Sales Management</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> General Journal</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Business Insights</div>
-                            {% if session.plan != 'basic' %}
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Receivable</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Accounts Payable</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Inventory Management</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Audit Log</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Cash Management</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Sales Management</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> General Journal</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Business Insights</div>
+                            {% if session.plan != 'starter' %}
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Bank Reconciliation</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Tax Reports</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Professional Receipts</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Cloud Sync & Multi-Device</div>
                             {% endif %}
-                            {% if session.plan == 'enterprise' %}
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> Multi-Branch Support</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> API Access</div>
-                            <div><i class="fas fa-check-circle" style="color: #10b981;"></i> BIR Integration</div>
+                            {% if session.plan in ['professional', 'suite'] %}
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Accounts Receivable</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Accounts Payable</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Inventory Management</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Purchase & Sales Orders</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Role-Based Access</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Audit Log</div>
+                            {% endif %}
+                            {% if session.plan == 'suite' %}
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Multi-Branch Support</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> All Add-ons Included</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Industry Packages</div>
+                            <div><i class="fas fa-check-circle" style="color: var(--accent);"></i> Fiscal Year Closing</div>
                             {% endif %}
                         </div>
                     </div>
                 </div>
-                {% if session.plan != 'enterprise' %}
+                {% if session.plan == 'starter' %}
                 <h3 style="margin-bottom: 20px;">Upgrade Options</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                    {% if session.plan == 'basic' %}
-                    <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; position: relative;">
-                        <div style="position: absolute; top: -10px; right: 20px; background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
-                        <h3 style="font-size: 22px; margin-bottom: 8px;">Pro Plan</h3>
-                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱1,500<span style="font-size: 14px;">/month</span></div>
-                        <ul style="margin: 20px 0; padding-left: 20px;"><li>AR, AP, Inventory</li><li>Multi-user (up to 10)</li><li>Audit Log</li><li>CSV Import</li></ul>
-                        <a href="/upgrade_to_pro" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Pro</a>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+                    <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 2px solid var(--accent); border-radius: 20px; padding: 24px; position: relative;">
+                        <div style="position: absolute; top: -10px; right: 20px; background: var(--accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
+                        <h3 style="font-size: 20px; margin-bottom: 4px;">Essentials</h3>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Run one business properly</p>
+                        <div style="font-size: 28px; font-weight: 700; color: var(--accent);">₱199<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 16px 0; padding-left: 20px; font-size: 13px;"><li>Cloud sync + multi-device</li><li>Bank Reconciliation</li><li>Tax Reports</li><li>Professional Receipts</li><li>Add-ons available</li></ul>
+                        <a href="/plan" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Essentials</a>
                     </div>
-                    {% endif %}
-                    <div style="background: var(--bg-primary); border-radius: 20px; padding: 24px; border: 1px solid var(--border-light);">
-                        <h3 style="font-size: 22px; margin-bottom: 8px;">Enterprise Plan</h3>
-                        <div style="font-size: 28px; font-weight: 700; color: #10b981;">₱5,000<span style="font-size: 14px;">/month</span></div>
-                        <ul style="margin: 20px 0; padding-left: 20px;"><li>All Pro features</li><li>Multi-branch</li><li>API Access</li><li>BIR Integration</li><li>Priority Support</li></ul>
-                        <a href="/upgrade_to_enterprise" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Enterprise</a>
+                    <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px;">
+                        <h3 style="font-size: 20px; margin-bottom: 4px;">Professional</h3>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Manage team + operations</p>
+                        <div style="font-size: 28px; font-weight: 700; color: var(--accent);">₱499<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 16px 0; padding-left: 20px; font-size: 13px;"><li>All Essentials features</li><li>Purchase & Sales Orders</li><li>Role-based access</li><li>Audit Log</li><li>Add-ons at 30% off</li></ul>
+                        <a href="/plan" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Professional</a>
+                    </div>
+                    <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px;">
+                        <h3 style="font-size: 20px; margin-bottom: 4px;">Suite</h3>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Multi-location control</p>
+                        <div style="font-size: 28px; font-weight: 700; color: var(--accent);">₱1,299<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 16px 0; padding-left: 20px; font-size: 13px;"><li>All Professional features</li><li>Multi-branch</li><li>All add-ons included</li><li>Fiscal Year Closing</li><li>Industry packages included</li></ul>
+                        <a href="/plan" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Suite</a>
                     </div>
                 </div>
+                {% elif session.plan == 'essentials' %}
+                <h3 style="margin-bottom: 20px;">Upgrade Options</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+                    <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 2px solid var(--accent); border-radius: 20px; padding: 24px; position: relative;">
+                        <div style="position: absolute; top: -10px; right: 20px; background: var(--accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">RECOMMENDED</div>
+                        <h3 style="font-size: 20px; margin-bottom: 4px;">Professional</h3>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Manage team + operations</p>
+                        <div style="font-size: 28px; font-weight: 700; color: var(--accent);">₱499<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 16px 0; padding-left: 20px; font-size: 13px;"><li>Purchase & Sales Orders</li><li>Role-based access</li><li>Audit Log</li><li>General Ledger</li><li>Add-ons at 30% off</li></ul>
+                        <a href="/plan" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Professional</a>
+                    </div>
+                    <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px;">
+                        <h3 style="font-size: 20px; margin-bottom: 4px;">Suite</h3>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Multi-location control</p>
+                        <div style="font-size: 28px; font-weight: 700; color: var(--accent);">₱1,299<span style="font-size: 14px;">/month</span></div>
+                        <ul style="margin: 16px 0; padding-left: 20px; font-size: 13px;"><li>Multi-branch</li><li>All add-ons included</li><li>Fiscal Year Closing</li><li>Industry packages included</li><li>10 users included</li></ul>
+                        <a href="/plan" class="btn btn-primary" style="width: 100%; text-align: center; display: block;">Upgrade to Suite</a>
+                    </div>
+                </div>
+                {% elif session.plan == 'professional' %}
+                <div style="background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 20px; padding: 24px; margin-bottom: 16px;">
+                    <h3 style="font-size: 20px; margin-bottom: 4px;">Suite — ₱1,299/month</h3>
+                    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Unlock multi-branch, all add-ons included, fiscal year closing</p>
+                    <a href="/plan" class="btn btn-primary">Upgrade to Suite</a>
+                </div>
                 {% else %}
-                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 20px; padding: 40px; text-align: center;">
+                <div style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%); border-radius: 20px; padding: 40px; text-align: center;">
                     <i class="fas fa-check-circle" style="font-size: 48px; color: white;"></i>
-                    <h3 style="color: white; margin-top: 16px;">You're on the best plan!</h3>
-                    <p style="color: rgba(255,255,255,0.9); margin-top: 8px;">You have access to all features.</p>
+                    <h3 style="color: white; margin-top: 16px;">You're on the most complete plan.</h3>
+                    <p style="color: rgba(255,255,255,0.9); margin-top: 8px;">All features, all add-ons, all industry packages included.</p>
                 </div>
                 {% endif %}
             </div>

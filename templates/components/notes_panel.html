@@ -1,0 +1,155 @@
+<!-- Notes & Tasks Panel -->
+<div class="card" style="margin-top:24px;" id="notesPanel">
+    <div class="card-header">
+        <h2><i class="fas fa-comments"></i> Notes & Tasks</h2>
+        <button class="btn btn-secondary btn-sm" onclick="toggleNoteForm()">
+            <i class="fas fa-plus"></i> Add Note
+        </button>
+    </div>
+
+    <!-- Add Note Form (hidden by default) -->
+    <div id="noteForm" style="display:none;margin-bottom:16px;padding:16px;background:var(--bg-primary);border-radius:14px;">
+        <div class="form-group">
+            <textarea id="noteText" rows="3" placeholder="What needs attention on this record?"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div class="form-group" style="flex:1;min-width:150px;">
+                <label>Assign To</label>
+                <select id="noteAssignee">
+                    <option value="">Just a note (no assignment)</option>
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;min-width:120px;">
+                <label>Priority</label>
+                <select id="notePriority">
+                    <option value="normal">Normal</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="toggleNoteForm()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitNote()">Save Note</button>
+        </div>
+    </div>
+
+    <!-- Notes List -->
+    <div id="notesList">
+        <p style="text-align:center;color:var(--text-tertiary);padding:16px;">Loading notes...</p>
+    </div>
+</div>
+
+<script>
+    var currentModule = '{{ module_type }}';
+    var currentRecordId = '{{ record_id }}';
+
+    function loadNotes() {
+        fetch('/tasks/list/' + currentModule + '/' + currentRecordId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var container = document.getElementById('notesList');
+                if (!data.notes || !data.notes.length) {
+                    container.innerHTML = '<p style="text-align:center;color:var(--text-tertiary);padding:16px;">No notes yet.</p>';
+                    return;
+                }
+                var html = '';
+                data.notes.forEach(function(n) {
+                    var statusBadge = '';
+                    if (n.assigned_to) {
+                        var statusClass = n.status === 'open' ? 'status-open' : 
+                                         n.status === 'in_progress' ? 'status-in_progress' : 'status-done';
+                        statusBadge = '<span class="status-badge ' + statusClass + '">' + n.status.replace('_', ' ') + '</span>';
+                    }
+                    var borderStyle = n.priority === 'urgent' ? 'border-left:3px solid #ef4444;' : '';
+                    html += '<div style="padding:12px 16px;margin-bottom:8px;background:rgba(255,255,255,0.02);border-radius:12px;' + borderStyle + '">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">';
+                    html += '<div style="flex:1;">';
+                    html += '<p style="font-size:13px;color:var(--text-primary);margin-bottom:6px;">' + n.note_text + '</p>';
+                    html += '<div style="font-size:10px;color:var(--text-tertiary);">';
+                    html += '<span><i class="fas fa-user"></i> ' + n.created_by_name + '</span>';
+                    if (n.assigned_to_name) {
+                        html += '<span style="margin-left:12px;"><i class="fas fa-arrow-right"></i> ' + n.assigned_to_name + '</span>';
+                    }
+                    html += '<span style="margin-left:12px;"><i class="fas fa-clock"></i> ' + (n.created_at || '') + '</span>';
+                    html += '</div>';
+                    html += '</div>';
+                    if (statusBadge) {
+                        html += '<div style="display:flex;align-items:center;gap:6px;">' + statusBadge;
+                        if (n.status !== 'done') {
+                            html += '<button class="btn btn-primary" style="font-size:10px;padding:4px 10px;" onclick="markDone(' + n.id + ')">Done</button>';
+                        }
+                        html += '</div>';
+                    }
+                    html += '</div></div>';
+                });
+                container.innerHTML = html;
+            });
+    }
+
+    function toggleNoteForm() {
+        var form = document.getElementById('noteForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        if (form.style.display === 'block') {
+            loadTeamMembers();
+        }
+    }
+
+    function loadTeamMembers() {
+        fetch('/tasks/team')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var select = document.getElementById('noteAssignee');
+                select.innerHTML = '<option value="">Just a note (no assignment)</option>';
+                data.team.forEach(function(m) {
+                    select.innerHTML += '<option value="' + m.id + '">' + m.username + ' (' + m.role + ')</option>';
+                });
+            });
+    }
+
+    function submitNote() {
+        var note = document.getElementById('noteText').value.trim();
+        var assignee = document.getElementById('noteAssignee').value;
+        var priority = document.getElementById('notePriority').value;
+
+        if (!note) { showToast ? showToast('Enter a note', 'error') : alert('Enter a note'); return; }
+
+        fetch('/tasks/create', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                module_type: currentModule,
+                record_id: currentRecordId,
+                note_text: note,
+                assigned_to: assignee || null,
+                priority: priority
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                toggleNoteForm();
+                document.getElementById('noteText').value = '';
+                loadNotes();
+                if (showToast) showToast(d.message, 'success');
+            }
+        });
+    }
+
+    function markDone(id) {
+        fetch('/tasks/' + id + '/status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({status: 'done'})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                loadNotes();
+                if (showToast) showToast('Marked as done', 'success');
+            }
+        });
+    }
+
+    // Load notes on page load
+    document.addEventListener('DOMContentLoaded', loadNotes);
+</script>
