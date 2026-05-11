@@ -25,9 +25,9 @@ def projects():
             COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.project_id = p.id AND t.type = 'income' AND t.deleted_at IS NULL), 0) as total_income,
             COALESCE((SELECT SUM(t.amount) FROM transactions t WHERE t.project_id = p.id AND t.type = 'expense' AND t.deleted_at IS NULL), 0) as total_expense,
             COALESCE((SELECT SUM(s.amount) FROM sales s WHERE s.project_id = p.id), 0) as total_sales
-        FROM projects p WHERE p.deleted_at IS NULL
+        FROM projects p
         JOIN users u ON p.user_id = u.id
-        WHERE u.business_id = %s
+        WHERE p.deleted_at IS NULL AND u.business_id = %s
         ORDER BY p.status ASC, p.created_at DESC
     """, (business_id,))
     projects = cursor.fetchall()

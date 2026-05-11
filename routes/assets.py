@@ -22,9 +22,9 @@ def assets():
     business_id = session.get('business_id', session['user_id'])
     
     cursor.execute("""
-        SELECT a.* FROM assets a WHERE a.deleted_at IS NULL
+        SELECT a.* FROM assets a
         JOIN users u ON a.user_id = u.id
-        WHERE u.business_id = %s
+        WHERE a.deleted_at IS NULL AND u.business_id = %s
         ORDER BY a.purchase_date DESC
     """, (business_id,))
     assets = cursor.fetchall()

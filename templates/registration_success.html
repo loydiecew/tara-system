@@ -2,9 +2,9 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Created — TARA</title>
-    <meta name="description" content="Your TARA business account is ready.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Account Created — TARA</title>
+    <meta name="description" content="Your TARA account is ready.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,8 +12,6 @@
     <style>
         :root {
             --bg-deep: #060608;
-            --bg-surface: #0c0c0f;
-            --bg-elevated: #121216;
             --bg-glass: rgba(18, 18, 22, 0.6);
             --text-primary: #f1f1f3;
             --text-secondary: #a1a1aa;
@@ -21,16 +19,13 @@
             --border-subtle: rgba(255,255,255,0.06);
             --border-visible: rgba(255,255,255,0.1);
             --accent: #10b981;
-            --accent-dark: #059669;
             --accent-light: #064e3b;
             --accent-glow: rgba(16, 185, 129, 0.2);
             --radius-sm: 10px;
             --radius-md: 16px;
             --radius-lg: 24px;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-deep);
@@ -41,25 +36,11 @@
             justify-content: center;
             padding: 24px;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
             position: relative;
             overflow-x: hidden;
         }
-
-        /* Ambient background */
-        .bg-universe {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .bg-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(140px);
-            opacity: 0.12;
-        }
+        .bg-universe { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .bg-orb { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.10; }
         .bg-orb-1 { width: 700px; height: 700px; background: #065f46; top: -150px; left: -150px; animation: orbDrift 22s ease-in-out infinite; }
         .bg-orb-2 { width: 500px; height: 500px; background: #1e3a5f; bottom: -100px; right: -100px; animation: orbDrift 26s ease-in-out infinite reverse; }
         @keyframes orbDrift {
@@ -67,15 +48,8 @@
             33% { transform: translate(60px, -40px) scale(1.06); }
             66% { transform: translate(-40px, 40px) scale(0.95); }
         }
-
-        .success-wrapper {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 520px;
-        }
-
-        .success-card {
+        .wrapper { position: relative; z-index: 2; width: 100%; max-width: 500px; }
+        .card {
             background: var(--bg-glass);
             backdrop-filter: blur(28px);
             -webkit-backdrop-filter: blur(28px);
@@ -85,205 +59,95 @@
             box-shadow: 0 24px 64px rgba(0,0,0,0.4);
             text-align: center;
         }
-
-        /* Success icon */
-        .success-icon {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            background: var(--accent-light);
-            border: 2px solid rgba(16, 185, 129, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .check-icon {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: var(--accent-light); border: 2px solid rgba(16,185,129,0.3);
+            display: flex; align-items: center; justify-content: center;
             margin: 0 auto 24px;
             animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            opacity: 0;
-            transform: scale(0.5);
+            opacity: 0; transform: scale(0.5);
         }
-        .success-icon i {
-            font-size: 32px;
-            color: var(--accent);
-        }
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.5); }
-            100% { opacity: 1; transform: scale(1); }
-        }
+        .check-icon i { font-size: 32px; color: var(--accent); }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1); } }
+        .card h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+        .card .sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; line-height: 1.6; }
 
-        .success-card h1 {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.8px;
-            margin-bottom: 8px;
-        }
-        .success-card h1 .highlight {
-            background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .success-card .subtitle {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-            line-height: 1.5;
-        }
-
-        /* Business ID box */
         .biz-id-box {
-            background: rgba(16, 185, 129, 0.05);
-            border: 1px solid rgba(16, 185, 129, 0.15);
-            border-radius: var(--radius-md);
-            padding: 24px;
-            margin-bottom: 28px;
+            background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.15);
+            border-radius: var(--radius-md); padding: 20px 24px; margin-bottom: 24px;
         }
         .biz-id-box .label {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--accent);
-            margin-bottom: 8px;
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--accent); margin-bottom: 8px;
         }
-        .biz-id-box .biz-id-value {
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            color: #fff;
-            font-family: 'Inter', monospace;
-            word-break: break-all;
-            margin-bottom: 4px;
+        .biz-id-box .id-value {
+            font-size: 22px; font-weight: 900; letter-spacing: 1px; color: #fff;
+            font-family: 'Courier New', monospace; margin-bottom: 4px;
         }
-        .biz-id-box .biz-name {
-            font-size: 13px;
-            color: var(--text-secondary);
+        .biz-id-box .biz-pass {
+            font-size: 13px; color: var(--text-secondary); margin-top: 8px;
         }
-        .biz-id-box .save-warning {
-            font-size: 11px;
-            color: #f59e0b;
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+        .biz-id-box .biz-pass strong {
+            font-family: 'Courier New', monospace; color: #f59e0b; font-size: 14px;
+        }
+        .biz-id-box .warn {
+            font-size: 10px; color: #f59e0b; margin-top: 10px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
         }
 
-        /* Steps */
-        .next-steps {
-            text-align: left;
-            margin-bottom: 28px;
+        .trial-info {
+            padding: 14px; background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            margin-bottom: 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.6;
         }
-        .next-steps .steps-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-tertiary);
-            margin-bottom: 12px;
-            text-align: center;
-        }
-        .next-steps .step {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-subtle);
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-        .next-steps .step:last-child {
-            border-bottom: none;
-        }
-        .next-steps .step .step-num {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: var(--bg-elevated);
-            border: 1px solid var(--border-visible);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--text-tertiary);
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-        .next-steps .step strong {
-            color: var(--text-primary);
-            font-weight: 600;
-        }
+        .trial-info strong { color: var(--text-primary); }
 
-        /* Buttons */
-        .btn-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
+        .steps-list { text-align: left; margin-bottom: 24px; }
+        .steps-list .step {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 10px 0; border-bottom: 1px solid var(--border-subtle);
+            font-size: 12px; color: var(--text-secondary); line-height: 1.5;
         }
+        .steps-list .step:last-child { border-bottom: none; }
+        .steps-list .step-num {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border-visible);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 700; color: var(--text-tertiary); flex-shrink: 0;
+        }
+        .steps-list .step strong { color: var(--text-primary); }
+
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            border-radius: 100px;
-            font-size: 14.5px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.25s;
-            cursor: pointer;
-            border: none;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 32px; border-radius: 100px;
+            font-size: 14px; font-weight: 600; text-decoration: none;
+            transition: all 0.2s; cursor: pointer; border: none;
             font-family: 'Inter', sans-serif;
-            letter-spacing: -0.3px;
-            white-space: nowrap;
         }
-        .btn-primary {
-            background: #fff;
-            color: #000;
+        .btn-primary { background: #fff; color: #000; }
+        .btn-primary:hover { background: #e5e5e5; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(255,255,255,0.12); }
+        .btn-copy {
+            background: rgba(255,255,255,0.05); color: #fff;
+            border: 1px solid rgba(255,255,255,0.12); margin-left: 8px;
         }
-        .btn-primary:hover {
-            background: #e5e5e5;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(255,255,255,0.12);
-        }
-        .btn-glass {
-            background: rgba(255,255,255,0.05);
-            color: #fff;
-            border: 1px solid rgba(255,255,255,0.12);
-        }
-        .btn-glass:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
-            transform: translateY(-2px);
-        }
+        .btn-copy:hover { background: rgba(255,255,255,0.1); }
 
-        @media (max-width: 480px) {
-            .success-card { padding: 36px 24px; }
-            .biz-id-box .biz-id-value { font-size: 22px; }
-            .btn-row { flex-direction: column; align-items: stretch; }
-            .btn { justify-content: center; }
-        }
+        @media (max-width: 480px) { .card { padding: 36px 20px; } .biz-id-box .id-value { font-size: 17px; } }
     </style>
 </head>
 <body>
-
 <div class="bg-universe">
     <div class="bg-orb bg-orb-1"></div>
     <div class="bg-orb bg-orb-2"></div>
 </div>
 
-<div class="success-wrapper">
-    <div class="success-card">
-        <div class="success-icon">
-            <i class="fas fa-check"></i>
-        </div>
-
-        <h1><span class="highlight">{{ business_name }}</span> is ready.</h1>
-        <p class="subtitle">
-            {% if plan and plan != 'Starter' %}
-            Your 30-day free trial has started. No credit card charged.
+<div class="wrapper">
+    <div class="card">
+        <div class="check-icon"><i class="fas fa-check"></i></div>
+        <h1>{{ business_name }} is ready.</h1>
+        <p class="sub">
+            {% if is_trial %}
+            Your 14-day {{ plan }} trial has started. No charges until {{ trial_ends_at.strftime('%B %d, %Y') if trial_ends_at else 'the trial ends' }}.
             {% else %}
             Your free account is live. No time limit, no credit card.
             {% endif %}
@@ -292,20 +156,30 @@
         <!-- Business ID -->
         <div class="biz-id-box">
             <div class="label">Your Business ID</div>
-            <div class="biz-id-value">{{ business_id }}</div>
-            <div class="biz-name">{{ business_name }}</div>
-            <div class="save-warning">
+            <div class="id-value" id="bizId">{{ business_id }}</div>
+            <div class="biz-pass">
+                Business Password: <strong>{{ business_password }}</strong>
+            </div>
+            <div class="warn">
                 <i class="fas fa-exclamation-triangle"></i>
-                Save this — you and your team need it to sign in.
+                Save these. You and your team need them to sign in.
             </div>
         </div>
 
+        <!-- Trial info for paid plans -->
+        {% if is_trial %}
+        <div class="trial-info">
+            <strong>Your Plan:</strong> {{ plan }} (₱{{ '199' if plan_slug == 'essentials' else '499' if plan_slug == 'professional' else '1,299' if plan_slug == 'suite' else '0' }}/mo)<br>
+            <strong>Trial ends:</strong> {{ trial_ends_at.strftime('%B %d, %Y') if trial_ends_at else '14 days from now' }}<br>
+            <strong>Billing:</strong> No charges until trial ends. Cancel anytime.
+        </div>
+        {% endif %}
+
         <!-- Next steps -->
-        <div class="next-steps">
-            <div class="steps-label">What's next</div>
+        <div class="steps-list">
             <div class="step">
                 <div class="step-num">1</div>
-                <span><strong>Save your Business ID</strong> — screenshot it, write it down, or copy it now. It cannot be recovered if lost.</span>
+                <span><strong>Save your Business ID and password</strong> — screenshot or write them down. You cannot recover the password if lost.</span>
             </div>
             <div class="step">
                 <div class="step-num">2</div>
@@ -313,16 +187,26 @@
             </div>
             <div class="step">
                 <div class="step-num">3</div>
-                <span><strong>Share with your team</strong> — give them the Business ID and Business Password so they can join.</span>
+                <span><strong>Add your products</strong> — set up your items so Quick Tap is ready to use.</span>
             </div>
+            {% if not is_trial %}
+            <div class="step">
+                <div class="step-num">4</div>
+                <span><strong>Record your first sale</strong> — tap a product and start tracking.</span>
+            </div>
+            {% else %}
+            <div class="step">
+                <div class="step-num">4</div>
+                <span><strong>Invite your team</strong> — give them the Business ID and password so they can create their accounts.</span>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Actions -->
-        <div class="btn-row">
+        <div>
             <a href="/login" class="btn btn-primary">
                 <i class="fas fa-arrow-right-to-bracket"></i> Sign In Now
             </a>
-            <button onclick="copyBizId()" class="btn btn-glass" id="copyBtn">
+            <button onclick="copyBizId()" class="btn btn-copy" id="copyBtn">
                 <i class="fas fa-copy"></i> Copy Business ID
             </button>
         </div>
@@ -331,7 +215,7 @@
 
 <script>
     function copyBizId() {
-        const bizId = "{{ business_id }}";
+        const bizId = document.getElementById('bizId').textContent;
         navigator.clipboard.writeText(bizId).then(() => {
             const btn = document.getElementById('copyBtn');
             btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
@@ -343,7 +227,6 @@
                 btn.style.color = '#fff';
             }, 2000);
         }).catch(() => {
-            // Fallback for older browsers
             const textArea = document.createElement('textarea');
             textArea.value = bizId;
             document.body.appendChild(textArea);
@@ -352,12 +235,9 @@
             document.body.removeChild(textArea);
             const btn = document.getElementById('copyBtn');
             btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            setTimeout(() => {
-                btn.innerHTML = '<i class="fas fa-copy"></i> Copy Business ID';
-            }, 2000);
+            setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i> Copy Business ID', 2000);
         });
     }
 </script>
-
 </body>
 </html>

@@ -22,18 +22,18 @@ def timecards():
     
     cursor.execute("""
         SELECT t.*, p.name as project_name, p.client_name
-        FROM timecards t WHERE t.deleted_at IS NULL
+        FROM timecards t
         LEFT JOIN projects p ON t.project_id = p.id
         JOIN users u ON t.user_id = u.id
-        WHERE u.business_id = %s
+        WHERE t.deleted_at IS NULL AND u.business_id = %s
         ORDER BY t.date_worked DESC
     """, (business_id,))
     timecards = cursor.fetchall()
     
     cursor.execute("""
-        SELECT p.id, p.name FROM projects p WHERE p.deleted_at IS NULL
+        SELECT p.id, p.name FROM projects p
         JOIN users u ON p.user_id = u.id
-        WHERE u.business_id = %s AND p.status = 'active'
+        WHERE p.deleted_at IS NULL AND u.business_id = %s AND p.status = 'active'
     """, (business_id,))
     projects = cursor.fetchall()
     

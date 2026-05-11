@@ -838,7 +838,26 @@
             border-color: #fff;
             box-shadow: 0 0 10px currentColor;
         }
+        /* ========== VOICE INPUT ========== */
+        .voice-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            z-index: 2;
+        }
+        .voice-btn:hover { color: var(--accent); background: var(--accent-light); }
+        .voice-btn.listening { color: #ef4444; animation: micPulse 1s infinite; }
+        @keyframes micPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     </style>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -1530,7 +1549,67 @@
                 sessionStorage.setItem('sidebarScroll', sidebarNav.scrollTop);
             });
         }
+    // ========== VOICE INPUT ==========
+    window.startVoice = function(inputId) {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            showToast('Voice input requires Chrome browser', 'warning');
+            return;
+        }
+        
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        var recognition = new SpeechRecognition();
+        recognition.lang = 'en-PH';
+        recognition.interimResults = false;
+        
+        var btn = document.getElementById('voiceBtn_' + inputId);
+        var status = document.getElementById('voiceStatus_' + inputId);
+        
+        if (btn) btn.classList.add('listening');
+        if (status) status.style.display = 'inline';
+        
+        recognition.start();
+        
+        recognition.onresult = function(event) {
+            var transcript = event.results[0][0].transcript;
+            var input = document.getElementById(inputId);
+            if (input) {
+                input.value = transcript;
+                input.focus();
+            }
+            if (btn) btn.classList.remove('listening');
+            if (status) status.style.display = 'none';
+            
+            // Try to parse amount from voice
+            fetch('/api/parse_voice', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: transcript})
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.amount) {
+                    var amountId = inputId.replace('Desc', 'Amount').replace('desc', 'amount').replace('Description', 'Amount').replace('description', 'amount');
+                    var amountField = document.getElementById(amountId);
+                    if (!amountField) {
+                        amountField = document.querySelector('input[name="amount"]');
+                    }
+                    if (amountField) amountField.value = data.amount;
+                }
+            });
+        };
+        
+        recognition.onerror = function() {
+            if (btn) btn.classList.remove('listening');
+            if (status) status.style.display = 'none';
+        };
+        
+        recognition.onend = function() {
+            if (btn) btn.classList.remove('listening');
+            if (status) status.style.display = 'none';
+        };
+    };
     </script>
+
     {% block extra_js %}{% endblock %}
         <!-- ========== ONBOARDING MODAL ========== -->
     <div id="onboardingModal" class="modal">

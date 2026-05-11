@@ -28,7 +28,13 @@
         <div class="form-grid">
             <div class="form-group">
                 <label>Description *</label>
-                <input type="text" name="description" placeholder="e.g., Rent payment" required>
+                <div style="position:relative;">
+                    <input type="text" name="description" id="cashDesc" placeholder="e.g., Rent payment" required style="padding-right:40px;">
+                    <button type="button" class="voice-btn" id="voiceBtn_cashDesc" onclick="startVoice('cashDesc')" title="Speak to fill">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <span class="voice-status" id="voiceStatus_cashDesc" style="display:none;font-size:10px;color:var(--accent);">Listening...</span>
+                </div>
             </div>
             <div class="form-group">
                 <label>Amount (₱) *</label>

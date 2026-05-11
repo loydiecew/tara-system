@@ -30,7 +30,7 @@ def budgets():
         SELECT 
             b.id, b.category, b.month, b.budget_amount,
             COALESCE(SUM(t.amount), 0) as actual_amount
-        FROM budgets b WHERE b.deleted_at IS NULL
+        FROM budgets b
         JOIN users u ON b.user_id = u.id
         LEFT JOIN transactions t ON t.category = b.category 
             AND MONTH(t.transaction_date) = MONTH(b.month)
@@ -38,7 +38,7 @@ def budgets():
             AND t.type = 'expense'
             AND t.deleted_at IS NULL
             AND t.user_id = b.user_id
-        WHERE u.business_id = %s
+        WHERE b.deleted_at IS NULL AND u.business_id = %s
         GROUP BY b.id, b.category, b.month, b.budget_amount
         ORDER BY b.month DESC, b.category ASC
     """, (business_id,))

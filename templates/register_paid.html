@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% if plan == 'essentials' %}Try Essentials{% elif plan == 'professional' %}Try Professional{% elif plan == 'suite' %}Try Suite{% else %}Start Trial — TARA{% endif %}</title>
+    <meta name="description" content="Start your 14-day free trial. No credit card required.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-deep: #060608;
+            --bg-surface: #0c0c0f;
+            --bg-elevated: #121216;
+            --bg-glass: rgba(18, 18, 22, 0.6);
+            --text-primary: #f1f1f3;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-visible: rgba(255,255,255,0.1);
+            --accent: #10b981;
+            --accent-dark: #059669;
+            --accent-light: #064e3b;
+            --accent-glow: rgba(16, 185, 129, 0.2);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .bg-universe { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .bg-orb { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.10; }
+        .bg-orb-1 { width: 700px; height: 700px; background: #065f46; top: -150px; left: -150px; animation: orbDrift 22s ease-in-out infinite; }
+        .bg-orb-2 { width: 500px; height: 500px; background: #1e3a5f; bottom: -100px; right: -100px; animation: orbDrift 26s ease-in-out infinite reverse; }
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(60px, -40px) scale(1.06); }
+            66% { transform: translate(-40px, 40px) scale(0.95); }
+        }
+        .wrapper { position: relative; z-index: 2; width: 100%; max-width: 620px; }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--text-tertiary); text-decoration: none;
+            font-size: 13px; font-weight: 500; margin-bottom: 20px; transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--text-secondary); }
+
+        /* Steps indicator */
+        .steps { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+        .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-visible); transition: all 0.3s; }
+        .step-dot.active { background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        .step-dot.done { background: var(--accent); }
+
+        .card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+        }
+
+        /* Plan header */
+        .plan-badge {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--accent); margin-bottom: 8px;
+        }
+        .plan-name {
+            font-size: 26px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 4px;
+        }
+        .plan-price { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; }
+        .plan-price strong { font-size: 20px; color: var(--text-primary); }
+        .trial-tag {
+            display: inline-block; font-size: 11px; font-weight: 600; color: var(--accent);
+            padding: 4px 12px; border-radius: 100px; background: var(--accent-light);
+            border: 1px solid rgba(16,185,129,0.2); margin-bottom: 24px;
+        }
+
+        .error-banner {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            color: #f87171; padding: 12px 14px; border-radius: var(--radius-sm);
+            margin-bottom: 20px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px;
+        }
+
+        /* Step panels */
+        .step-panel { display: none; animation: fadeSlide 0.3s ease; }
+        .step-panel.active { display: block; }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group.full { grid-column: span 2; }
+        .form-group label {
+            display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-tertiary); margin-bottom: 6px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap i {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-tertiary); font-size: 14px; pointer-events: none;
+        }
+        .input-wrap input, .input-wrap select {
+            width: 100%; padding: 12px 14px 12px 42px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); font-size: 14px;
+            font-family: 'Inter', sans-serif; color: var(--text-primary);
+            transition: all 0.2s; outline: none;
+        }
+        .input-wrap select {
+            appearance: none; cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+        }
+        .input-wrap select option { background: var(--bg-elevated); color: var(--text-primary); }
+        .input-wrap input:focus, .input-wrap select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(255,255,255,0.05);
+        }
+        .input-wrap:focus-within i { color: var(--accent); }
+        .hint { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; }
+
+        /* Add-on cards */
+        .addon-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 280px; overflow-y: auto; }
+        .addon-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 14px; background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.2s;
+        }
+        .addon-item:hover { border-color: var(--border-visible); background: rgba(255,255,255,0.04); }
+        .addon-item.selected { border-color: var(--accent); background: var(--accent-light); }
+        .addon-item input[type="checkbox"] { display: none; }
+        .addon-item .addon-check {
+            width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border-visible);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s;
+        }
+        .addon-item.selected .addon-check { background: var(--accent); border-color: var(--accent); }
+        .addon-item.selected .addon-check::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; }
+        .addon-info { flex: 1; min-width: 0; }
+        .addon-info .addon-name { font-size: 13px; font-weight: 600; }
+        .addon-info .addon-desc { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+        .addon-price { font-size: 14px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+
+        /* Package cards */
+        .pkg-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .pkg-item {
+            padding: 14px; background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        .pkg-item:hover { border-color: var(--border-visible); }
+        .pkg-item.selected { border-color: var(--accent); background: var(--accent-light); }
+        .pkg-item .pkg-name { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+        .pkg-item .pkg-price { font-size: 16px; font-weight: 800; color: var(--accent); }
+        .pkg-item .pkg-save { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+
+        /* Total bar */
+        .total-bar {
+            padding: 16px; background: rgba(16,185,129,0.05);
+            border: 1px solid rgba(16,185,129,0.15); border-radius: var(--radius-sm);
+            margin-bottom: 16px; text-align: center;
+        }
+        .total-bar .total-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); }
+        .total-bar .total-amount { font-size: 28px; font-weight: 900; color: var(--accent); }
+        .total-bar .total-note { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Billing toggle */
+        .billing-toggle {
+            display: flex; gap: 0; margin-bottom: 16px;
+            background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); overflow: hidden;
+        }
+        .billing-opt {
+            flex: 1; padding: 10px; text-align: center; cursor: pointer;
+            font-size: 12px; font-weight: 600; color: var(--text-tertiary); transition: all 0.2s;
+        }
+        .billing-opt:hover { color: var(--text-secondary); }
+        .billing-opt.active { background: var(--accent); color: #fff; }
+
+        /* Buttons */
+        .btn-row { display: flex; gap: 10px; }
+        .btn-row .btn { flex: 1; }
+        .btn {
+            padding: 13px 20px; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.2s; border: none; text-align: center; text-decoration: none;
+        }
+        .btn-primary { background: #fff; color: #000; }
+        .btn-primary:hover { background: #e5e5e5; transform: translateY(-1px); }
+        .btn-secondary {
+            background: transparent; border: 1px solid var(--border-visible);
+            color: var(--text-secondary);
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        .no-cc { text-align: center; font-size: 11px; color: var(--text-tertiary); margin-top: 10px; }
+        .footer-link {
+            text-align: center; margin-top: 20px; padding-top: 16px;
+            border-top: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-secondary);
+        }
+        .footer-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+
+        @media (max-width: 560px) {
+            .form-row { grid-template-columns: 1fr; }
+            .form-group.full { grid-column: span 1; }
+            .pkg-list { grid-template-columns: 1fr; }
+            .card { padding: 28px 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-universe">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+</div>
+
+<div class="wrapper">
+    <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back</a>
+    <div class="steps" id="stepDots">
+        <div class="step-dot active" id="dot1"></div>
+        <div class="step-dot" id="dot2"></div>
+        <div class="step-dot" id="dot3"></div>
+    </div>
+
+    <div class="card">
+        <!-- Plan Header -->
+        <div class="plan-badge">
+            {% if plan == 'essentials' %}Essentials Plan{% elif plan == 'professional' %}Professional Plan{% elif plan == 'suite' %}Suite Plan{% endif %}
+        </div>
+        <div class="plan-name">
+            {% if plan == 'essentials' %}Run your business properly.{% elif plan == 'professional' %}Manage your team.{% elif plan == 'suite' %}Control multiple locations.{% endif %}
+        </div>
+        <div class="plan-price">
+            <strong>
+                {% if plan == 'essentials' %}₱199{% elif plan == 'professional' %}₱499{% elif plan == 'suite' %}₱1,299{% endif %}
+            </strong>/month · 
+            {% if plan == 'essentials' %}1 user{% elif plan == 'professional' %}3 users{% elif plan == 'suite' %}10 users{% endif %}
+        </div>
+        <div class="trial-tag">14-Day Free Trial — No charges today</div>
+
+        {% if error %}
+        <div class="error-banner"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/register?plan={{ plan }}" id="regForm">
+            <!-- ═══════ STEP 1: Account ═══════ -->
+            <div class="step-panel active" id="step1">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-user"></i>
+                            <input type="text" name="full_name" placeholder="Your full name" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" name="email" placeholder="you@email.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Username</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-at"></i>
+                            <input type="text" name="username" placeholder="Choose a username" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" name="password" placeholder="Min. 6 characters" required minlength="6">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Name</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-building"></i>
+                            <input type="text" name="business_name" placeholder="Your registered business name" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Industry</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-tag"></i>
+                            <select name="industry" required>
+                                <option value="">Select your industry...</option>
+                                <option value="food_beverage">Food & Beverage</option>
+                                <option value="retail">Retail</option>
+                                <option value="health_wellness">Health & Wellness</option>
+                                <option value="professional_services">Professional Services</option>
+                                <option value="service_based">Service-Based</option>
+                                <option value="construction">Construction & Real Estate</option>
+                                <option value="logistics">Logistics & Transport</option>
+                                <option value="technology">Technology</option>
+                                <option value="hospitality">Hospitality & Travel</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Size</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-users"></i>
+                            <select name="business_size" required>
+                                <option value="solo">Solo — Just me</option>
+                                <option value="small" {% if plan in ['essentials','professional'] %}selected{% endif %}>Small — 1-10 staff</option>
+                                <option value="medium" {% if plan == 'suite' %}selected{% endif %}>Growing — 10+ staff, multi-branch</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label>Business Password</label>
+                        <div class="input-wrap">
+                            <i class="fas fa-key"></i>
+                            <input type="password" name="business_password" placeholder="Shared by your team to access the business" required minlength="4">
+                        </div>
+                        <div class="hint">Give this to your team members so they can sign in under your business.</div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary" style="width:100%;" onclick="nextStep(2)">Continue</button>
+            </div>
+
+            <!-- ═══════ STEP 2: Add-ons ═══════ -->
+            <div class="step-panel" id="step2">
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">
+                    Add modules to your plan. Each comes with a 14-day free trial. You won't be charged until the trial ends. Cancel anytime.
+                </p>
+
+                <div class="addon-list">
+                    <label class="addon-item">
+                        <input type="checkbox" name="addons" value="1">
+                        <span class="addon-check"></span>
+                        <span class="addon-info"><span class="addon-name">Accounts Receivable</span><span class="addon-desc">Track who owes you, send reminders, aging reports</span></span>
+                        <span class="addon-price">₱149/mo</span>
+                    </label>
+                    <label class="addon-item">
+                        <input type="checkbox" name="addons" value="2">
+                        <span class="addon-check"></span>
+                        <span class="addon-info"><span class="addon-name">Accounts Payable</span><span class="addon-desc">Track what you owe suppliers, due dates</span></span>
+                        <span class="addon-price">₱149/mo</span>
+                    </label>
+                    <label class="addon-item">
+                        <input type="checkbox" name="addons" value="3">
+                        <span class="addon-check"></span>
+                        <span class="addon-info"><span class="addon-name">Inventory Management</span><span class="addon-desc">Stock tracking, reorder alerts, COGS</span></span>
+                        <span class="addon-price">₱149/mo</span>
+                    </label>
+                    <label class="addon-item">
+                        <input type="checkbox" name="addons" value="4">
+                        <span class="addon-check"></span>
+                        <span class="addon-info"><span class="addon-name">Bank Reconciliation</span><span class="addon-desc">Match bank statements to system records</span></span>
+                        <span class="addon-price">₱99/mo</span>
+                    </label>
+                    <label class="addon-item">
+                        <input type="checkbox" name="addons" value="5">
+                        <span class="addon-check"></span>
+                        <span class="addon-info"><span class="addon-name">Tax Reports</span><span class="addon-desc">BIR-ready VAT and tax summaries</span></span>
+                        <span class="addon-price">₱99/mo</span>
+                    </label>
+                    <label class="addon-item">
+                        <input type="checkbox" name="addons" value="6">
+                        <span class="addon-check"></span>
+                        <span class="addon-info"><span class="addon-name">Recurring Transactions</span><span class="addon-desc">Auto-post bills and subscriptions</span></span>
+                        <span class="addon-price">₱79/mo</span>
+                    </label>
+                </div>
+
+                <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:10px;">
+                    Or pick an Industry Package (save 30%+)
+                </div>
+                <div class="pkg-list">
+                    <div class="pkg-item" data-pkg="f&b">
+                        <div class="pkg-name">Food & Beverage</div>
+                        <div class="pkg-price">₱299/mo</div>
+                        <div class="pkg-save">AR + Inventory + Recurring + Recipe Mgmt</div>
+                    </div>
+                    <div class="pkg-item" data-pkg="retail">
+                        <div class="pkg-name">Retail</div>
+                        <div class="pkg-price">₱299/mo</div>
+                        <div class="pkg-save">AR + Inventory + Multi-Currency + POS</div>
+                    </div>
+                    <div class="pkg-item" data-pkg="pro_services">
+                        <div class="pkg-name">Professional Services</div>
+                        <div class="pkg-price">₱199/mo</div>
+                        <div class="pkg-save">Projects + Timecards + Quotations</div>
+                    </div>
+                    <div class="pkg-item" data-pkg="health">
+                        <div class="pkg-name">Health & Wellness</div>
+                        <div class="pkg-price">₱229/mo</div>
+                        <div class="pkg-save">AR + Timecards + Projects + Attachments</div>
+                    </div>
+                </div>
+
+                <div class="total-bar">
+                    <div class="total-label">Estimated Monthly</div>
+                    <div class="total-amount" id="totalDisplay">
+                        {% if plan == 'essentials' %}₱199{% elif plan == 'professional' %}₱499{% elif plan == 'suite' %}₱1,299{% endif %}
+                    </div>
+                    <div class="total-note">First charge after 14-day trial ends</div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(1)">Back</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep(3)">Continue</button>
+                </div>
+            </div>
+
+            <!-- ═══════ STEP 3: Payment ═══════ -->
+            <div class="step-panel" id="step3">
+                <div style="margin-bottom:16px;">
+                    <p style="font-size:13px;font-weight:600;margin-bottom:6px;">Billing Cycle</p>
+                    <div class="billing-toggle" id="billingToggle">
+                        <div class="billing-opt active" data-cycle="monthly">Monthly</div>
+                        <div class="billing-opt" data-cycle="semi_annual">Semi-Annual</div>
+                        <div class="billing-opt" data-cycle="annual">Annual</div>
+                    </div>
+                    <input type="hidden" name="billing_cycle" value="monthly" id="billingCycleInput">
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <p style="font-size:13px;font-weight:600;margin-bottom:6px;">Payment Method</p>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:80px;padding:16px 10px;text-align:center;background:rgba(255,255,255,0.03);border:2px solid var(--accent);border-radius:var(--radius-sm);cursor:pointer;">
+                            <i class="fas fa-credit-card" style="font-size:20px;color:var(--accent);margin-bottom:6px;display:block;"></i>
+                            <span style="font-size:11px;font-weight:600;">Card</span>
+                        </div>
+                        <div style="flex:1;min-width:80px;padding:16px 10px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);cursor:pointer;opacity:0.6;">
+                            <i class="fas fa-mobile-screen" style="font-size:20px;color:var(--text-tertiary);margin-bottom:6px;display:block;"></i>
+                            <span style="font-size:11px;font-weight:600;">GCash</span>
+                        </div>
+                        <div style="flex:1;min-width:80px;padding:16px 10px;text-align:center;background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);cursor:pointer;opacity:0.6;">
+                            <i class="fas fa-wallet" style="font-size:20px;color:var(--text-tertiary);margin-bottom:6px;display:block;"></i>
+                            <span style="font-size:11px;font-weight:600;">Maya</span>
+                        </div>
+                    </div>
+                    <p style="font-size:10px;color:var(--text-tertiary);margin-top:8px;text-align:center;">
+                        GCash and Maya coming soon. Card payments processed securely by PayMongo.
+                    </p>
+                </div>
+
+                <div style="font-size:11px;color:var(--text-tertiary);text-align:center;margin-bottom:16px;line-height:1.5;">
+                    By clicking "Start Trial", you agree to our Terms of Service and Privacy Policy.
+                    <br>No charges today. Cancel anytime during your 14-day trial.
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn btn-secondary" onclick="prevStep(2)">Back</button>
+                    <button type="submit" class="btn btn-primary">Start 14-Day Free Trial</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="no-cc"><i class="fas fa-shield"></i> No charges today. Cancel anytime. Your data stays safe.</div>
+        <div class="footer-link">Already have an account? <a href="/login">Sign in</a></div>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+
+    function showStep(n) {
+        document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById('step' + n).classList.add('active');
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById('dot' + i);
+            dot.classList.remove('active', 'done');
+            if (i < n) dot.classList.add('done');
+            if (i === n) dot.classList.add('active');
+        }
+        currentStep = n;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function nextStep(n) { showStep(n); }
+    function prevStep(n) { showStep(n); }
+
+    // Add-on selection
+    document.querySelectorAll('.addon-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            if (e.target.tagName === 'INPUT') return;
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            this.classList.toggle('selected', checkbox.checked);
+            updateTotal();
+        });
+        item.querySelector('input').addEventListener('change', function() {
+            item.classList.toggle('selected', this.checked);
+            updateTotal();
+        });
+    });
+
+    // Package selection
+    document.querySelectorAll('.pkg-item').forEach(pkg => {
+        pkg.addEventListener('click', function() {
+            document.querySelectorAll('.pkg-item').forEach(p => p.classList.remove('selected'));
+            this.classList.add('selected');
+            document.querySelectorAll('.addon-item').forEach(a => {
+                a.classList.remove('selected');
+                a.querySelector('input').checked = false;
+            });
+            updateTotal();
+        });
+    });
+
+    // Billing toggle
+    document.querySelectorAll('.billing-opt').forEach(opt => {
+        opt.addEventListener('click', function() {
+            document.querySelectorAll('.billing-opt').forEach(o => o.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('billingCycleInput').value = this.dataset.cycle;
+            updateTotal();
+        });
+    });
+
+    function updateTotal() {
+        const basePrices = { 'essentials': 199, 'professional': 499, 'suite': 1299 };
+        const plan = '{{ plan }}';
+        let total = basePrices[plan] || 0;
+
+        // Apply billing cycle discount
+        const cycle = document.getElementById('billingCycleInput').value;
+        if (cycle === 'annual') total = Math.round(total * 0.75);
+        else if (cycle === 'semi_annual') total = Math.round(total * 0.875);
+
+        document.getElementById('totalDisplay').textContent = '₱' + total.toLocaleString();
+    }
+</script>
+</body>
+</html>

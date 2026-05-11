@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Start Free — TARA</title>
+    <meta name="description" content="Create your free TARA account. No credit card, no time limit.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-deep: #060608;
+            --bg-surface: #0c0c0f;
+            --bg-elevated: #121216;
+            --bg-glass: rgba(18, 18, 22, 0.6);
+            --text-primary: #f1f1f3;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-visible: rgba(255,255,255,0.1);
+            --accent: #10b981;
+            --accent-dark: #059669;
+            --accent-light: #064e3b;
+            --accent-glow: rgba(16, 185, 129, 0.2);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .bg-universe { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .bg-orb { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.10; }
+        .bg-orb-1 { width: 700px; height: 700px; background: #065f46; top: -150px; left: -150px; animation: orbDrift 22s ease-in-out infinite; }
+        .bg-orb-2 { width: 500px; height: 500px; background: #1e3a5f; bottom: -100px; right: -100px; animation: orbDrift 26s ease-in-out infinite reverse; }
+        @keyframes orbDrift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(60px, -40px) scale(1.06); }
+            66% { transform: translate(-40px, 40px) scale(0.95); }
+        }
+        .wrapper { position: relative; z-index: 2; width: 100%; max-width: 460px; }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--text-tertiary); text-decoration: none;
+            font-size: 13px; font-weight: 500; margin-bottom: 20px; transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--text-secondary); }
+        .card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 40px 36px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+        }
+        .st-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--accent-light); color: var(--accent);
+            font-size: 11px; font-weight: 700; padding: 6px 14px;
+            border-radius: 100px; border: 1px solid rgba(16,185,129,0.2);
+            margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .st-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)} }
+        .card h1 { font-size: 28px; font-weight: 900; letter-spacing: -1px; margin-bottom: 4px; }
+        .card h1 span { background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .card .sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; line-height: 1.5; }
+        .error-banner {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+            color: #f87171; padding: 12px 14px; border-radius: var(--radius-sm);
+            margin-bottom: 20px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-tertiary); margin-bottom: 6px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap i {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-tertiary); font-size: 14px; pointer-events: none; transition: color 0.2s;
+        }
+        .input-wrap input, .input-wrap select {
+            width: 100%; padding: 13px 14px 13px 42px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); font-size: 14px;
+            font-family: 'Inter', sans-serif; color: var(--text-primary);
+            transition: all 0.2s; outline: none;
+        }
+        .input-wrap select {
+            appearance: none; cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+        }
+        .input-wrap select option { background: var(--bg-elevated); color: var(--text-primary); }
+        .input-wrap input::placeholder { color: var(--text-tertiary); opacity: 0.5; }
+        .input-wrap input:focus, .input-wrap select:focus {
+            border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(255,255,255,0.05);
+        }
+        .input-wrap:focus-within i { color: var(--accent); }
+        .btn-submit {
+            width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
+            font-size: 15px; font-weight: 600; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: all 0.2s; margin-top: 8px; letter-spacing: -0.2px;
+            background: #fff; color: #000;
+        }
+        .btn-submit:hover { background: #e5e5e5; transform: translateY(-1px); box-shadow: 0 12px 28px rgba(255,255,255,0.08); }
+        .no-cc {
+            text-align: center; font-size: 11px; color: var(--text-tertiary);
+            margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .footer-link {
+            text-align: center; margin-top: 20px; padding-top: 16px;
+            border-top: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-secondary);
+        }
+        .footer-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+        .footer-link a:hover { color: #34d399; }
+        @media (max-width: 480px) { .card { padding: 32px 20px; } }
+    </style>
+</head>
+<body>
+<div class="bg-universe">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+</div>
+
+<div class="wrapper">
+    <a href="/" class="back-link"><i class="fas fa-arrow-left"></i> Back</a>
+
+    <div class="card">
+        <div class="st-badge"><span class="dot"></span> Free Forever</div>
+        <h1>Start tracking <span>in 60 seconds.</span></h1>
+        <p class="sub">For sari-sari stores, market vendors, barbers, food carts, and solo sellers. No credit card. No time limit.</p>
+
+        {% if error %}
+        <div class="error-banner"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/register?plan=starter">
+            <div class="form-group">
+                <label>Full Name</label>
+                <div class="input-wrap">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="full_name" placeholder="Your full name" required autofocus>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-wrap">
+                    <i class="fas fa-at"></i>
+                    <input type="text" name="username" placeholder="Choose a username" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrap">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Min. 6 characters" required minlength="6">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Business Name</label>
+                <div class="input-wrap">
+                    <i class="fas fa-store"></i>
+                    <input type="text" name="business_name" placeholder="Your store or business name" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>What kind of business?</label>
+                <div class="input-wrap">
+                    <i class="fas fa-tag"></i>
+                    <select name="industry" required>
+                        <option value="">Select your industry...</option>
+                        <option value="sari_sari">Sari-Sari Store</option>
+                        <option value="food_cart">Food Cart / Street Food</option>
+                        <option value="market_vendor">Market Vendor</option>
+                        <option value="barber_shop">Barber Shop / Salon</option>
+                        <option value="home_seller">Home-Based Online Seller</option>
+                        <option value="freelancer">Freelancer / Services</option>
+                        <option value="eatery">Karenderya / Eatery</option>
+                        <option value="bakeshop">Home Bakeshop</option>
+                        <option value="repair">Repair Shop</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <input type="hidden" name="business_size" value="solo">
+
+            <button type="submit" class="btn-submit">Start for Free</button>
+            <div class="no-cc"><i class="fas fa-shield"></i> No credit card. Free forever. No catch.</div>
+        </form>
+
+        <div class="footer-link">Already have an account? <a href="/login">Sign in</a></div>
+    </div>
+</div>
+</body>
+</html>

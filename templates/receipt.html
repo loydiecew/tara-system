@@ -3,147 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt #{{ receipt_number }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>{{ receipt_title }} {{ receipt_number }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
-            background: #f0f4f8;
-            display: flex; justify-content: center; align-items: center;
-            min-height: 100vh; padding: 40px 20px;
+            font-family: 'Inter', -apple-system, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            background: #fff;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
         }
-        .receipt-container {
-            width: 100%; max-width: 480px;
-            background: #ffffff; border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12); overflow: hidden;
+        .receipt {
+            max-width: 320px;
+            margin: 0 auto;
+            padding: 24px 20px;
         }
-        .receipt-accent { height: 6px; background: linear-gradient(90deg, #10b981 0%, #059669 50%, #34d399 100%); }
-        .receipt-body { padding: 32px 28px; }
-        .receipt-header {
-            text-align: center; margin-bottom: 28px;
-            padding-bottom: 20px; border-bottom: 2px dashed #e2e8f0;
+        .receipt.wide {
+            max-width: 680px;
         }
-        .receipt-logo {
-            width: 56px; height: 56px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border-radius: 16px;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 12px;
-            font-size: 24px; font-weight: 800; color: white;
-            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+
+        /* Header */
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 14px;
+            margin-bottom: 14px;
         }
-        .receipt-business-name { font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
-        .receipt-business-id { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px; }
-        .receipt-title { font-size: 13px; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 8px; }
-        .receipt-meta { display: flex; justify-content: space-between; margin-bottom: 24px; font-size: 13px; color: #64748b; }
-        .receipt-meta strong { color: #1e293b; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-        .receipt-customer { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 24px; }
-        .receipt-customer-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 4px; }
-        .receipt-customer-name { font-size: 18px; font-weight: 600; color: #1e293b; }
-        .receipt-items { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-        .receipt-items th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #94a3b8; padding: 10px 0; border-bottom: 2px solid #e2e8f0; }
-        .receipt-items td { padding: 12px 0; font-size: 14px; color: #334155; border-bottom: 1px solid #f1f5f9; }
-        .receipt-items .text-right { text-align: right; }
-        .receipt-totals { border-top: 2px solid #e2e8f0; padding-top: 16px; }
-        .receipt-total-row { display: flex; justify-content: space-between; font-size: 14px; color: #64748b; margin-bottom: 8px; }
-        .receipt-total-row.grand { font-size: 20px; font-weight: 700; color: #1e293b; margin-top: 8px; padding-top: 12px; border-top: 1px solid #e2e8f0; }
-        .receipt-total-row.grand .amount { color: #10b981; }
-        .receipt-detail-row { display: flex; justify-content: space-between; font-size: 13px; color: #64748b; margin-bottom: 6px; }
-        .receipt-detail-row span:last-child { font-weight: 500; color: #334155; }
-        .receipt-footer { text-align: center; margin-top: 28px; padding-top: 20px; border-top: 2px dashed #e2e8f0; color: #94a3b8; font-size: 13px; line-height: 1.6; }
-        .receipt-footer i { color: #ef4444; margin: 0 2px; }
-        .receipt-actions { display: flex; gap: 12px; margin-top: 24px; padding: 0 28px 28px; }
-        .btn { flex: 1; padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; transition: all 0.3s ease; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4); }
-        .btn-secondary { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
-        .btn-secondary:hover { background: #e2e8f0; }
+        .header .biz-name {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            margin-bottom: 2px;
+        }
+        .header .biz-details {
+            font-size: 9px;
+            color: #555;
+            line-height: 1.5;
+        }
+        .header .receipt-type {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            color: #333;
+        }
+
+        /* Info row */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            color: #555;
+            margin-bottom: 12px;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .info-row .label { color: #888; text-transform: uppercase; font-size: 8px; letter-spacing: 0.5px; }
+        .info-row .value { font-weight: 500; color: #333; }
+
+        /* Items table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th {
+            text-align: left;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            padding: 6px 4px;
+            border-bottom: 1.5px solid #333;
+        }
+        th.right { text-align: right; }
+        td {
+            padding: 5px 4px;
+            font-size: 10px;
+            border-bottom: 1px dotted #e0e0e0;
+            vertical-align: top;
+        }
+        td.right { text-align: right; font-family: 'Source Code Pro', monospace; font-weight: 500; }
+        td.item-name { font-weight: 500; }
+
+        /* Totals */
+        .totals {
+            border-top: 1.5px solid #333;
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 10px;
+        }
+        .total-row .label { color: #555; }
+        .total-row .value { font-family: 'Source Code Pro', monospace; font-weight: 500; }
+        .total-row.grand {
+            font-size: 13px;
+            font-weight: 700;
+            padding-top: 6px;
+            margin-top: 4px;
+            border-top: 1.5px solid #333;
+        }
+        .total-row.vat {
+            font-size: 9px;
+            color: #666;
+        }
+
+        /* Payment info */
+        .payment-info {
+            margin-top: 14px;
+            padding: 10px 12px;
+            background: #f8f8f8;
+            border-radius: 6px;
+            font-size: 9px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .payment-info strong { color: #333; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 14px;
+            border-top: 1px dashed #ccc;
+            font-size: 8px;
+            color: #999;
+            line-height: 1.6;
+        }
+        .footer .bir-serial {
+            font-family: 'Source Code Pro', monospace;
+            font-size: 9px;
+            color: #333;
+            font-weight: 600;
+            margin: 6px 0;
+            padding: 4px 12px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            letter-spacing: 2px;
+        }
+        .footer .disclaimer {
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        /* Print */
         @media print {
-            body { background: white; padding: 0; }
-            .receipt-container { box-shadow: none; max-width: 100%; border-radius: 0; }
-            .receipt-actions { display: none; }
-            .receipt-accent { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .receipt-logo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { background: #fff; padding: 0; }
+            .receipt { max-width: 100%; padding: 0; }
+            @page { margin: 8mm; size: 80mm 297mm; }
+        }
+        @media screen {
+            .receipt {
+                background: #fff;
+                box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+                border-radius: 8px;
+                margin: 20px auto;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="receipt-container">
-        <div class="receipt-accent"></div>
-        <div class="receipt-body">
-            <div class="receipt-header">
-                <div class="receipt-logo">T</div>
-                <div class="receipt-business-name">{{ business_name }}</div>
-                <div class="receipt-business-id">Business ID: {{ business_id }}</div>
-                <div class="receipt-title">{{ receipt_title }}</div>
+    <div class="receipt {% if items and items|length > 3 %}wide{% endif %}">
+        
+        <!-- Header -->
+        <div class="header">
+            <div class="biz-name">{{ user.business_name or 'TARA Business' }}</div>
+            <div class="biz-details">
+                {% if user.address %}{{ user.address }}<br>{% endif %}
+                {% if user.tin %}TIN: {{ user.tin }}<br>{% endif %}
+                {% if user.phone %}Tel: {{ user.phone }}{% endif %}
             </div>
-
-            <div class="receipt-meta">
-                <div><strong>Receipt #</strong>{{ receipt_number }}</div>
-                <div><strong>Date</strong>{{ receipt_date }}</div>
-            </div>
-
-            {% if customer_label %}
-            <div class="receipt-customer">
-                <div class="receipt-customer-label">{{ customer_label }}</div>
-                <div class="receipt-customer-name">{{ customer_name }}</div>
-            </div>
-            {% endif %}
-
-            <table class="receipt-items">
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th class="text-right">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ description }}</td>
-                        <td class="text-right">₱ {{ "{:,.2f}".format(amount) }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            {% if payment_method %}
-            <div style="margin-bottom: 16px;">
-                <div class="receipt-detail-row"><span>Payment Method</span><span>{{ payment_method }}</span></div>
-                {% if reference_number %}
-                <div class="receipt-detail-row"><span>Reference #</span><span>{{ reference_number }}</span></div>
-                {% endif %}
-                {% if invoice_number %}
-                <div class="receipt-detail-row"><span>Invoice #</span><span>{{ invoice_number }}</span></div>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            {% if vat_registered %}
-            {% set vat_amount = amount / 1.12 * 0.12 %}
-            {% set subtotal = amount - vat_amount %}
-            <div class="receipt-totals">
-                <div class="receipt-total-row"><span>VATable Sale</span><span>₱ {{ "{:,.2f}".format(subtotal) }}</span></div>
-                <div class="receipt-total-row"><span>VAT (12%)</span><span>₱ {{ "{:,.2f}".format(vat_amount) }}</span></div>
-                <div class="receipt-total-row grand"><span>Total</span><span class="amount">₱ {{ "{:,.2f}".format(amount) }}</span></div>
-            </div>
-            {% else %}
-            <div class="receipt-totals">
-                <div class="receipt-total-row"><span>Amount</span><span>₱ {{ "{:,.2f}".format(amount) }}</span></div>
-                <div class="receipt-total-row"><span>Tax</span><span>VAT-Exempt</span></div>
-                <div class="receipt-total-row grand"><span>Total</span><span class="amount">₱ {{ "{:,.2f}".format(amount) }}</span></div>
-            </div>
-            {% endif %}
-
-            <div class="receipt-footer">
-                <p>Thank you for your business <i class="fas fa-heart"></i></p>
-                <p style="font-size: 11px; margin-top: 4px;">Generated by TARA Accounting System<br>{{ today.strftime('%B %d, %Y') }}</p>
-            </div>
+            <div class="receipt-type">{{ receipt_title }}</div>
         </div>
 
-        <div class="receipt-actions">
-            <a href="/{{ back_url }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
-            <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print / PDF</button>
+        <!-- Info -->
+        <div class="info-row">
+            <div>
+                <div class="label">Receipt No.</div>
+                <div class="value">{{ receipt_number }}</div>
+            </div>
+            <div>
+                <div class="label">Date</div>
+                <div class="value">{{ receipt_date }}</div>
+            </div>
+            {% if customer_name %}
+            <div>
+                <div class="label">{{ customer_label or 'Customer' }}</div>
+                <div class="value">{{ customer_name }}</div>
+            </div>
+            {% endif %}
+            {% if payment_method %}
+            <div>
+                <div class="label">Payment</div>
+                <div class="value">{{ payment_method|title }}</div>
+            </div>
+            {% endif %}
+            {% if reference_number %}
+            <div>
+                <div class="label">Reference</div>
+                <div class="value">{{ reference_number }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Items -->
+        {% if items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th class="right">Qty</th>
+                    <th class="right">Unit Price</th>
+                    <th class="right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td class="item-name">{{ item.product_name or item.description or 'Item' }}</td>
+                    <td class="right">{{ item.quantity or 1 }}</td>
+                    <td class="right">{{ "%.2f"|format(item.unit_price or item.amount) }}</td>
+                    <td class="right">{{ "%.2f"|format(item.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <!-- Totals -->
+        <div class="totals">
+            {% if subtotal %}
+            <div class="total-row">
+                <span class="label">Subtotal</span>
+                <span class="value">₱{{ "%.2f"|format(subtotal) }}</span>
+            </div>
+            {% endif %}
+            {% if discount_amount and discount_amount > 0 %}
+            <div class="total-row">
+                <span class="label">Discount</span>
+                <span class="value">-₱{{ "%.2f"|format(discount_amount) }}</span>
+            </div>
+            {% endif %}
+            {% if vat_amount is defined %}
+            <div class="total-row vat">
+                <span class="label">VAT (12%)</span>
+                <span class="value">₱{{ "%.2f"|format(vat_amount) }}</span>
+            </div>
+            <div class="total-row vat">
+                <span class="label">VATable Sales</span>
+                <span class="value">₱{{ "%.2f"|format(vatable_sales) }}</span>
+            </div>
+            {% endif %}
+            <div class="total-row grand">
+                <span class="label">TOTAL</span>
+                <span class="value">₱{{ "%.2f"|format(amount) }}</span>
+            </div>
+            {% if amount_in_words %}
+            <div class="total-row" style="font-size:8px;color:#888;font-style:italic;">
+                <span>{{ amount_in_words }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Payment info -->
+        {% if payment_method or served_by %}
+        <div class="payment-info">
+            {% if payment_method %}
+            <strong>Payment Method:</strong> {{ payment_method|title }}<br>
+            {% endif %}
+            {% if served_by %}
+            <strong>Served by:</strong> {{ served_by }}<br>
+            {% endif %}
+            {% if notes %}
+            <strong>Notes:</strong> {{ notes }}
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="bir-serial">BIR SERIAL: ____________________</div>
+            <div>THIS SERVES AS AN OFFICIAL RECEIPT</div>
+            <div class="disclaimer">Valid for 5 years from date of issue. Subject to BIR regulations.</div>
+            <div style="margin-top:6px;">Generated by TARA Accounting System</div>
         </div>
     </div>
 </body>

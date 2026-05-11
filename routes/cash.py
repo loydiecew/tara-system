@@ -272,6 +272,11 @@ def edit_transaction(transaction_id):
 @cash_bp.route('/receipt/cash/<int:transaction_id>')
 def receipt_cash(transaction_id):
     """Generate a receipt for a cash income transaction"""
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT business_name, business_id, tin, address, phone FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
@@ -321,7 +326,7 @@ def receipt_cash(transaction_id):
         parts = customer_name.lower().split('received from', 1)
         customer_name = parts[1].strip() if len(parts) > 1 else customer_name
     
-    return render_template('receipt.html',
+    return render_template('receipt.html', user=user,
                          receipt_number=receipt_number,
                          receipt_title='Cash Receipt',
                          receipt_date=str(transaction['transaction_date']),

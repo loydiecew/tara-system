@@ -398,6 +398,11 @@ def payment_receipt(payment_id):
     
     db = get_db()
     cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT business_name, business_id, tin, address, phone FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
     
     business_id = session.get('business_id', session['user_id'])
     
@@ -434,7 +439,7 @@ def payment_receipt(payment_id):
     receipt_number = f"RCPT-{payment_id:06d}"
     today = date.today()
     
-    return render_template('payment_receipt.html',
+    return render_template('payment_receipt.html', user=user,
                          payment=payment,
                          business_name=business_name,
                          business_id=business_id_num,

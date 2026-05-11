@@ -267,6 +267,14 @@ def edit_sale(sale_id):
 def receipt(sale_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    
+    # Fetch user/business info
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT business_name, business_id, tin, address, phone FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    cursor.close()
+    db.close()
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])
@@ -293,7 +301,7 @@ def receipt(sale_id):
     business_id_num = owner['business_id'] if owner and owner.get('business_id') else business_id
     vat_registered = bool(owner['vat_registered']) if owner else False
     
-    return render_template('receipt.html', sale=sale, items=items, amount=float(sale['amount']),
+    return render_template('receipt.html', user=user, sale=sale, items=items, amount=float(sale['amount']),
                          business_name=business_name, business_id=business_id_num,
                          receipt_number=f"TARA-{sale_id:06d}", receipt_title='Sales Receipt',
                          receipt_date=str(sale['sale_date']), customer_label='Bill To',
@@ -336,6 +344,11 @@ def convert_sale_to_invoice(sale_id):
 def receipt_payment(payment_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("SELECT business_name, business_id, tin, address, phone FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
     db = get_db()
     cursor = db.cursor(dictionary=True)
     business_id = session.get('business_id', session['user_id'])
@@ -362,7 +375,7 @@ def receipt_payment(payment_id):
     vat_registered = bool(owner['vat_registered']) if owner else False
     method_display = payment['payment_method'].replace('_', ' ').title() if payment.get('payment_method') else 'Cash'
     back_url = 'ar' if payment.get('invoice_id') else 'cash'
-    return render_template('receipt.html', receipt_number=f"RCPT-{payment_id:06d}",
+    return render_template('receipt.html', user=user, receipt_number=f"RCPT-{payment_id:06d}",
                          receipt_title='Payment Receipt', receipt_date=str(payment['payment_date']),
                          business_name=business_name, business_id=business_id_num,
                          customer_label='Received From', customer_name=payment['from_name'] or 'Customer',

@@ -1,0 +1,84 @@
+<!-- Voice Input Button -->
+<button type="button" class="voice-btn" id="voiceBtn_{{ input_id }}" onclick="startVoice('{{ input_id }}')" title="Speak to fill">
+    <i class="fas fa-microphone"></i>
+</button>
+<span class="voice-status" id="voiceStatus_{{ input_id }}" style="display:none;font-size:10px;color:var(--accent);">Listening...</span>
+
+<style>
+.voice-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    z-index: 2;
+}
+.voice-btn:hover { color: var(--accent); background: var(--accent-light); }
+.voice-btn.listening { color: #ef4444; animation: micPulse 1s infinite; }
+@keyframes micPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+
+<script>
+function startVoice(inputId) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert('Voice input is not supported in your browser. Use Chrome.');
+        return;
+    }
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-PH';
+    recognition.interimResults = false;
+    
+    const btn = document.getElementById('voiceBtn_' + inputId);
+    const status = document.getElementById('voiceStatus_' + inputId);
+    
+    btn.classList.add('listening');
+    if (status) status.style.display = 'inline';
+    
+    recognition.start();
+    
+    recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = transcript;
+            input.focus();
+        }
+        btn.classList.remove('listening');
+        if (status) status.style.display = 'none';
+        
+        // Optionally parse for amount
+        if (inputId.includes('desc') || inputId.includes('name')) {
+            fetch('/api/parse_voice', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: transcript})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.amount) {
+                    const amountField = document.getElementById(inputId.replace('desc', 'amount').replace('name', 'amount').replace('Description', 'Amount'));
+                    if (amountField) amountField.value = data.amount;
+                }
+            });
+        }
+    };
+    
+    recognition.onerror = function() {
+        btn.classList.remove('listening');
+        if (status) status.style.display = 'none';
+    };
+    
+    recognition.onend = function() {
+        btn.classList.remove('listening');
+        if (status) status.style.display = 'none';
+    };
+}
+</script>

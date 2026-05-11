@@ -24,10 +24,10 @@ def quotations():
     
     cursor.execute("""
         SELECT q.*, c.name as customer_name, c.email as customer_email
-        FROM quotations q WHERE q.deleted_at IS NULL
+        FROM quotations q
         LEFT JOIN customers c ON q.customer_id = c.id
         JOIN users u ON q.user_id = u.id
-        WHERE u.business_id = %s
+        WHERE q.deleted_at IS NULL AND u.business_id = %s
         ORDER BY q.quote_date DESC
     """, (business_id,))
     quotes = cursor.fetchall()
