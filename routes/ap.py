@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
 from datetime import date, timedelta
 from models.database import get_db
+from models.helpers import can_user_access
 from models.audit import log_audit
 from models.access_control import check_module_access
 

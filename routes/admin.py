@@ -9,7 +9,7 @@ admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/admin/users')
 def admin_users():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return redirect(url_for('auth.login'))
     
     db = get_db()
@@ -31,7 +31,7 @@ def admin_users():
 
 @admin_bp.route('/admin/add_user', methods=['POST'])
 def admin_add_user():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return redirect(url_for('auth.login'))
     
     username = request.form['username']
@@ -87,7 +87,7 @@ def admin_add_user():
 
 @admin_bp.route('/admin/delete_user/<int:user_id>')
 def admin_delete_user(user_id):
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return redirect(url_for('auth.login'))
     
     if user_id == session['user_id']:
@@ -104,7 +104,7 @@ def admin_delete_user(user_id):
 
 @admin_bp.route('/admin/restore')
 def admin_restore():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return redirect(url_for('auth.login'))
     
     module_filter = request.args.get('filter', 'all')
@@ -319,7 +319,7 @@ def admin_restore():
 
 @admin_bp.route('/admin/restore/<int:type_code>/<int:record_id>')
 def restore_item(type_code, record_id):
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return redirect(url_for('auth.login'))
     
     table_map = {1: 'transactions', 2: 'sales', 3: 'invoices', 4: 'bills', 5: 'products'}
@@ -342,7 +342,7 @@ def restore_item(type_code, record_id):
 
 @admin_bp.route('/admin/audit')
 def admin_audit():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return redirect(url_for('auth.login'))
     
     action_filter = request.args.get('action', 'all')
@@ -383,7 +383,7 @@ def admin_audit():
 
 @admin_bp.route('/admin/audit/api')
 def admin_audit_api():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return jsonify({'error': 'Unauthorized'}), 401
 
     business_id = session.get('business_id')
@@ -492,7 +492,7 @@ def update_profile():
 
 @admin_bp.route('/admin/users/api')
 def admin_users_api():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return jsonify({'error': 'Unauthorized'}), 401
     
     db = get_db()
@@ -515,7 +515,7 @@ def admin_users_api():
 
 @admin_bp.route('/admin/restore/data')
 def admin_restore_data():
-    if 'user_id' not in session or session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') not in ['admin', 'owner']:
         return jsonify({'error': 'Unauthorized'}), 401
     
     module_filter = request.args.get('filter', 'all')

@@ -125,7 +125,7 @@ def handle_registration(plan_slug):
             INSERT INTO users (username, password, role, full_name, email, industry, 
                              business_size, plan_id, business_id, business_password, 
                              business_name, vat_registered, trial_ends_at, billing_cycle)
-            VALUES (%s, %s, 'admin', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, 'owner', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (username, hashed_password, full_name, email, industry, business_size,
               plan_id, business_id, hashed_business_password, business_name,
               vat_registered, trial_ends_at, billing_cycle))

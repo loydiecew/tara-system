@@ -67,8 +67,10 @@
                     <label>Role</label>
                     <select name="role">
                         <option value="cashier">Cashier</option>
+                        {% if session.plan in ['professional', 'suite'] %}
                         <option value="manager">Manager</option>
                         <option value="admin">Admin</option>
+                        {% endif %}
                         {% for role in roles %}
                         <option value="custom_{{ role.id }}">{{ role.name }}</option>
                         {% endfor %}

@@ -30,3 +30,4 @@ from .currencies import currencies_bp
 from .permissions import permissions_bp
 from .planner import planner_bp
 from routes.tasks import tasks_bp
+from routes.approvals import approvals_bp

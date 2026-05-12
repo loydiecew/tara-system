@@ -27,8 +27,10 @@
                 <label>Role</label>
                 <select name="role">
                     <option value="cashier">Cashier (Sales only)</option>
+                    {% if session.plan in ['professional', 'suite'] %}
                     <option value="manager">Manager (View reports)</option>
                     <option value="admin">Admin (Full access)</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group">
@@ -53,7 +55,7 @@
                 <tr>
                     <td>{{ u.full_name or u.username }}</td>
                     <td>{{ u.username }}</td>
-                    <td><span class="badge {{ 'badge-success' if u.role == 'admin' else 'badge-info' if u.role == 'manager' else 'badge-warning' }}">
+                    <td><span class="badge {{ 'badge-success' if u.role in ['admin', 'owner'] else 'badge-info' if u.role == 'manager' else 'badge-warning' }}">
                         {{ u.role|capitalize }}
                     </span></td>
                     <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '-' }}</td>

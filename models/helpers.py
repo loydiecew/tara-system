@@ -2,6 +2,100 @@ from flask import session
 from models.database import get_db
 from datetime import timedelta
 
+def can_user_access(session, module_name, action='view'):
+    """Centralized role-based access control.
+    
+    Args:
+        session: Flask session object
+        module_name: e.g., 'reports', 'ar', 'settings', 'billing'
+        action: 'view', 'create', 'edit', 'delete', 'approve'
+    
+    Returns:
+        bool: Whether the user can perform the action
+    """
+    role = session.get('role', 'viewer')
+    plan = session.get('plan', 'starter')
+    
+    # Owner can do everything
+    if role == 'owner':
+        return True
+    
+    # Viewer is read-only on view action, nothing else
+    if role in ['viewer', 'auditor']:
+        return action == 'view'
+    
+    # Cashier restrictions
+    if role == 'cashier':
+        cashier_allowed = {
+            'dashboard': ['view'],
+            'quick_tap': ['view', 'create'],
+            'cash': ['view', 'create'],
+            'sales': ['view', 'create'],
+            'ar': ['view', 'create'],
+            'journal': ['view'],
+            'tasks': ['view'],
+            'all_transactions': ['view'],
+            'income_statement': ['view'],
+            'balance_sheet': ['view'],
+        }
+        allowed = cashier_allowed.get(module_name, [])
+        return action in allowed
+    
+    # Manager restrictions
+    if role == 'manager':
+        manager_restricted = {
+            'billing': [],
+            'users_roles': ['view'],
+            'settings': ['view'],
+            'permissions': ['view'],
+            'audit_log': ['view'],
+            'fiscal_year': [],
+            'branches': [],
+            'currencies': ['view'],
+            'tax': ['view'],
+            'import_data': ['view', 'create'],
+        }
+        restricted = manager_restricted.get(module_name, None)
+        if restricted is not None:
+            return action in restricted
+        return True
+    
+    # Admin — full access except billing
+    if role == 'admin':
+        if module_name == 'billing':
+            return False
+        return True
+    
+    return False
+
+
+def can_user_edit(session, module_name):
+    """Shorthand for edit permission check."""
+    return can_user_access(session, module_name, 'edit')
+
+
+def can_user_create(session, module_name):
+    """Shorthand for create permission check."""
+    return can_user_access(session, module_name, 'create')
+
+
+def can_user_delete(session, module_name):
+    """Shorthand for delete permission check."""
+    return can_user_access(session, module_name, 'delete')
+
+
+def get_role_label(role):
+    """Return display label for role."""
+    labels = {
+        'owner': 'Owner',
+        'admin': 'Admin', 
+        'manager': 'Manager',
+        'cashier': 'Cashier',
+        'viewer': 'Viewer',
+    }
+    return labels.get(role, role.title())
+
+
 def get_user_plan(user_id):
     """Get user's current plan"""
     db = get_db()

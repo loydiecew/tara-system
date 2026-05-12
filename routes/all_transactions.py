@@ -10,7 +10,7 @@ def all_transactions():
         return redirect(url_for('auth.login'))
     
     # Only admin, owner, manager can access
-    if session.get('role') not in ['admin', 'owner', 'manager']:
+    if session.get('role') not in ['admin', 'owner', 'manager', 'cashier']:
         return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()

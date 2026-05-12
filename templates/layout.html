@@ -895,6 +895,17 @@
 
                 {% if session.plan == 'starter' %}
                 <!-- ═══════ STARTER ═══════ -->
+                {% if session.plan != 'starter' and session.role in ['owner', 'admin', 'manager'] %}
+                {% if session.plan != 'essentials' or (user_count is defined and user_count > 1) %}
+                <div class="nav-section">
+                    <div class="nav-label">TEAM</div>
+                    <a href="/users-roles" class="nav-item {{ is_active('users_roles') }}">
+                        <i class="fas fa-users-gear"></i><span>Users &amp; Roles</span>
+                    </a>
+                </div>
+                {% endif %}
+                {% endif %}
+
                 <div class="nav-section">
                     <div class="nav-label">MAIN</div>
                     <a href="/quick-tap" class="nav-item {{ 'active' if request.path == '/quick-tap' else '' }}">
@@ -918,21 +929,40 @@
                 </div>
                 {% else %}
                 <!-- ═══════ ESSENTIALS+ ═══════ -->
+                {% if session.plan != 'starter' and session.role in ['owner', 'admin', 'manager'] %}
+                {% if session.plan != 'essentials' or (user_count is defined and user_count > 1) %}
+                <div class="nav-section">
+                    <div class="nav-label">TEAM</div>
+                    <a href="/users-roles" class="nav-item {{ is_active('users_roles') }}">
+                        <i class="fas fa-users-gear"></i><span>Users &amp; Roles</span>
+                    </a>
+                </div>
+                {% endif %}
+                {% endif %}
+
                 <div class="nav-section">
                     <div class="nav-label">MAIN</div>
                     <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
                         <i class="fas fa-chart-pie"></i><span>Dashboard</span>
                     </a>
+                    {% if session.role not in ['cashier', 'viewer'] %}
                     <a href="/insights" class="nav-item {{ is_active('insights') }}">
                         <i class="fas fa-chart-line"></i><span>Business Insights</span>
                     </a>
                     <a href="/reports" class="nav-item {{ is_active('reports') }}">
                         <i class="fas fa-file-pdf"></i><span>Reports</span>
                     </a>
+                    {% endif %}
                 </div>
 
                 <div class="nav-section">
                     <div class="nav-label">FINANCIAL</div>
+                    {% if session.plan in ['professional', 'suite'] and session.role in ['owner', 'admin', 'manager'] %}
+                    <a href="/approvals" class="nav-item {{ 'active' if request.path == '/approvals' else '' }}">
+                        <i class="fas fa-clipboard-check"></i><span>Approvals</span>
+                        <span id="approvalBadge" style="display:none;background:#f59e0b;color:#000;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:auto;">0</span>
+                    </a>
+                    {% endif %}
                     <a href="/cash" class="nav-item {{ is_active('cash') }}">
                         <i class="fas fa-coins"></i><span>Cash Management</span>
                     </a>
@@ -940,34 +970,34 @@
                         <i class="fas fa-chart-simple"></i><span>Sales Management</span>
                     </a>
 
-                    {% if session.plan in ['essentials', 'professional', 'suite'] and user_can_view('recurring') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['essentials', 'professional', 'suite'] and user_can_view('recurring') %}
                     <a href="/recurring" class="nav-item {{ is_active('recurring') }}">
                         <i class="fas fa-redo-alt"></i><span>Recurring Transaction</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['essentials', 'professional', 'suite'] and user_can_view('bank_reconciliation') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['essentials', 'professional', 'suite'] and user_can_view('bank_reconciliation') %}
                     <a href="/bank-reconciliation" class="nav-item {{ is_active('bank_reconciliation') }}">
                         <i class="fas fa-university"></i><span>Bank Reconciliation</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['essentials', 'professional', 'suite'] and user_can_view('tax') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['essentials', 'professional', 'suite'] and user_can_view('tax') %}
                     <a href="/tax" class="nav-item {{ is_active('tax') }}">
                         <i class="fas fa-file-invoice"></i><span>Tax Reports</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['professional', 'suite'] and user_can_view('currencies') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and user_can_view('currencies') %}
                     <a href="/currencies" class="nav-item {{ is_active('currencies') }}">
                         <i class="fas fa-dollar-sign"></i><span>Currencies</span>
                     </a>
                     {% endif %}
-                    {% if session.plan == 'suite' and user_can_view('fiscal_year') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan == 'suite' and user_can_view('fiscal_year') %}
                     <a href="/fiscal-year" class="nav-item {{ is_active('fiscal') }}">
                         <i class="fas fa-calendar-check"></i><span>Fiscal Year</span>
                     </a>
                     {% endif %}
                 </div>
 
-                {% if session.plan in ['professional', 'suite'] and (user_can_view('ar') or user_can_view('ap')) %}
+                {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and (user_can_view('ar') or user_can_view('ap')) %}
                 <div class="nav-section">
                     <div class="nav-label">RECEIVABLES & PAYABLES</div>
                     {% if user_can_view('ar') %}
@@ -983,7 +1013,7 @@
                 </div>
                 {% endif %}
 
-                {% if session.plan in ['professional', 'suite'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
+                {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
                 <div class="nav-section">
                     <div class="nav-label">OPERATIONS</div>
                     {% if user_can_view('inventory') %}
@@ -1060,22 +1090,22 @@
                     <a href="/journal" class="nav-item {{ is_active('journal') }}">
                         <i class="fas fa-book-open"></i><span>General Journal</span>
                     </a>
-                    {% if session.plan in ['professional', 'suite'] and user_can_view('ledger') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and user_can_view('ledger') %}
                     <a href="/ledger" class="nav-item {{ is_active('ledger') }}">
                         <i class="fas fa-balance-scale"></i><span>General Ledger</span>
                     </a>
                     {% endif %}
-                    {% if session.plan in ['professional', 'suite'] and user_can_view('trial_balance') %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and user_can_view('trial_balance') %}
                     <a href="/trial-balance" class="nav-item {{ is_active('trial_balance') }}">
                         <i class="fas fa-balance-scale-right"></i><span>Trial Balance</span>
                     </a>
                     {% endif %}
-                    <a href="/income-statement" class="nav-item {{ is_active('income_statement') }}">
+                    {% if session.role not in ['cashier'] %}<a href="/income-statement" class="nav-item {{ is_active('income_statement') }}">
                         <i class="fas fa-file-invoice-dollar"></i><span>Income Statement</span>
-                    </a>
-                    <a href="/balance-sheet" class="nav-item {{ is_active('balance_sheet') }}">
+                    </a>{% endif %}
+                    {% if session.role not in ['cashier'] %}<a href="/balance-sheet" class="nav-item {{ is_active('balance_sheet') }}">
                         <i class="fas fa-file-invoice"></i><span>Balance Sheet</span>
-                    </a>
+                    </a>{% endif %}
                     {% if session.role in ['admin', 'owner'] and session.plan in ['professional', 'suite'] %}
                     <a href="/admin/audit" class="nav-item {{ is_active('admin_audit') }}">
                         <i class="fas fa-history"></i><span>Audit Log</span>

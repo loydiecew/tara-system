@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from datetime import date
 from models.database import get_db
+from models.helpers import can_user_access
 from models.audit import log_audit
 
 cash_bp = Blueprint('cash', __name__)
@@ -115,10 +116,44 @@ def add_transaction():
     db = get_db()
     cursor = db.cursor()
     
+    # Approval workflow — dynamic thresholds from budgets
+    role = session.get('role', 'viewer')
+    needs_approval = False
+    budget_info = None
+    
+    if trans_type == 'expense' and role == 'manager':
+        # Check if this category has an approval threshold
+        if category:
+            cursor.execute("""
+                SELECT budget_amount, approval_threshold,
+                       COALESCE((SELECT SUM(t.amount) FROM transactions t
+                         WHERE t.category = %s AND MONTH(t.transaction_date) = MONTH(%s)
+                         AND YEAR(t.transaction_date) = YEAR(%s) AND t.type = 'expense'
+                         AND t.status = 'active' AND t.deleted_at IS NULL), 0) as spent
+                FROM budgets WHERE user_id = %s AND category = %s
+                AND MONTH(month) = MONTH(%s) AND YEAR(month) = YEAR(%s)
+            """, (category, transaction_date, transaction_date, session['user_id'],
+                  category, transaction_date, transaction_date))
+            budget = cursor.fetchone()
+            
+            if budget and budget[1] is not None:
+                threshold = float(budget[1])
+                if amount > threshold:
+                    needs_approval = True
+                    budget_info = {
+                        'budget_amount': float(budget[0]),
+                        'spent': float(budget[2]),
+                        'after': float(budget[2]) + amount,
+                        'threshold': threshold
+                    }
+    
+    status = 'pending_approval' if needs_approval else 'active'
+    print(f"DEBUG: needs_approval={needs_approval}, status={status}, role={role}, amount={amount}, category={category}")
+    
     cursor.execute("""
-        INSERT INTO transactions (user_id, description, amount, type, category, transaction_date, reference_number, payment_method, project_id)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (session['user_id'], description, amount, trans_type, category, transaction_date, reference_number, payment_method, project_id))
+        INSERT INTO transactions (user_id, description, amount, type, category, transaction_date, reference_number, payment_method, project_id, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (session['user_id'], description, amount, trans_type, category, transaction_date, reference_number, payment_method, project_id, status))
     db.commit()
 
     new_transaction = {
@@ -132,8 +167,17 @@ def add_transaction():
     log_audit(session['user_id'], session['username'], 'CREATE', 'transactions', 
             cursor.lastrowid, new_values=new_transaction)
     
+    if needs_approval:
+        if budget_info:
+            pct = (budget_info['after'] / budget_info['budget_amount'] * 100) if budget_info['budget_amount'] > 0 else 0
+            flash(f'Submitted for approval: ₱{amount:,.2f} — Budget: ₱{budget_info["budget_amount"]:,.0f} ({pct:.0f}% after)', 'info')
+        else:
+            flash(f'Submitted for approval: ₱{amount:,.2f}', 'info')
+        return redirect(url_for('cash.cash'))
+    
     # ========== DOUBLE-ENTRY JOURNAL (Pro and Enterprise only) ==========
-    if session.get('plan') in ['professional', 'suite']:
+    # Skip journal entries for pending approval transactions
+    if not needs_approval and session.get('plan') in ['professional', 'suite']:
         # Get account mapping for this transaction type and category
         cursor.execute("""
             SELECT debit_account_id, credit_account_id FROM transaction_account_mapping
@@ -186,6 +230,9 @@ def add_transaction():
 def delete_transaction(transaction_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    if not can_user_access(session, 'cash', 'delete'):
+        flash('You do not have permission to delete entries.', 'error')
+        return redirect(url_for('cash.cash'))
     
     db = get_db()
     cursor = db.cursor(dictionary=True)

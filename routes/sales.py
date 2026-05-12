@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from datetime import date
 from models.database import get_db
 from models.audit import log_audit
+from models.helpers import can_user_access
 
 sales_bp = Blueprint('sales', __name__)
 
@@ -74,6 +75,9 @@ def sales():
 def add_sale():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    if not can_user_access(session, 'sales', 'create'):
+        flash('You do not have permission to record sales.', 'error')
+        return redirect(url_for('sales.sales'))
     
     customer_name = request.form.get('customer_name', 'Walk-in Customer')
     sale_date = request.form.get('sale_date', date.today())
@@ -219,6 +223,9 @@ def add_sale():
 def delete_sale(sale_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    if not can_user_access(session, 'sales', 'delete'):
+        flash('You do not have permission to delete entries.', 'error')
+        return redirect(url_for('sales.sales'))
     db = get_db()
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT * FROM sales WHERE id = %s AND user_id = %s", (sale_id, session['user_id']))
@@ -235,6 +242,9 @@ def delete_sale(sale_id):
 def edit_sale(sale_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+    if not can_user_access(session, 'sales', 'edit'):
+        flash('You do not have permission to edit entries.', 'error')
+        return redirect(url_for('sales.sales'))
     db = get_db()
     cursor = db.cursor(dictionary=True)
     if request.method == 'POST':

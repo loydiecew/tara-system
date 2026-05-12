@@ -44,7 +44,7 @@
             <a href="#" class="profile-nav-link active" data-tab="profile"><i class="fas fa-user-circle"></i> Profile</a>
             <a href="#" class="profile-nav-link" data-tab="plan"><i class="fas fa-crown"></i> Billing & Plan</a>
             <a href="#" class="profile-nav-link" data-tab="appearance"><i class="fas fa-palette"></i> Appearance</a>
-            {% if session.role == 'admin' %}
+            {% if session.role in ['admin', 'owner'] %}
             <a href="#" class="profile-nav-link" data-tab="restore"><i class="fas fa-trash-restore"></i> Restore Data</a>
             {% endif %}
             <div style="height: 1px; background: var(--border-light); margin: 12px 16px;"></div>
@@ -302,7 +302,7 @@
             </div>
 
             <!-- TAB: Restore -->
-            {% if session.role == 'admin' %}
+            {% if session.role in ['admin', 'owner'] %}
             <div id="tab-restore" class="tab-content">
                 <h2 style="font-size: 22px; margin-bottom: 8px;">Restore Deleted Items</h2>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Recover accidentally deleted records</p>

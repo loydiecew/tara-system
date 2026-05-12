@@ -78,15 +78,17 @@ def set_budget():
     if len(month) == 7:  # Format: YYYY-MM
         month = month + '-01'    
     budget_amount = float(request.form['budget_amount'])
+    threshold = request.form.get('approval_threshold', '').strip()
+    approval_threshold = float(threshold) if threshold else None
 
     db = get_db()
     cursor = db.cursor()
     
     cursor.execute("""
-        INSERT INTO budgets (user_id, category, month, budget_amount)
-        VALUES (%s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE budget_amount = %s
-    """, (session['user_id'], category, month, budget_amount, budget_amount))
+        INSERT INTO budgets (user_id, category, month, budget_amount, approval_threshold)
+        VALUES (%s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE budget_amount = %s, approval_threshold = %s
+    """, (session['user_id'], category, month, budget_amount, approval_threshold, budget_amount, approval_threshold))
     
     db.commit()
     cursor.close()

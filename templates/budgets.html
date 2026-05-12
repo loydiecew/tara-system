@@ -47,6 +47,7 @@
             <div class="form-group"><label>Category *</label><select name="category" required><option value="">Select category</option>{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}<option value="Other">Other</option></select></div>
             <div class="form-group"><label>Month *</label><input type="month" name="month" value="{{ current_month }}" required></div>
             <div class="form-group"><label>Budget Amount (₱) *</label><input type="number" name="budget_amount" step="0.01" placeholder="0.00" required></div>
+            <div class="form-group"><label>Approval Threshold (₱)</label><input type="number" name="approval_threshold" step="0.01" placeholder="e.g. 5000"><small style="color:var(--text-secondary);">Expenses above this need approval. Leave blank for no approval.</small></div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-save"></i> Save Budget</button>
     </form>
@@ -74,7 +75,7 @@
         <tr data-filter='{"search":"{{ b.category|lower }}"}'>
             <td><strong>{{ b.category }}</strong></td>
             <td>{{ b.month.strftime('%B %Y') if b.month else '-' }}</td>
-            <td>₱ {{ "{:,.2f}".format(b.budget_amount) }}</td>
+            <td>₱ {{ "{:,.2f}".format(b.budget_amount) }}</td><td>{% if b.approval_threshold %}₱ {{ "{:,.0f}".format(b.approval_threshold) }}{% else %}—{% endif %}</td>
             <td style="color:{{ '#ef4444' if b.over_budget else '#10b981' }};">₱ {{ "{:,.2f}".format(b.actual_amount) }}</td>
             <td style="color:{{ '#ef4444' if b.variance < 0 else '#10b981' }};">₱ {{ "{:,.2f}".format(b.variance) }}</td>
             <td><div class="budget-bar"><div class="budget-bar-fill {{ bar_class }}" style="width:{{ [b.percent_used,100]|min }}%;"></div></div><div class="budget-status {{ bar_class }}">{{ b.percent_used }}% — {{ status_text }}</div></td>

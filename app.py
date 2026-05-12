@@ -12,7 +12,7 @@ from routes import (
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
     budgets_bp, projects_bp, timecards_bp, assets_bp, reports_bp, planner_bp,
     branches_bp, payments_bp, recurring_bp, bank_rec_bp,
-    fiscal_bp, tax_bp, currencies_bp, permissions_bp, tasks_bp 
+    fiscal_bp, tax_bp, currencies_bp, permissions_bp, tasks_bp, approvals_bp 
 )
 
 # ---------- App setup ----------
@@ -31,6 +31,7 @@ mail = Mail(app)
 
 # ---------- Register blueprints ----------
 BLUEPRINTS = [
+    approvals_bp,
     tasks_bp,
     auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
@@ -84,10 +85,21 @@ def inject_user_context():
         db.close()
         return bool(result and result['can_view'])
 
+    # Get user count for the business (for TEAM section gating)
+    user_count = 0
+    if 'user_id' in session:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users WHERE business_id = %s", (session.get('business_id', session.get('user_id')),))
+        user_count = cursor.fetchone()[0]
+        cursor.close()
+        db.close()
+
     ctx = {
         'is_active': is_active,
         'get_branches': get_branches,
         'user_can_view': user_can_view,
+        'user_count': user_count,
     }
 
     if 'user_id' in session:

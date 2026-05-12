@@ -188,7 +188,6 @@ def list_notes(module_type, record_id):
     
     return jsonify({'notes': notes})
 
-
 @tasks_bp.route('/tasks/team')
 def team_list():
     if 'user_id' not in session:
