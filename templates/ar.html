@@ -24,19 +24,76 @@
 </div>
 
 <div class="card">
+    <!-- Scratchpad Quick Entry -->
+    <div class="card-header" style="cursor:pointer;" onclick="document.getElementById('scratchpadBodyAR').classList.toggle('collapsed');">
+        <h2><i class="fas fa-bolt" style="color:var(--accent);font-size:14px;"></i> Quick Entry</h2>
+        <svg class="scratchpad-chevron" id="scratchpadChevronAR" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div id="scratchpadBodyAR">
+        <div style="padding:12px 16px;">
+        <textarea id="scratchpadTextAR" class="scratchpad-input" placeholder="Describe the entry..." 
+            style="width:100%;min-height:60px;padding:10px;border:1px solid var(--border-color);border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-primary" style="font-size:12px;" onclick="parseScratchpadAR()">Parse</button>
+            <button class="btn btn-secondary" style="font-size:12px;" onclick="document.getElementById('scratchpadTextAR').value='';document.getElementById('scratchpadPreviewAR').innerHTML='';">Clear</button>
+        </div>
+        <div id="scratchpadPreviewAR" style="margin-top:12px;"></div>
+        </div>
+    </div>
+    <style>.scratchpad-toggle { cursor: pointer; user-select: none; }
+.scratchpad-toggle h2 { display: flex; align-items: center; gap: 8px; }
+.scratchpad-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.scratchpad-chevron { transition: transform 0.2s ease; color: var(--text-muted); }
+#scratchpadBodyAR.collapsed { display: none; }
+#scratchpadBodyAR.collapsed ~ .card-header .scratchpad-chevron,
+.scratchpad-toggle:has(+ #scratchpadBodyAR.collapsed) .scratchpad-chevron { transform: rotate(-90deg); }
+.scratchpad-inner { padding: 0 20px 16px 20px; }
+.scratchpad-hint { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px 0; }
+.scratchpad-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px; font-family: inherit; resize: vertical; min-height: 64px; transition: border-color 0.15s, box-shadow 0.15s; }
+.scratchpad-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+body.dark .scratchpad-input, body.semi-dark .scratchpad-input { background: rgba(15,23,42,0.6); border-color: #334155; color: #f1f5f9; }
+body.dark .scratchpad-input::placeholder, body.semi-dark .scratchpad-input::placeholder { color: #64748b; }
+.scratchpad-parse-btn { margin-top: 10px; padding: 8px 18px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+.scratchpad-parse-btn:hover { background: var(--accent-dark); box-shadow: 0 4px 12px var(--accent-glow); }
+.scratchpad-preview { margin-top: 14px; }
+.scratchpad-preview-card { background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 14px; padding: 16px; animation: spFadeIn 0.2s ease; }
+@keyframes spFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.scratchpad-preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.scratchpad-preview-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 100px; }
+.sp-type-sale { background: rgba(16,185,129,0.12); color: #10b981; }
+.sp-type-expense { background: rgba(239,68,68,0.1); color: #ef4444; }
+.sp-type-payment { background: rgba(59,130,246,0.1); color: #3b82f6; }
+body.dark .sp-type-sale { background: rgba(16,185,129,0.18); color: #6ee7b7; }
+body.dark .sp-type-expense { background: rgba(239,68,68,0.15); color: #fca5a5; }
+body.dark .sp-type-payment { background: rgba(59,130,246,0.15); color: #93c5fd; }
+.scratchpad-preview-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 10px; }
+.scratchpad-preview-table th { text-align: left; font-weight: 500; color: var(--text-muted); padding: 4px 0; border-bottom: 1px solid var(--border-light); }
+.scratchpad-preview-table td { padding: 6px 0; border-bottom: 1px dashed var(--border-light); }
+.scratchpad-preview-total { font-weight: 600; font-size: 14px; margin: 8px 0; color: var(--text-primary); }
+.scratchpad-preview-meta { font-size: 11px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 12px; margin: 6px 0; }
+.scratchpad-preview-breakdown { font-size: 11px; padding: 8px 12px; background: var(--accent-light); border-radius: 8px; color: var(--accent); margin: 8px 0; }
+.scratchpad-preview-actions { display: flex; gap: 8px; margin-top: 12px; }
+.scratchpad-btn-save { padding: 7px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+.scratchpad-btn-save:hover { background: var(--accent-dark); box-shadow: 0 4px 12px var(--accent-glow); }
+.scratchpad-btn-cancel { padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border-light); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; transition: all 0.2s ease; }
+.scratchpad-btn-cancel:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.scratchpad-loading { text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px; }
+.scratchpad-error { text-align: center; padding: 14px; color: #ef4444; font-size: 12px; }</style>
+
+
     <div class="card-header">
         <h2><i class="fas fa-user-plus"></i> Add Customer</h2>
     </div>
     <form method="POST" action="/add_customer">
         <div class="form-grid">
             <div class="form-group"><label>Customer Name *</label><input type="text" name="name" required></div>
-            <div class="form-group"><label>Contact Person</label><input type="text" name="contact_person" placeholder="Who to contact"></div>
+            <div class="form-group"><label>Contact Person</label><input type="text" name="contact_person" placeholder=" "></div>
             <div class="form-group"><label>Email</label><input type="email" name="email"></div>
             <div class="form-group"><label>Phone</label><input type="text" name="phone"></div>
-            <div class="form-group"><label>TIN</label><input type="text" name="tin" placeholder="Tax identification number"></div>
+            <div class="form-group"><label>TIN</label><input type="text" name="tin" placeholder=" "></div>
             <div class="form-group"><label>Payment Terms</label><select name="payment_terms"><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_60">Net 60</option><option value="cod">Cash on Delivery</option></select></div>
             <div class="form-group"><label>Credit Limit (₱)</label><input type="number" name="credit_limit" step="0.01" value="0"></div>
-            <div class="form-group"><label>Address</label><input type="text" name="address" placeholder="Billing/shipping address"></div>
+            <div class="form-group"><label>Address</label><input type="text" name="address" placeholder=" "></div>
             <div class="form-group"><label>&nbsp;</label><button type="submit" class="btn btn-primary">Add Customer</button></div>
         </div>
     </form>
@@ -51,11 +108,11 @@
             <div class="form-group"><label>Customer *</label><select name="customer_id" required><option value="">Select customer</option>{% for c in customers %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
             <div class="form-group"><label>Amount (₱) *</label><input type="number" name="amount" step="0.01" required></div>
             <div class="form-group"><label>Due Date *</label><input type="date" name="due_date" required></div>
-            <div class="form-group"><label>Invoice Number</label><input type="text" name="invoice_number" placeholder="Auto-generated if blank"></div>
+            <div class="form-group"><label>Invoice Number</label><input type="text" name="invoice_number" placeholder=" "></div>
             <div class="form-group"><label>Payment Terms</label><select name="payment_terms"><option value="net_15">Net 15</option><option value="net_30">Net 30</option><option value="net_60">Net 60</option><option value="cod">Cash on Delivery</option></select></div>
-            <div class="form-group"><label>Reference PO/SO</label><input type="text" name="reference_po" placeholder="Link to purchase/sales order"></div>
-            <div class="form-group"><label>BIR Serial Number</label><input type="text" name="bir_serial" placeholder="Official receipt serial"></div>
-            <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder="Products or services..."></textarea></div>
+            <div class="form-group"><label>Reference PO/SO</label><input type="text" name="reference_po" placeholder=" "></div>
+            <div class="form-group"><label>BIR Serial Number</label><input type="text" name="bir_serial" placeholder=" "></div>
+            <div class="form-group"><label>Description</label><textarea name="description" rows="2" placeholder=" "></textarea></div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 16px;">Create Invoice</button>
     </form>
@@ -84,7 +141,7 @@
         <div class="filter-group"><label>Date From</label><input type="date" id="arBody_date_from" onchange="filterTable('arBody','arNoData')"></div>
         <div class="filter-group"><label>Date To</label><input type="date" id="arBody_date_to" onchange="filterTable('arBody','arNoData')"></div>
         <div class="filter-group"><label>Status</label><select id="arBody_status" onchange="filterTable('arBody','arNoData')"><option value="all">All</option><option value="paid">Paid</option><option value="partially_paid">Partial</option><option value="unpaid">Unpaid</option></select></div>
-        <div class="filter-group" style="flex:1; min-width:150px;"><label>Search</label><input type="text" id="arBody_search" placeholder="Customer or invoice #..." oninput="filterTable('arBody','arNoData')"></div>
+        <div class="filter-group" style="flex:1; min-width:150px;"><label>Search</label><input type="text" id="arBody_search" placeholder=" " oninput="filterTable('arBody','arNoData')"></div>
         <button class="btn btn-secondary btn-sm" onclick="clearFilters('arBody')" style="padding:8px 12px; font-size:11px;"><i class="fas fa-times"></i> Clear</button>
     </div>
     {% endif %}
@@ -152,8 +209,8 @@
             <div class="form-group" style="margin-bottom:12px;"><label>Payment Amount (₱)</label><input type="number" name="amount" id="paymentAmount" step="0.01" required autofocus></div>
             <div class="form-group" style="margin-bottom:12px;"><label>Payment Date</label><input type="date" name="payment_date" id="paymentDate" value="{{ today }}" required></div>
             <div class="form-group" style="margin-bottom:12px;"><label>Payment Method</label><select name="payment_method" id="paymentMethod"><option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="gcash">GCash</option><option value="maya">Maya</option><option value="check">Check</option></select></div>
-            <div class="form-group" style="margin-bottom:12px;"><label>Reference Number</label><input type="text" name="reference_number" placeholder="Check #, transaction ID..."></div>
-            <div class="form-group" style="margin-bottom:12px;"><label>Notes</label><input type="text" name="notes" placeholder="Optional"></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Reference Number</label><input type="text" name="reference_number" placeholder=" "></div>
+            <div class="form-group" style="margin-bottom:12px;"><label>Notes</label><input type="text" name="notes" placeholder=" "></div>
             <button type="submit" class="btn btn-primary" style="width:100%;">Record Payment</button>
         </form>
     </div>
@@ -190,5 +247,51 @@
         } else { historyRow.style.display = 'none'; }
     }
     window.onclick = function(event) { if (event.target === document.getElementById('paymentModal')) closePaymentModal(); };
+function parseScratchpadAR() {
+    var text = document.getElementById('scratchpadTextAR').value.trim();
+    if (!text) return;
+    var preview = document.getElementById('scratchpadPreviewAR');
+    preview.innerHTML = '<div class="scratchpad-loading">Analyzing entry...</div>';
+    fetch('/scratchpad/parse', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: text})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.success) {
+            preview.innerHTML = '<div class="scratchpad-error">' + (data.error || 'Could not parse.') + '</div>';
+            return;
+        }
+        var typeClass = data.transaction_type === 'payment_received' ? 'sp-type-payment' : data.transaction_type === 'expense' ? 'sp-type-expense' : 'sp-type-sale';
+        var typeLabel = data.transaction_type === 'payment_received' ? 'Payment Received' : data.transaction_type === 'expense' ? 'Expense' : 'Sale';
+        var html = '<div class="scratchpad-preview-card">';
+        html += '<div class="scratchpad-preview-header"><span class="scratchpad-preview-type ' + typeClass + '">' + typeLabel + '</span><span style="font-size:11px;color:var(--text-tertiary);">' + new Date(data.date).toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) + '</span></div>';
+        html += '<div class="scratchpad-preview-total">Total: \u20b1' + data.total_amount.toLocaleString('en-PH', {minimumFractionDigits: 2}) + '</div>';
+        html += '<div class="scratchpad-preview-meta">';
+        if (data.person) html += '<span>From: ' + data.person + '</span>';
+        if (data.payment_method) html += '<span>Method: ' + data.payment_method + '</span>';
+        html += '</div>';
+        if (data.breakdown) html += '<div class="scratchpad-preview-breakdown">' + data.breakdown + '</div>';
+        html += '<div class="scratchpad-preview-actions"><button class="scratchpad-btn-save" onclick="saveScratchpadAR()">Save Entry</button><button class="scratchpad-btn-cancel" onclick="document.getElementById(\'scratchpadPreviewAR\').innerHTML=\'\';">Cancel</button></div>';
+        html += '</div>';
+        preview.innerHTML = html;
+        window._scratchpadPreviewAR = data;
+    });
+}
+function saveScratchpadAR() {
+    var data = window._scratchpadPreviewAR;
+    if (!data) return;
+    fetch('/scratchpad/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (res.success) { alert(res.message); location.reload(); }
+        else { alert('Error: ' + res.error); }
+    });
+}
 </script>
 {% endblock %}

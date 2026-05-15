@@ -29,7 +29,7 @@
             <div class="form-group">
                 <label>Description *</label>
                 <div style="position:relative;">
-                    <input type="text" name="description" id="cashDesc" placeholder="e.g., Rent payment" required style="padding-right:40px;">
+                    <input type="text" name="description" id="cashDesc" placeholder=" " required style="padding-right:40px;">
                     <button type="button" class="voice-btn" id="voiceBtn_cashDesc" onclick="startVoice('cashDesc')" title="Speak to fill">
                         <i class="fas fa-microphone"></i>
                     </button>
@@ -38,7 +38,7 @@
             </div>
             <div class="form-group">
                 <label>Amount (₱) *</label>
-                <input type="number" name="amount" step="0.01" placeholder="0.00" required>
+                <input type="number" name="amount" step="0.01" placeholder=" " required>
             </div>
             <div class="form-group">
                 <label>Type</label>
@@ -87,7 +87,7 @@
             </div>
             <div class="form-group">
                 <label>Reference Number</label>
-                <input type="text" name="reference_number" placeholder="Check #, transaction ID...">
+                <input type="text" name="reference_number" placeholder=" ">
             </div>
             {% if user_can_view('projects') %}
             <div class="form-group">
@@ -112,104 +112,119 @@
 
 <!-- Scratchpad / Smart Entry -->
 <div class="card" style="margin-bottom: 24px;">
-    <div class="card-header" style="cursor:pointer;" onclick="document.getElementById('scratchpadBody').classList.toggle('collapsed');">
-        <h2><i class="fas fa-pen-to-square"></i> Quick Entry (Beta)</h2>
-        <i class="fas fa-chevron-down" style="color:var(--text-tertiary);font-size:12px;transition:transform 0.3s;" id="scratchpadChevron"></i>
+    <div class="card-header scratchpad-toggle" onclick="document.getElementById('scratchpadBody').classList.toggle('collapsed');">
+        <h2><i class="fas fa-bolt" style="color:var(--accent);font-size:14px;"></i> Quick Entry</h2>
+        <svg class="scratchpad-chevron" id="scratchpadChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div id="scratchpadBody">
-        <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px;">Type what happened naturally. TARA will figure out the details.</p>
-        <textarea id="scratchpadText" placeholder="e.g., sold 5 lattes 800 each yesterday&#10;or: bought supplies for 500&#10;or: received 1500 from Juan" 
-                  style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border-visible);background:rgba(255,255,255,0.03);color:var(--text-primary);font-size:13px;font-family:'Inter',sans-serif;resize:vertical;min-height:70px;"></textarea>
-        <button class="btn btn-secondary" style="margin-top:8px;font-size:11px;" onclick="parseScratchpad()">
-            <i class="fas fa-wand-magic-sparkles"></i> Preview
-        </button>
-        <div id="scratchpadPreview" style="margin-top:12px;"></div>
+        <div class="scratchpad-inner">
+            <p class="scratchpad-hint">Type what happened naturally — TARA will figure out the details.</p>
+            <textarea id="scratchpadText" class="scratchpad-input" placeholder="Describe the entry..."></textarea>
+            <button class="scratchpad-parse-btn" onclick="parseScratchpad()">Parse Entry</button>
+            <div id="scratchpadPreview" class="scratchpad-preview"></div>
+        </div>
     </div>
 </div>
 
 <style>
+.scratchpad-toggle { cursor: pointer; user-select: none; }
+.scratchpad-toggle h2 { display: flex; align-items: center; gap: 8px; }
+.scratchpad-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.scratchpad-chevron { transition: transform 0.2s ease; color: var(--text-muted); }
 #scratchpadBody.collapsed { display: none; }
-#scratchpadBody.collapsed ~ .card-header #scratchpadChevron { transform: rotate(-90deg); }
-</style>
+#scratchpadBody.collapsed ~ .card-header .scratchpad-chevron,
+.scratchpad-toggle:has(+ #scratchpadBody.collapsed) .scratchpad-chevron { transform: rotate(-90deg); }
+.scratchpad-inner { padding: 0 20px 16px 20px; }
+.scratchpad-hint { font-size: 12px; color: var(--text-secondary); margin: 0 0 12px 0; }
+.scratchpad-input { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-light); background: var(--bg-secondary); color: var(--text-primary); font-size: 13px; font-family: inherit; resize: vertical; min-height: 64px; transition: border-color 0.15s, box-shadow 0.15s; }
+.scratchpad-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+body.dark .scratchpad-input, body.semi-dark .scratchpad-input { background: rgba(15,23,42,0.6); border-color: #334155; color: #f1f5f9; }
+body.dark .scratchpad-input::placeholder, body.semi-dark .scratchpad-input::placeholder { color: #64748b; }
+.scratchpad-parse-btn { margin-top: 10px; padding: 8px 18px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+.scratchpad-parse-btn:hover { background: var(--accent-dark); box-shadow: 0 4px 12px var(--accent-glow); }
+.scratchpad-preview { margin-top: 14px; }
+.scratchpad-preview-card { background: var(--glass-bg); backdrop-filter: var(--backdrop-blur); -webkit-backdrop-filter: var(--backdrop-blur); border: 1px solid var(--glass-border); border-radius: 14px; padding: 16px; animation: spFadeIn 0.2s ease; }
+@keyframes spFadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.scratchpad-preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.scratchpad-preview-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 100px; }
+.sp-type-sale { background: rgba(16,185,129,0.12); color: #10b981; }
+.sp-type-expense { background: rgba(239,68,68,0.1); color: #ef4444; }
+.sp-type-payment { background: rgba(59,130,246,0.1); color: #3b82f6; }
+body.dark .sp-type-sale { background: rgba(16,185,129,0.18); color: #6ee7b7; }
+body.dark .sp-type-expense { background: rgba(239,68,68,0.15); color: #fca5a5; }
+body.dark .sp-type-payment { background: rgba(59,130,246,0.15); color: #93c5fd; }
+.scratchpad-preview-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 10px; }
+.scratchpad-preview-table th { text-align: left; font-weight: 500; color: var(--text-muted); padding: 4px 0; border-bottom: 1px solid var(--border-light); }
+.scratchpad-preview-table td { padding: 6px 0; border-bottom: 1px dashed var(--border-light); }
+.scratchpad-preview-total { font-weight: 600; font-size: 14px; margin: 8px 0; color: var(--text-primary); }
+.scratchpad-preview-meta { font-size: 11px; color: var(--text-secondary); display: flex; flex-wrap: wrap; gap: 12px; margin: 6px 0; }
+.scratchpad-preview-breakdown { font-size: 11px; padding: 8px 12px; background: var(--accent-light); border-radius: 8px; color: var(--accent); margin: 8px 0; }
+.scratchpad-preview-actions { display: flex; gap: 8px; margin-top: 12px; }
+.scratchpad-btn-save { padding: 7px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+.scratchpad-btn-save:hover { background: var(--accent-dark); box-shadow: 0 4px 12px var(--accent-glow); }
+.scratchpad-btn-cancel { padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border-light); background: transparent; color: var(--text-secondary); font-size: 12px; cursor: pointer; transition: all 0.2s ease; }
+.scratchpad-btn-cancel:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.scratchpad-loading { text-align: center; padding: 14px; color: var(--text-muted); font-size: 12px; }
+.scratchpad-error { text-align: center; padding: 14px; color: #ef4444; font-size: 12px; }</style>
 
 <script>
 function parseScratchpad() {
     var text = document.getElementById('scratchpadText').value.trim();
     if (!text) return;
-    
     var preview = document.getElementById('scratchpadPreview');
-    preview.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-secondary);">Analyzing...</div>';
-    
-    fetch('/api/parse_scratchpad', {
+    preview.innerHTML = '<div class="scratchpad-loading">Analyzing entry...</div>';
+    fetch('/scratchpad/parse', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({text: text})
     })
     .then(function(r) { return r.json(); })
-    .then(function(entries) {
-        if (!entries || !entries.length) {
-            preview.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-tertiary);">Could not understand. Try: "sold 5 items 100 each" or "bought supplies for 500"</div>';
+    .then(function(data) {
+        if (!data.success) {
+            preview.innerHTML = '<div class="scratchpad-error">' + (data.error || 'Could not parse. Try including an amount like 800 or \u20b1800.') + '</div>';
             return;
         }
-        
-        var html = '<div style="overflow-x:auto;"><table style="width:100%;font-size:11px;"><thead><tr>';
-        html += '<th>Date</th><th>Type</th><th>Description</th><th>Qty</th><th>Price</th><th>Total</th>';
-        html += '</tr></thead><tbody>';
-        
-        var grandTotal = 0;
-        entries.forEach(function(e) {
-            html += '<tr>';
-            html += '<td>' + e.date + '</td>';
-            html += '<td><span class="badge ' + (e.type === 'sale' || e.type === 'income' ? 'badge-success' : 'badge-danger') + '">' + e.type + '</span></td>';
-            html += '<td>' + e.description + '</td>';
-            html += '<td>' + e.quantity + '</td>';
-            html += '<td>' + e.unit_price.toFixed(2) + '</td>';
-            html += '<td style="font-weight:600;">' + e.total.toFixed(2) + '</td>';
-            html += '</tr>';
-            grandTotal += e.total;
-        });
-        html += '<tr style="font-weight:700;border-top:2px solid var(--border-visible);"><td colspan="5">Total</td><td>' + grandTotal.toFixed(2) + '</td></tr>';
-        html += '</tbody></table></div>';
-        html += '<div style="display:flex;gap:8px;margin-top:10px;">';
-        html += '<button class="btn btn-primary" style="font-size:11px;" onclick="window._scratchEntries = ' + JSON.stringify(entries) + '; saveScratchpad()"><i class="fas fa-save"></i> Save All</button>';
-        html += '<button class="btn btn-secondary" style="font-size:11px;" onclick="document.getElementById('scratchpadPreview').innerHTML='';document.getElementById('scratchpadText').value='';">Clear</button>';
+        var typeClass = data.transaction_type === 'sale' ? 'sp-type-sale' : data.transaction_type === 'expense' ? 'sp-type-expense' : 'sp-type-payment';
+        var typeLabel = data.transaction_type === 'sale' ? 'Sale' : data.transaction_type === 'expense' ? 'Expense' : 'Payment Received';
+        var html = '<div class="scratchpad-preview-card">';
+        html += '<div class="scratchpad-preview-header"><span class="scratchpad-preview-type ' + typeClass + '">' + typeLabel + '</span><span style="font-size:11px;color:var(--text-tertiary);">' + new Date(data.date).toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) + '</span></div>';
+        if (data.items && data.items.length > 0) {
+            html += '<table class="scratchpad-preview-table"><thead><tr><th>Qty</th><th>Item</th><th>Price</th><th>Total</th></tr></thead><tbody>';
+            data.items.forEach(function(item) {
+                html += '<tr><td>' + item.quantity + '</td><td>' + item.product + '</td><td>\u20b1' + item.unit_price.toLocaleString() + '</td><td style="font-weight:500;">\u20b1' + item.total.toLocaleString() + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        html += '<div class="scratchpad-preview-total">Total: \u20b1' + data.total_amount.toLocaleString('en-PH', {minimumFractionDigits: 2}) + '</div>';
+        html += '<div class="scratchpad-preview-meta">';
+        if (data.category) html += '<span>Category: ' + data.category + '</span>';
+        if (data.person) html += '<span>From: ' + data.person + '</span>';
+        if (data.payment_method) html += '<span>Method: ' + data.payment_method + '</span>';
+        html += '</div>';
+        if (data.breakdown) html += '<div class="scratchpad-preview-breakdown">' + data.breakdown + '</div>';
+        html += '<div class="scratchpad-preview-actions"><button class="scratchpad-btn-save" onclick="saveScratchpad()">Save Entry</button><button class="scratchpad-btn-cancel" onclick="document.getElementById(\'scratchpadPreview\').innerHTML=\'\';">Cancel</button></div>';
         html += '</div>';
         preview.innerHTML = html;
+        window._scratchpadPreview = data;
     });
 }
-
 function saveScratchpad() {
-    var entries = window._scratchEntries || [];
-    if (!entries.length) return;
-    var saved = 0;
-    
-    function saveNext(index) {
-        if (index >= entries.length) {
-            if (typeof showToast === 'function') showToast(saved + ' transaction(s) saved', 'success');
-            document.getElementById('scratchpadPreview').innerHTML = '';
-            document.getElementById('scratchpadText').value = '';
-            setTimeout(function() { location.reload(); }, 600);
-            return;
+    var data = window._scratchpadPreview;
+    if (!data) return;
+    fetch('/scratchpad/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (res.success) {
+            alert(res.message);
+            location.reload();
+        } else {
+            alert('Error: ' + res.error);
         }
-        
-        var e = entries[index];
-        var formData = new FormData();
-        formData.append('description', e.description);
-        formData.append('amount', e.total);
-        formData.append('type', e.type === 'expense' ? 'expense' : 'income');
-        formData.append('category', 'General');
-        formData.append('date', e.date);
-        formData.append('payment_method', 'cash');
-        
-        fetch('/add_transaction', {
-            method: 'POST',
-            body: formData
-        })
-        .then(function() { saved++; saveNext(index + 1); })
-        .catch(function() { saveNext(index + 1); });
-    }
-    
-    saveNext(0);
+    });
 }
 </script>
 
@@ -248,7 +263,7 @@ function saveScratchpad() {
         </div>
         <div class="filter-group" style="flex:1; min-width:150px;">
             <label>Search</label>
-            <input type="text" id="cashBody_search" placeholder="Description or category..." oninput="filterTable('cashBody','cashNoData')">
+            <input type="text" id="cashBody_search" placeholder=" " oninput="filterTable('cashBody','cashNoData')">
         </div>
         <button class="btn btn-secondary btn-sm" onclick="clearFilters('cashBody')" style="padding:8px 12px; font-size:11px;">
             <i class="fas fa-times"></i> Clear

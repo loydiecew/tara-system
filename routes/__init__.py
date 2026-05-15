@@ -31,3 +31,4 @@ from .permissions import permissions_bp
 from .planner import planner_bp
 from routes.tasks import tasks_bp
 from routes.approvals import approvals_bp
+from routes.scratchpad import scratchpad_bp

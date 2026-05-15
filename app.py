@@ -7,6 +7,7 @@ from models.helpers import user_has_feature, user_has_addon
 
 # ---------- Import all blueprints ----------
 from routes import (
+    scratchpad_bp,
     auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
     all_transactions_bp, import_bp, orders_bp, quotations_bp,
@@ -14,8 +15,6 @@ from routes import (
     branches_bp, payments_bp, recurring_bp, bank_rec_bp,
     fiscal_bp, tax_bp, currencies_bp, permissions_bp, tasks_bp, approvals_bp 
 )
-
-# ---------- App setup ----------
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'tara-dev-key')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -31,6 +30,7 @@ mail = Mail(app)
 
 # ---------- Register blueprints ----------
 BLUEPRINTS = [
+    scratchpad_bp,
     approvals_bp,
     tasks_bp,
     auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
@@ -179,15 +179,19 @@ def _update_plan(plan_id, plan_key, plan_name):
     session['plan_name'] = plan_name
 
 
+@app.route('/favicon.ico')
+def favicon():
+    return '', 204
+
 # ---------- Error handlers ----------
 @app.errorhandler(404)
 def not_found(e):
-    return render_template('404.html'), 404
+    return '<!DOCTYPE html><html><head><title>404 - TARA</title><style>body{font-family:Inter,sans-serif;background:#060608;color:#f1f1f3;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center} h1{font-size:48px;color:#10b981} p{color:#a1a1aa} a{color:#10b981}</style></head><body><div><h1>404</h1><p>Page not found</p><a href="/">Go Home</a></div></body></html>', 404
 
 
 @app.errorhandler(500)
 def server_error(e):
-    return render_template('500.html'), 500
+    return '<!DOCTYPE html><html><head><title>500 - TARA</title><style>body{font-family:Inter,sans-serif;background:#060608;color:#f1f1f3;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center} h1{font-size:48px;color:#f59e0b} p{color:#a1a1aa} a{color:#10b981}</style></head><body><div><h1>500</h1><p>Something went wrong</p><a href="/">Go Home</a></div></body></html>', 500
 
 
 # ---------- Run ----------

@@ -121,13 +121,12 @@
         .nav-logo .logo-mark {
             width: 30px; height: 30px;
             border-radius: 8px;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #000;
-            font-size: 15px;
-            font-weight: 800;
+            flex-shrink: 0;
+        }
+        .nav-logo .logo-mark img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+        }
         }
         .nav-links { display: flex; gap: 28px; align-items: center; }
         .nav-links a {
@@ -839,7 +838,7 @@
 <!-- Nav -->
 <nav id="navbar">
     <a href="#" class="nav-logo">
-        <div class="logo-mark">T</div>
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TARA" class="logo-mark">
         TARA
     </a>
     <div class="nav-links">

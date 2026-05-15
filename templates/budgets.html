@@ -21,33 +21,46 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="stats-grid">
     <div class="stat-card"><div class="stat-title">Active Budgets</div><div class="stat-value">{{ budgets|length }}</div></div>
     <div class="stat-card"><div class="stat-title">Over Budget</div><div class="stat-value" style="color: #ef4444;">{{ budgets|selectattr('over_budget', 'equalto', true)|list|length }}</div></div>
-    <div class="stat-card"><div class="stat-title">On Track</div><div class="stat-value" style="color: #10b981;">{{ budgets|selectattr('over_budget', 'equalto', false)|list|length }}</div></div>
+    <div class="stat-card"><div class="stat-title">On Track</div><div class="stat-value" style="color: #10b981;">{{ budgets|rejectattr('over_budget', 'equalto', true)|list|length }}</div></div>
 </div>
 
-<div class="chart-container" style="height: 200px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+<div class="chart-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
         <h3 style="font-size: 14px;"><i class="fas fa-chart-bar"></i> Budget vs Actual</h3>
-        <select id="budgetMonth" onchange="loadBudgetChart()" style="padding: 6px 10px; border-radius: 8px; font-size: 12px;">
+        <select id="budgetMonth" onchange="loadBudgetChart()" style="padding: 6px 10px; border-radius: 8px; font-size: 12px; background: var(--bg-secondary); border: 1px solid var(--border-light); color: var(--text-primary);">
             <option value="{{ current_month }}">This Month</option>
-            {% for b in budgets|unique(attribute='month') %}
-            <option value="{{ b.month.strftime('%Y-%m') }}">{{ b.month.strftime('%B %Y') }}</option>
+            {% for m in unique_months %}
+            <option value="{{ m.month.strftime('%Y-%m') }}">{{ m.label }}</option>
             {% endfor %}
         </select>
     </div>
-    <div style="height: 150px;"><canvas id="budgetChart"></canvas></div>
+    <div style="height: 250px;"><canvas id="budgetChart"></canvas></div>
 </div>
 
 <div class="card">
     <div class="card-header"><h2><i class="fas fa-plus-circle"></i> Set Budget</h2></div>
     <form method="POST" action="/set_budget">
         <div class="form-grid">
-            <div class="form-group"><label>Category *</label><select name="category" required><option value="">Select category</option>{% for cat in categories %}<option value="{{ cat }}">{{ cat }}</option>{% endfor %}<option value="Other">Other</option></select></div>
+            <div class="form-group">
+                <label>Category *</label>
+                <select name="category" required>
+                    <option value="">Select category...</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="form-group"><label>Month *</label><input type="month" name="month" value="{{ current_month }}" required></div>
             <div class="form-group"><label>Budget Amount (₱) *</label><input type="number" name="budget_amount" step="0.01" placeholder="0.00" required></div>
-            <div class="form-group"><label>Approval Threshold (₱)</label><input type="number" name="approval_threshold" step="0.01" placeholder="e.g. 5000"><small style="color:var(--text-secondary);">Expenses above this need approval. Leave blank for no approval.</small></div>
+            <div class="form-group">
+                <label>Approval Threshold (₱)</label>
+                <input type="number" name="approval_threshold" step="0.01" placeholder="e.g. 5000">
+                <small style="color:var(--text-secondary);">Expenses above this need manager approval. Leave blank for no approval.</small>
+            </div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-save"></i> Save Budget</button>
     </form>
@@ -56,53 +69,63 @@
 <div class="card">
     <div class="card-header">
         <h2><i class="fas fa-list"></i> Budgets</h2>
-        <div style="display: flex; gap: 8px;">
-            {% if user_can_view('import_data') %}
-            <a href="/import-data?tab=cash" class="btn btn-secondary btn-sm" style="padding:8px 14px;font-size:12px;"><i class="fas fa-upload"></i> Import</a>
-            {% endif %}
-            <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('budgetsTable','TARA_Budgets_{{ today }}')" style="padding:8px 14px;font-size:12px;"><i class="fas fa-download"></i> Export CSV</button>
-        </div>
+        <button class="btn btn-secondary btn-sm" onclick="exportTableToCSV('budgetsTable','TARA_Budgets')" style="padding:8px 14px;font-size:12px;"><i class="fas fa-download"></i> Export CSV</button>
     </div>
-    <div class="filter-bar">
-        <div class="filter-group" style="flex:1;min-width:150px;"><label>Search</label><input type="text" id="budgetsBody_search" placeholder="Category..." oninput="filterTable('budgetsBody','budgetsNoData')"></div>
-        <button class="btn btn-secondary btn-sm" onclick="clearFilters('budgetsBody')" style="padding:8px 12px;font-size:11px;"><i class="fas fa-times"></i> Clear</button>
-    </div>
-    <div class="table-wrapper"><table id="budgetsTable"><thead><tr><th>Category</th><th>Month</th><th>Budget</th><th>Actual</th><th>Remaining</th><th>Progress</th><th>Actions</th></tr></thead>
-    <tbody id="budgetsBody">
-        {% for b in budgets %}
-        {% set bar_class = 'safe' if b.percent_used < 80 else ('warning' if b.percent_used <= 100 else 'over') %}
-        {% set status_text = 'On track' if b.percent_used < 80 else ('Near limit' if b.percent_used <= 100 else 'Over budget') %}
-        <tr data-filter='{"search":"{{ b.category|lower }}"}'>
-            <td><strong>{{ b.category }}</strong></td>
-            <td>{{ b.month.strftime('%B %Y') if b.month else '-' }}</td>
-            <td>₱ {{ "{:,.2f}".format(b.budget_amount) }}</td><td>{% if b.approval_threshold %}₱ {{ "{:,.0f}".format(b.approval_threshold) }}{% else %}—{% endif %}</td>
-            <td style="color:{{ '#ef4444' if b.over_budget else '#10b981' }};">₱ {{ "{:,.2f}".format(b.actual_amount) }}</td>
-            <td style="color:{{ '#ef4444' if b.variance < 0 else '#10b981' }};">₱ {{ "{:,.2f}".format(b.variance) }}</td>
-            <td><div class="budget-bar"><div class="budget-bar-fill {{ bar_class }}" style="width:{{ [b.percent_used,100]|min }}%;"></div></div><div class="budget-status {{ bar_class }}">{{ b.percent_used }}% — {{ status_text }}</div></td>
-            <td><a href="/delete_budget/{{ b.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Remove?')"><i class="fas fa-trash-alt"></i></a></td>
-        </tr>
-        {% else %}
-        <tr id="budgetsNoData"><td colspan="7" style="text-align:center;padding:30px;">No budgets set yet</td></tr>
-        {% endfor %}
-    </tbody></table></div>
+    <div class="table-wrapper"><table id="budgetsTable">
+        <thead><tr><th>Category</th><th>Month</th><th>Budget</th><th>Threshold</th><th>Actual</th><th>Remaining</th><th>Progress</th><th>Actions</th></tr></thead>
+        <tbody id="budgetsBody">
+            {% for b in budgets %}
+            {% set bar_class = 'safe' if b.percent_used < 80 else ('warning' if b.percent_used <= 100 else 'over') %}
+            {% set status_text = 'On track' if b.percent_used < 80 else ('Near limit' if b.percent_used <= 100 else 'Over budget') %}
+            <tr>
+                <td><strong>{{ b.category }}</strong></td>
+                <td>{{ b.month.strftime('%B %Y') if b.month else '-' }}</td>
+                <td>₱{{ "{:,.2f}".format(b.budget_amount) }}</td>
+                <td>{% if b.approval_threshold %}₱{{ "{:,.0f}".format(b.approval_threshold) }}{% else %}—{% endif %}</td>
+                <td style="color:{{ '#ef4444' if b.over_budget else '#10b981' }};">₱{{ "{:,.2f}".format(b.actual_amount) }}</td>
+                <td style="color:{{ '#ef4444' if b.variance < 0 else '#10b981' }};">₱{{ "{:,.2f}".format(b.variance) }}</td>
+                <td>
+                    <div class="budget-bar"><div class="budget-bar-fill {{ bar_class }}" style="width:{{ [b.percent_used, 100]|min }}%;"></div></div>
+                    <div class="budget-status {{ bar_class }}">{{ b.percent_used }}% — {{ status_text }}</div>
+                </td>
+                <td><a href="/delete_budget/{{ b.id }}" class="btn-icon btn-icon-danger" onclick="return confirm('Remove this budget?')"><i class="fas fa-trash-alt"></i></a></td>
+            </tr>
+            {% else %}
+            <tr id="budgetsNoData"><td colspan="8" style="text-align:center;padding:30px;">No budgets set yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table></div>
 </div>
 
 <script>
     let budgetChart = null;
     function loadBudgetChart() {
         const month = document.getElementById('budgetMonth').value;
-        fetch(`/api/budget-comparison?month=${month}-01`)
-            .then(res => res.json())
-            .then(data => {
+        fetch('/api/budget-comparison?month=' + month + '-01')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                var ctx = document.getElementById('budgetChart').getContext('2d');
                 if (budgetChart) budgetChart.destroy();
-                const ctx = document.getElementById('budgetChart').getContext('2d');
                 budgetChart = new Chart(ctx, {
                     type: 'bar',
-                    data: { labels: data.categories, datasets: [{ label: 'Budget', data: data.budget, backgroundColor: '#10b981', borderRadius: 4 }, { label: 'Actual', data: data.actual, backgroundColor: '#ef4444', borderRadius: 4 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } } } }
+                    data: {
+                        labels: data.categories,
+                        datasets: [
+                            { label: 'Budget', data: data.budget, backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: 'Actual', data: data.actual, backgroundColor: '#ef4444', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+                        scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } } }
+                    }
                 });
             });
     }
-    document.addEventListener('DOMContentLoaded', loadBudgetChart);
+    document.addEventListener('DOMContentLoaded', function() {
+        loadBudgetChart();
+    });
 </script>
 {% endblock %}

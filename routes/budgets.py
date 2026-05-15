@@ -1,20 +1,22 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash, jsonify
 from datetime import date, timedelta
-from calendar import monthrange
 from models.database import get_db
-from models.access_control import check_module_access
 
 budgets_bp = Blueprint('budgets', __name__)
+
+# Pre-defined expense categories that always show
+DEFAULT_CATEGORIES = [
+    'Supplies', 'Rent', 'Utilities', 'Salary', 'Transport',
+    'Marketing', 'Inventory', 'Equipment', 'Maintenance', 'Other'
+]
 
 @budgets_bp.route('/budgets')
 def budgets():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
 
-    if not check_module_access('budgets'): return redirect(url_for('dashboard.dashboard'))
-
-    if session.get('plan') not in ['suite']:
-        flash('Budgeting is available on Enterprise plan only.', 'error')
+    if session.get('plan') not in ['professional', 'suite']:
+        flash('Budgeting is available on Professional and Suite plans.', 'error')
         return redirect(url_for('dashboard.dashboard'))
     
     db = get_db()
@@ -22,13 +24,12 @@ def budgets():
     business_id = session.get('business_id', session['user_id'])
     
     today = date.today()
-    current_month = today.replace(day=1)
-    last_month = (current_month - timedelta(days=1)).replace(day=1)
+    current_month = today.replace(day=1).isoformat()
     
     # Get all budgets with actual spending
     cursor.execute("""
         SELECT 
-            b.id, b.category, b.month, b.budget_amount,
+            b.id, b.category, b.month, b.budget_amount, b.approval_threshold,
             COALESCE(SUM(t.amount), 0) as actual_amount
         FROM budgets b
         JOIN users u ON b.user_id = u.id
@@ -36,10 +37,11 @@ def budgets():
             AND MONTH(t.transaction_date) = MONTH(b.month)
             AND YEAR(t.transaction_date) = YEAR(b.month)
             AND t.type = 'expense'
+            AND t.status = 'active'
             AND t.deleted_at IS NULL
             AND t.user_id = b.user_id
         WHERE b.deleted_at IS NULL AND u.business_id = %s
-        GROUP BY b.id, b.category, b.month, b.budget_amount
+        GROUP BY b.id, b.category, b.month, b.budget_amount, b.approval_threshold
         ORDER BY b.month DESC, b.category ASC
     """, (business_id,))
     budgets = cursor.fetchall()
@@ -49,22 +51,36 @@ def budgets():
         b['percent_used'] = round((float(b['actual_amount']) / float(b['budget_amount'])) * 100, 1) if float(b['budget_amount']) > 0 else 0
         b['over_budget'] = float(b['actual_amount']) > float(b['budget_amount'])
     
-    # Get expense categories for dropdown
+    # Get custom categories from existing transactions + defaults
     cursor.execute("""
         SELECT DISTINCT category FROM transactions t
         JOIN users u ON t.user_id = u.id
         WHERE u.business_id = %s AND t.type = 'expense' AND t.category IS NOT NULL
+        AND t.category != ''
         ORDER BY category
     """, (business_id,))
-    categories = [row['category'] for row in cursor.fetchall()]
+    custom_cats = [row['category'] for row in cursor.fetchall()]
+    
+    # Merge defaults + custom, no duplicates
+    categories = list(dict.fromkeys(DEFAULT_CATEGORIES + custom_cats))
+    
     cursor.close()
     db.close()
     
+    # Get unique months for dropdown
+    unique_months = []
+    seen = set()
+    for b in budgets:
+        m = b['month'].strftime('%Y-%m') if hasattr(b['month'], 'strftime') else str(b['month'])[:7]
+        if m not in seen:
+            unique_months.append({'month': b['month'], 'label': b['month'].strftime('%B %Y') if hasattr(b['month'], 'strftime') else m})
+            seen.add(m)
+    
     return render_template('budgets.html',
-                         username=session['username'],
                          budgets=budgets,
                          categories=categories,
-                         current_month=current_month.isoformat(),
+                         unique_months=unique_months,
+                         current_month=current_month,
                          today=today.isoformat())
 
 
@@ -75,8 +91,8 @@ def set_budget():
     
     category = request.form['category']
     month = request.form['month']
-    if len(month) == 7:  # Format: YYYY-MM
-        month = month + '-01'    
+    if len(month) == 7:
+        month = month + '-01'
     budget_amount = float(request.form['budget_amount'])
     threshold = request.form.get('approval_threshold', '').strip()
     approval_threshold = float(threshold) if threshold else None
@@ -87,14 +103,15 @@ def set_budget():
     cursor.execute("""
         INSERT INTO budgets (user_id, category, month, budget_amount, approval_threshold)
         VALUES (%s, %s, %s, %s, %s)
-        ON DUPLICATE KEY UPDATE budget_amount = %s, approval_threshold = %s
-    """, (session['user_id'], category, month, budget_amount, approval_threshold, budget_amount, approval_threshold))
+        ON DUPLICATE KEY UPDATE budget_amount = VALUES(budget_amount), 
+                                approval_threshold = VALUES(approval_threshold)
+    """, (session['user_id'], category, month, budget_amount, approval_threshold))
     
     db.commit()
     cursor.close()
     db.close()
     
-    flash(f'Budget set: {category} - ₱{budget_amount:,.2f}', 'success')
+    flash(f'Budget set: {category} — ₱{budget_amount:,.2f}', 'success')
     return redirect(url_for('budgets.budgets'))
 
 
@@ -117,7 +134,6 @@ def delete_budget(budget_id):
 
 @budgets_bp.route('/api/budget-comparison')
 def budget_comparison():
-    """API endpoint for budget vs actual chart data"""
     if 'user_id' not in session:
         return jsonify({'error': 'Not logged in'}), 401
     
@@ -131,19 +147,19 @@ def budget_comparison():
         SELECT 
             b.category, b.budget_amount,
             COALESCE(SUM(t.amount), 0) as actual_amount
-        FROM budgets b WHERE b.deleted_at IS NULL
-        LEFT JOIN transactions t ON t.category = b.category 
-            AND MONTH(t.transaction_date) = MONTH(%s)
-            AND YEAR(t.transaction_date) = YEAR(%s)
-            AND t.type = 'expense'
-            AND t.deleted_at IS NULL
+        FROM budgets b
         JOIN users u ON b.user_id = u.id
-        LEFT JOIN users ut ON t.user_id = ut.id
-        WHERE u.business_id = %s AND b.month = %s
-        AND (ut.business_id = %s OR t.id IS NULL)
+        LEFT JOIN transactions t ON t.category = b.category 
+            AND MONTH(t.transaction_date) = MONTH(b.month)
+            AND YEAR(t.transaction_date) = YEAR(b.month)
+            AND t.type = 'expense'
+            AND t.status = 'active'
+            AND t.deleted_at IS NULL
+            AND t.user_id = b.user_id
+        WHERE u.business_id = %s AND b.month = %s AND b.deleted_at IS NULL
         GROUP BY b.category, b.budget_amount
         ORDER BY b.category
-    """, (month, month, business_id, month, business_id))
+    """, (business_id, month))
     data = cursor.fetchall()
     
     cursor.close()

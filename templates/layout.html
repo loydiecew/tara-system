@@ -181,16 +181,19 @@
         .logo { display: flex; align-items: center; gap: 10px; overflow: hidden; }
         .logo-icon {
             width: 38px; height: 38px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white;
+            border-radius: 10px;
             flex-shrink: 0;
             box-shadow: 0 4px 12px var(--accent-glow);
             animation: logoPulse 3s ease-in-out infinite;
         }
+        .logo-icon img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+        }
         @keyframes logoPulse {
             0%, 100% { box-shadow: 0 4px 12px var(--accent-glow); }
+            50% { box-shadow: 0 4px 24px rgba(16,185,129,0.5); }
+        }
             50% { box-shadow: 0 4px 24px rgba(16,185,129,0.5); }
         }
         .logo-text { font-size: 20px; font-weight: 700; color: white; white-space: nowrap; }
@@ -882,7 +885,7 @@
         <aside class="sidebar {% if session.plan == 'starter' %}enterprise-hide{% endif %} {% if session.plan == 'suite' and session.role in ['admin', 'owner'] %}enterprise-hide{% endif %}">        
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">T</div>
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="TARA" class="logo-icon">
                     <div class="logo-text">TARA<span>.</span></div>
                 </div>
                 <button class="sidebar-toggle" id="sidebarToggle">
