@@ -11,9 +11,9 @@
     <div class="stat-card"><div class="stat-title">Total Transactions</div><div class="stat-value">{{ sales|length }}</div></div>
 </div>
 
-<div class="card">
-    <!-- Scratchpad Quick Entry -->
-    <div class="card-header" style="cursor:pointer;" onclick="document.getElementById('scratchpadBodySales').classList.toggle('collapsed');">
+<!-- Scratchpad Quick Entry -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header scratchpad-toggle" onclick="document.getElementById('scratchpadBodySales').classList.toggle('collapsed');">
         <h2><i class="fas fa-bolt" style="color:var(--accent);font-size:14px;"></i> Quick Entry</h2>
         <svg class="scratchpad-chevron" id="scratchpadChevronSales" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -28,7 +28,12 @@
         <div id="scratchpadPreviewSales" style="margin-top:12px;"></div>
         </div>
     </div>
-    <style>.scratchpad-toggle { cursor: pointer; user-select: none; }
+    <style>.scratchpad-suggestion { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; background: var(--accent-light); border: 1px solid rgba(16,185,129,0.2); border-radius: 20px; font-size: 11px; color: var(--accent); cursor: pointer; transition: all 0.15s ease; animation: spFadeIn 0.2s ease; }
+.scratchpad-suggestion:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.scratchpad-suggestion .sg-icon { font-size: 10px; }
+.scratchpad-suggestion .sg-text { font-weight: 500; }
+.scratchpad-suggestion .sg-confidence { font-size: 9px; opacity: 0.7; margin-left: 2px; }
+.scratchpad-toggle { cursor: pointer; user-select: none; }
 .scratchpad-toggle h2 { display: flex; align-items: center; gap: 8px; }
 .scratchpad-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
 .scratchpad-chevron { transition: transform 0.2s ease; color: var(--text-muted); }
@@ -267,6 +272,36 @@ function updateSaleTotal() {
     const grandTotal = subtotal - totalDiscount;
     document.getElementById('saleGrandTotal').textContent = '₱' + grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
 }
+
+// Smart categorization for scratchpad
+var _scratchpadTimeout;
+document.getElementById('scratchpadTextSales').addEventListener('input', function() {
+    clearTimeout(_scratchpadTimeout);
+    var val = this.value.trim();
+    var suggestion = document.getElementById('scratchpadSuggestionSales');
+    if (val.length < 3) { suggestion.style.display = 'none'; return; }
+    _scratchpadTimeout = setTimeout(function() {
+        fetch('/api/suggest_category', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({description: val})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.category && data.confidence > 0.15) {
+                suggestion.innerHTML = '<span class="sg-icon"><i class="fas fa-lightbulb"></i></span><span class="sg-text">' + data.category + '</span><span class="sg-confidence">' + Math.round(data.confidence * 100) + '%</span>';
+                suggestion.style.display = 'inline-flex';
+                suggestion.onclick = function() {
+                    document.getElementById('scratchpadTextSales').value = val + ' [' + data.category + ']';
+                    suggestion.style.display = 'none';
+                };
+            } else {
+                suggestion.style.display = 'none';
+            }
+        });
+    }, 600);
+});
+
 function parseScratchpadSales() {
     var text = document.getElementById('scratchpadTextSales').value.trim();
     if (!text) return;

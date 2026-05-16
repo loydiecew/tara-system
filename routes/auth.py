@@ -47,7 +47,7 @@ def register():
 def handle_registration(plan_slug):
     """Process registration form submission."""
     full_name = request.form.get('full_name', '').strip()
-    username = request.form.get('username', '').strip().lower()
+    username = request.form.get('username', '').strip()
     password = request.form.get('password', '')
     business_name = request.form.get('business_name', '').strip()
     industry = request.form.get('industry', '').strip()
@@ -81,13 +81,16 @@ def handle_registration(plan_slug):
     plan_slug_map = {1: 'starter', 2: 'essentials', 3: 'professional', 4: 'suite'}
     plan_name_map = {1: 'Starter', 2: 'Essentials', 3: 'Professional', 4: 'Suite'}
     
-    # Business password
-    business_password = request.form.get('business_password', '')
-    if plan_slug == 'starter':
-        business_password = generate_business_password()
-    elif not business_password or len(business_password) < 4:
-        return render_template('register_paid.html', plan=plan_slug,
-                              error='Business password must be at least 4 characters.')
+    # Business password — all plans set their own, Starter defaults if empty
+    business_password = request.form.get('business_password', '').strip()
+    if not business_password:
+        business_password = generate_business_password()  # Fallback auto-generate
+    elif len(business_password) < 4:
+        return render_template(
+            'register_starter.html' if plan_slug == 'starter' else 'register_paid.html',
+            plan=plan_slug,
+            error='Business password must be at least 4 characters.'
+        )
     
     # VAT
     vat_registered = 0 if business_size == 'solo' else 1

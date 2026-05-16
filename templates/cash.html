@@ -120,6 +120,7 @@
         <div class="scratchpad-inner">
             <p class="scratchpad-hint">Type what happened naturally — TARA will figure out the details.</p>
             <textarea id="scratchpadText" class="scratchpad-input" placeholder="Describe the entry..."></textarea>
+            <div id="scratchpadSuggestion" class="scratchpad-suggestion" style="display:none;"></div>
             <button class="scratchpad-parse-btn" onclick="parseScratchpad()">Parse Entry</button>
             <div id="scratchpadPreview" class="scratchpad-preview"></div>
         </div>
@@ -127,6 +128,11 @@
 </div>
 
 <style>
+.scratchpad-suggestion { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; background: var(--accent-light); border: 1px solid rgba(16,185,129,0.2); border-radius: 20px; font-size: 11px; color: var(--accent); cursor: pointer; transition: all 0.15s ease; animation: spFadeIn 0.2s ease; }
+.scratchpad-suggestion:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.scratchpad-suggestion .sg-icon { font-size: 10px; }
+.scratchpad-suggestion .sg-text { font-weight: 500; }
+.scratchpad-suggestion .sg-confidence { font-size: 9px; opacity: 0.7; margin-left: 2px; }
 .scratchpad-toggle { cursor: pointer; user-select: none; }
 .scratchpad-toggle h2 { display: flex; align-items: center; gap: 8px; }
 .scratchpad-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
@@ -168,6 +174,36 @@ body.dark .sp-type-payment { background: rgba(59,130,246,0.15); color: #93c5fd; 
 .scratchpad-error { text-align: center; padding: 14px; color: #ef4444; font-size: 12px; }</style>
 
 <script>
+
+// Smart categorization for scratchpad
+var _scratchpadTimeout;
+document.getElementById('scratchpadText').addEventListener('input', function() {
+    clearTimeout(_scratchpadTimeout);
+    var val = this.value.trim();
+    var suggestion = document.getElementById('scratchpadSuggestion');
+    if (val.length < 3) { suggestion.style.display = 'none'; return; }
+    _scratchpadTimeout = setTimeout(function() {
+        fetch('/api/suggest_category', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({description: val})
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.category && data.confidence > 0.15) {
+                suggestion.innerHTML = '<span class="sg-icon"><i class="fas fa-lightbulb"></i></span><span class="sg-text">' + data.category + '</span><span class="sg-confidence">' + Math.round(data.confidence * 100) + '%</span>';
+                suggestion.style.display = 'inline-flex';
+                suggestion.onclick = function() {
+                    document.getElementById('scratchpadText').value = val + ' [' + data.category + ']';
+                    suggestion.style.display = 'none';
+                };
+            } else {
+                suggestion.style.display = 'none';
+            }
+        });
+    }, 600);
+});
+
 function parseScratchpad() {
     var text = document.getElementById('scratchpadText').value.trim();
     if (!text) return;

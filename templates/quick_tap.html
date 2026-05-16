@@ -203,6 +203,7 @@
     .st-btn.st-add i { font-size: 18px; position: relative; z-index: 1; }
 
     /* ── Action Bar ── */
+    #mixedBtn.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
     .st-actions {
         display: flex;
         gap: 8px;
@@ -434,7 +435,14 @@
     .st-feed-badge.sale { background: rgba(16,185,129,0.12); color: var(--accent); }
     .st-feed-badge.expense { background: rgba(239,68,68,0.08); color: #ef4444; }
     .st-feed-badge.credit { background: rgba(245,158,11,0.1); color: #f59e0b; }
-    .st-feed-empty {
+    
+.st-feed-group { cursor: pointer; }
+.st-feed-group:hover { background: var(--accent-light); border-radius: 6px; }
+.st-feed-detail { padding: 2px 0 4px 20px; border-left: 2px solid var(--border-light); margin-left: 12px; margin-bottom: 2px; }
+.st-feed-subitem { display: flex; align-items: center; padding: 1px 0; font-size: 11px; }
+.st-feed-group.expanded .st-expand-icon { transform: rotate(180deg); }
+
+.st-feed-empty {
         text-align: center;
         padding: 24px 16px;
         color: var(--text-tertiary);
@@ -642,6 +650,9 @@
             </div>
 
             <div class="st-actions">
+                <button class="st-act" id="mixedBtn" onclick="toggleMixedMode()">
+                    <i class="fas fa-layer-group"></i> Mixed
+                </button>
                 <button class="st-act" onclick="openExpense()">
                     <i class="fas fa-arrow-down"></i> Expense
                 </button>
@@ -687,13 +698,26 @@
                 <div class="st-feed">
                     {% if activity %}
                         {% for a in activity %}
-                        <div class="st-feed-item">
-                            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px;">{{ a.name }}</span>
+                        <div class="st-feed-item{% if a.count is defined and a.count > 1 %} st-feed-group{% endif %}"{% if a.details %} onclick="toggleFeedDetail(this)"{% endif %}>
+                            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px;">
+                                {% if a.count is defined and a.count > 1 %}{{ a.count }}× {% endif %}{{ a.name }}
+                            </span>
                             <span class="st-feed-badge {{ a.type }}">{{ a.type }}</span>
                             <span style="font-weight:600;margin-left:6px;white-space:nowrap;{% if a.type == 'expense' %}color:#ef4444;{% endif %}">
-                                {% if a.type == 'expense' %}-{% endif %}{{ "%.0f"|format(a.amount) }}
+                                {% if a.type == 'expense' %}-{% endif %}{{ "%.0f"|format(a.total_amount) }}
                             </span>
+                            {% if a.details %}<i class="fas fa-chevron-down st-expand-icon" style="margin-left:4px;font-size:8px;opacity:0.5;"></i>{% endif %}
                         </div>
+                        {% if a.details %}
+                        <div class="st-feed-detail" style="display:none;">
+                            {% for d in a.details %}
+                            <div class="st-feed-subitem">
+                                <span style="font-size:10px;color:var(--text-tertiary);margin-right:8px;">{{ d.time }}</span>
+                                <span style="font-weight:500;">{% if a.type == 'expense' %}-{% endif %}{{ "%.0f"|format(d.amount) }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                         {% endfor %}
                     {% else %}
                         <div class="st-feed-empty">
@@ -726,6 +750,14 @@
 </div>
 
 <!-- ═══════════ MODALS ═══════════ -->
+
+        <div id="mixedBar" style="display:none;position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:500;background:var(--glass-bg);backdrop-filter:var(--backdrop-blur);border:2px solid var(--accent);border-radius:16px;padding:10px 20px;box-shadow:0 8px 32px rgba(0,0,0,0.3);align-items:center;gap:14px;max-width:90vw;">
+            <span id="mixedCount" style="font-weight:700;color:var(--accent);font-size:14px;">0 items</span>
+            <span id="mixedTotal" style="font-weight:700;font-size:14px;">₱0</span>
+            <button class="st-act" onclick="finishMixed()" style="padding:6px 14px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:8px;">Done</button>
+            <button class="st-act" onclick="cancelMixed()" style="padding:6px 14px;font-size:12px;">Cancel</button>
+        </div>
+
 <div class="st-modal" id="saleModal">
     <div class="st-modal-box">
         <h3>Custom Sale</h3>
@@ -862,25 +894,137 @@
     }
 
     // ── Activity Toggle ──
+    
+    function toggleFeedDetail(el) {
+        var detail = el.nextElementSibling;
+        if (detail && detail.classList.contains('st-feed-detail')) {
+            var isOpen = detail.style.display === 'block';
+            detail.style.display = isOpen ? 'none' : 'block';
+            el.classList.toggle('expanded', !isOpen);
+        }
+    }
+
     function toggleActivity() {
         document.getElementById('activityCard').classList.toggle('collapsed');
     }
 
     // ── Quick Tap ──
+
+    // ── Mixed Mode ──
+    var mixedMode = false;
+    var mixedItems = [];
+
+    function toggleMixedMode() {
+        mixedMode = !mixedMode;
+        var btn = document.getElementById('mixedBtn');
+        var bar = document.getElementById('mixedBar');
+        if (mixedMode) {
+            btn.classList.add('active');
+            bar.style.display = 'flex';
+            mixedItems = [];
+            updateMixedBar();
+        } else {
+            btn.classList.remove('active');
+            bar.style.display = 'none';
+            mixedItems = [];
+        }
+    }
+
+    function updateMixedBar() {
+        document.getElementById('mixedCount').textContent = mixedItems.length + ' item' + (mixedItems.length !== 1 ? 's' : '');
+        var total = mixedItems.reduce(function(s, i) { return s + i.price; }, 0);
+        document.getElementById('mixedTotal').textContent = '₱' + total.toLocaleString();
+    }
+
+    function cancelMixed() { mixedItems = []; toggleMixedMode(); }
+
+    function finishMixed() {
+        if (mixedItems.length === 0) return;
+        var total = mixedItems.reduce(function(s, i) { return s + i.price; }, 0);
+        var names = mixedItems.map(function(i) { return i.name; }).join(', ');
+        fetch('/quick-tap/record', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({product_id: null, product_name: 'Mixed: ' + names, amount: total, quantity: mixedItems.length, is_mixed: true, mixed_items: mixedItems})
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) { cancelMixed(); setTimeout(() => location.reload(), 350); }
+            else toast(d.error || 'Error', 'err');
+        });
+    }
+
     function tap(btn) {
         const id = btn.dataset.id, name = btn.dataset.name, price = parseFloat(btn.dataset.price);
         btn.style.transform = 'scale(0.93)';
         setTimeout(() => btn.style.transform = '', 100);
+        
+        if (typeof mixedMode !== 'undefined' && mixedMode) {
+            mixedItems.push({product_id: id, name: name, price: price});
+            updateMixedBar();
+            return;
+        }
+        
+        // Instant UI update
+        flashBtn(btn);
+        prependActivity(name, price);
+        
         fetch('/quick-tap/record', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({product_id: id, product_name: name, amount: price, quantity: 1})
         })
         .then(r => r.json())
-        .then(d => {
-            if (d.success) { toast(d.message, 'ok'); setTimeout(() => location.reload(), 350); }
-            else toast(d.error, 'err');
-        });
+        .then(d => { if (!d.success) toast(d.error, 'err'); })
+        .catch(() => {});
+    }
+    
+    function flashBtn(btn) {
+        btn.style.transition = 'none';
+        btn.style.boxShadow = '0 0 0 4px var(--accent)';
+        setTimeout(() => { btn.style.transition = 'box-shadow 0.4s ease'; btn.style.boxShadow = ''; }, 150);
+    }
+    
+    function prependActivity(name, amount) {
+        var feed = document.querySelector('.st-feed');
+        if (!feed) return;
+        var emptyEl = feed.querySelector('.st-feed-empty');
+        if (emptyEl) emptyEl.remove();
+        
+        // Check if top item is same product — group it
+        var firstItem = feed.firstElementChild;
+        if (firstItem && firstItem.classList.contains('st-feed-item')) {
+            var nameSpan = firstItem.querySelector('span:first-child');
+            var currentName = nameSpan ? nameSpan.textContent.replace(/^\d+× /, '').trim() : '';
+            if (currentName === name) {
+                var countMatch = nameSpan.textContent.match(/^(\d+)× /);
+                var count = countMatch ? parseInt(countMatch[1]) : 1;
+                nameSpan.textContent = (count + 1) + '× ' + name;
+                var amtSpan = firstItem.querySelector('span:last-child');
+                if (amtSpan) {
+                    var cur = parseInt(amtSpan.textContent.replace(/[^0-9]/g, '')) || 0;
+                    amtSpan.textContent = (cur + amount).toLocaleString();
+                }
+                firstItem.style.transition = 'none';
+                firstItem.style.background = 'var(--accent-light)';
+                setTimeout(() => { firstItem.style.transition = 'background 0.3s'; firstItem.style.background = ''; }, 150);
+                return;
+            }
+        }
+        
+        // New item
+        var item = document.createElement('div');
+        item.className = 'st-feed-item';
+        item.style.opacity = '1';
+        item.style.animation = 'none';
+        item.innerHTML = '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px;">' + name + '</span>' +
+            '<span class="st-feed-badge sale">sale</span>' +
+            '<span style="font-weight:600;margin-left:6px;white-space:nowrap;">' + amount.toLocaleString() + '</span>';
+        feed.insertBefore(item, feed.firstChild);
+        
+        // Update count badge
+        var countEl = document.querySelector('.st-activity-meta .count');
+        if (countEl) countEl.textContent = (parseInt(countEl.textContent) || 0) + 1;
     }
 
     function openCustomSale() { document.getElementById('saleModal').classList.add('show'); document.getElementById('saleName').focus(); }

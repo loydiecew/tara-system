@@ -191,13 +191,34 @@ def get_recent_activity(user_id):
         UNION ALL
         (SELECT 'note' as type, t.description as name, 0 as amount, t.created_at as ts
          FROM transactions t WHERE t.user_id = %s AND t.transaction_date = %s AND t.type = 'note' AND t.deleted_at IS NULL)
-        ORDER BY ts DESC LIMIT 30
+        ORDER BY ts DESC LIMIT 50
     """, (user_id, today, user_id, today, user_id, today, user_id, today))
-    activity = cursor.fetchall()
+    raw = cursor.fetchall()
     cursor.close()
     db.close()
-    return activity
-
+    
+    # Group consecutive identical items
+    grouped = []
+    for item in raw:
+        item_time = item['ts'].strftime('%I:%M %p') if hasattr(item['ts'], 'strftime') else str(item['ts'])
+        if (grouped and 
+            grouped[-1]['type'] == item['type'] and 
+            grouped[-1]['name'] == item['name'] and
+            grouped[-1]['type'] in ('sale', 'expense')):
+            grouped[-1]['count'] += 1
+            grouped[-1]['total_amount'] += float(item['amount'])
+            grouped[-1]['details'].append({'amount': float(item['amount']), 'time': item_time})
+        else:
+            grouped.append({
+                'type': item['type'],
+                'name': item['name'],
+                'count': 1,
+                'total_amount': float(item['amount']),
+                'ts': item['ts'],
+                'details': [{'amount': float(item['amount']), 'time': item_time}]
+            })
+    
+    return grouped[:30]
 def is_first_login(user_id):
     """Check if user has completed onboarding."""
     db = get_db()
@@ -265,17 +286,38 @@ def record_sale():
     today = date.today()
 
     try:
-        desc = f"{product_name}" + (f" x{quantity}" if quantity > 1 else "")
+        is_mixed = data.get('is_mixed', False)
+        mixed_items = data.get('mixed_items', [])
+        
+        if is_mixed and mixed_items:
+            # Mixed/combo sale — create one grouped transaction + individual sale records
+            desc = f"Mixed: {product_name.replace('Mixed: ', '')}"
+            amount = sum(item['price'] for item in mixed_items)
+            quantity = len(mixed_items)
+            
+            cursor.execute("INSERT INTO sales (user_id, customer_name, amount, sale_date, description, payment_method, branch_id) VALUES (%s, 'Walk-in', %s, %s, %s, 'cash', %s)",
+                           (user_id, amount, today, desc, session.get('branch_id')))
+            sale_id = cursor.lastrowid
+            
+            # Create sale_items for each mixed item
+            for item in mixed_items:
+                cursor.execute("INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, amount) VALUES (%s, %s, %s, 1, %s, %s)",
+                               (sale_id, item.get('product_id'), item['name'], item['price'], item['price']))
+            
+            cursor.execute("INSERT INTO transactions (user_id, amount, type, description, category, transaction_date, payment_method, branch_id) VALUES (%s, %s, 'income', %s, 'Sales', %s, 'cash', %s)",
+                           (user_id, amount, desc, today, session.get('branch_id')))
+        else:
+            desc = f"{product_name}" + (f" x{quantity}" if quantity > 1 else "")
 
-        cursor.execute("INSERT INTO sales (user_id, customer_name, amount, sale_date, description, payment_method, branch_id) VALUES (%s, 'Walk-in', %s, %s, %s, 'cash', %s)",
-                       (user_id, amount, today, desc, session.get('branch_id')))
-        sale_id = cursor.lastrowid
+            cursor.execute("INSERT INTO sales (user_id, customer_name, amount, sale_date, description, payment_method, branch_id) VALUES (%s, 'Walk-in', %s, %s, %s, 'cash', %s)",
+                           (user_id, amount, today, desc, session.get('branch_id')))
+            sale_id = cursor.lastrowid
 
-        cursor.execute("INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, amount) VALUES (%s, %s, %s, %s, %s, %s)",
-                       (sale_id, product_id, product_name, quantity, amount / quantity, amount))
+            cursor.execute("INSERT INTO sale_items (sale_id, product_id, product_name, quantity, unit_price, amount) VALUES (%s, %s, %s, %s, %s, %s)",
+                           (sale_id, product_id, product_name, quantity, amount / quantity, amount))
 
-        cursor.execute("INSERT INTO transactions (user_id, amount, type, description, category, transaction_date, payment_method, branch_id) VALUES (%s, %s, 'income', %s, 'Sales', %s, 'cash', %s)",
-                       (user_id, amount, desc, today, session.get('branch_id')))
+            cursor.execute("INSERT INTO transactions (user_id, amount, type, description, category, transaction_date, payment_method, branch_id) VALUES (%s, %s, 'income', %s, 'Sales', %s, 'cash', %s)",
+                           (user_id, amount, desc, today, session.get('branch_id')))
 
         cursor.execute("INSERT INTO journal_entries (user_id, entry_date, description, reference) VALUES (%s, %s, %s, %s)",
                        (user_id, today, f"Quick Tap: {product_name}", f"QT-{sale_id}"))
@@ -707,6 +749,7 @@ def import_products_csv():
             name = row.get('name', '').strip()
             price_str = row.get('price', '0').strip()
             stock_str = row.get('stock', '').strip()
+            category = row.get('category', '').strip() or None
 
             if not name or not price_str:
                 continue
@@ -718,9 +761,9 @@ def import_products_csv():
             stock = int(stock_str) if stock_str else None
 
             if stock is not None:
-                cursor.execute("INSERT INTO products (user_id, name, price, quantity) VALUES (%s, %s, %s, %s)", (user_id, name, price, stock))
+                cursor.execute("INSERT INTO products (user_id, name, price, quantity, category) VALUES (%s, %s, %s, %s, %s)", (user_id, name, price, stock, category))
             else:
-                cursor.execute("INSERT INTO products (user_id, name, price) VALUES (%s, %s, %s)", (user_id, name, price))
+                cursor.execute("INSERT INTO products (user_id, name, price, category) VALUES (%s, %s, %s, %s)", (user_id, name, price, category))
             imported += 1
 
         db.commit()

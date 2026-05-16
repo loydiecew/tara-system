@@ -109,41 +109,36 @@
     }
 
     /* ── Tab bar ── */
-    .st-tabs {
+        .st-tabs {
         display: flex;
         gap: 0;
         background: var(--glass-bg);
         backdrop-filter: var(--backdrop-blur);
         border: 1px solid var(--glass-border);
-        border-radius: 16px;
+        border-radius: 18px;
         overflow: hidden;
+        flex-shrink: 0;
+        margin-top: 10px;
     }
     .st-tab {
         flex: 1;
-        padding: 12px 8px;
+        padding: 13px 8px;
         text-align: center;
         text-decoration: none;
         font-size: 11px;
         font-weight: 600;
         color: var(--text-secondary);
-        transition: all 0.2s;
+        transition: all 0.2s ease;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 4px;
     }
-    .st-tab i { font-size: 15px; }
-    .st-tab:hover {
-        background: var(--accent-light);
-        color: var(--accent);
-    }
-    .st-tab.active {
-        background: var(--accent);
-        color: #fff;
-    }
-
-    @media (max-width: 600px) {
-        .st-stats { grid-template-columns: 1fr; }
+    .st-tab i { font-size: 15px; transition: transform 0.2s; }
+    .st-tab:hover { background: var(--accent-light); color: var(--accent); }
+    .st-tab:hover i { transform: translateY(-2px); }
+    .st-tab.active { background: var(--accent); color: #fff; }
+    @media (max-width: 480px) {
         .st-tab span { display: none; }
         .st-tab { padding: 10px 4px; }
     }
@@ -215,20 +210,6 @@
     {% endif %}
 
     <!-- Tab Bar -->
-    <div class="st-tabs">
-        <a href="/quick-tap" class="st-tab">
-            <i class="fas fa-bolt"></i><span>Quick Tap</span>
-        </a>
-        <a href="/quick-tap/products" class="st-tab">
-            <i class="fas fa-box"></i><span>Products</span>
-        </a>
-        <a href="/quick-tap/credit" class="st-tab">
-            <i class="fas fa-hand-holding-usd"></i><span>Credit</span>
-        </a>
-        <a href="/quick-tap/weekly" class="st-tab active">
-            <i class="fas fa-calendar-week"></i><span>Week</span>
-        </a>
-    </div>
-
+    {% include 'components/quick_tap_tabs.html' %}
 </div>
 {% endblock %}

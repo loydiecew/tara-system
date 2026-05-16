@@ -220,10 +220,36 @@
         .sidebar.collapsed .nav-item i { margin: 0; font-size: 20px; }
 
         .nav-section { padding: 0 16px; margin-bottom: 28px; }
-        .nav-label {
+        .nav-section .nav-label {
             font-size: 10px; font-weight: 700;
             text-transform: uppercase; letter-spacing: 1.5px;
             color: #475569; padding: 0 8px; margin-bottom: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: color 0.2s ease;
+        }
+        .nav-section .nav-label:hover {
+            color: var(--accent);
+        }
+        .nav-section .nav-label .toggle-icon {
+            font-size: 8px;
+            transition: transform 0.3s ease;
+            opacity: 0.5;
+        }
+        .nav-section .nav-label:hover .toggle-icon {
+            opacity: 1;
+        }
+        .nav-section.collapsed .nav-item {
+            display: none;
+        }
+        .nav-section.collapsed .nav-label {
+            margin-bottom: 4px;
+        }
+        .nav-section.collapsed .nav-label .toggle-icon {
+            transform: rotate(-90deg);
         }
         .nav-item {
             display: flex; align-items: center; gap: 12px;
@@ -295,6 +321,7 @@
             border-radius: 4px;
             margin-left: 4px;
         }
+        /* Legacy: nav-section-collapsible uses same collapsible behavior */
         .nav-section-collapsible .nav-label {
             cursor: pointer;
             display: flex;
@@ -337,12 +364,14 @@
             box-shadow: var(--card-shadow);
         }
         .greeting h1 {
-            font-size: 28px; font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 60%);
-            -webkit-background-clip: text; background-clip: text;
-            color: transparent;
+            font-size: 18px; font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
         }
-        .greeting p { font-size: 14px; color: var(--text-secondary); margin-top: 6px; }
+        .greeting p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
         .search-bar {
             display: flex; align-items: center;
             background: var(--bg-secondary);
@@ -901,7 +930,7 @@
                 {% if session.plan != 'starter' and session.role in ['owner', 'admin', 'manager'] %}
                 {% if session.plan != 'essentials' or (user_count is defined and user_count > 1) %}
                 <div class="nav-section">
-                    <div class="nav-label">TEAM</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">TEAM <i class="fas fa-chevron-down toggle-icon"></i></div>
                     <a href="/users-roles" class="nav-item {{ is_active('users_roles') }}">
                         <i class="fas fa-users-gear"></i><span>Users &amp; Roles</span>
                     </a>
@@ -910,7 +939,7 @@
                 {% endif %}
 
                 <div class="nav-section">
-                    <div class="nav-label">MAIN</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">MAIN <i class="fas fa-chevron-down toggle-icon"></i></div>
                     <a href="/quick-tap" class="nav-item {{ 'active' if request.path == '/quick-tap' else '' }}">
                         <i class="fas fa-bolt"></i><span>Quick Tap</span>
                     </a>
@@ -919,13 +948,13 @@
                     </a>
                 </div>
                 <div class="nav-section">
-                    <div class="nav-label">CUSTOMER CREDIT</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">CUSTOMER CREDIT <i class="fas fa-chevron-down toggle-icon"></i></div>
                     <a href="/quick-tap" class="nav-item {{ 'active' if request.path == '/quick-tap' else '' }}">
                         <i class="fas fa-hand-holding-usd"></i><span>Who Owes Me</span>
                     </a>
                 </div>
                 <div class="nav-section">
-                    <div class="nav-label">HISTORY</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">HISTORY <i class="fas fa-chevron-down toggle-icon"></i></div>
                     <a href="/quick-tap/weekly" class="nav-item {{ 'active' if request.path == '/quick-tap/weekly' else '' }}">
                         <i class="fas fa-calendar-week"></i><span>Weekly Summary</span>
                     </a>
@@ -935,7 +964,7 @@
                 {% if session.plan != 'starter' and session.role in ['owner', 'admin', 'manager'] %}
                 {% if session.plan != 'essentials' or (user_count is defined and user_count > 1) %}
                 <div class="nav-section">
-                    <div class="nav-label">TEAM</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">TEAM <i class="fas fa-chevron-down toggle-icon"></i></div>
                     <a href="/users-roles" class="nav-item {{ is_active('users_roles') }}">
                         <i class="fas fa-users-gear"></i><span>Users &amp; Roles</span>
                     </a>
@@ -944,7 +973,7 @@
                 {% endif %}
 
                 <div class="nav-section">
-                    <div class="nav-label">MAIN</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">MAIN <i class="fas fa-chevron-down toggle-icon"></i></div>
                     <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
                         <i class="fas fa-chart-pie"></i><span>Dashboard</span>
                     </a>
@@ -959,7 +988,7 @@
                 </div>
 
                 <div class="nav-section">
-                    <div class="nav-label">FINANCIAL</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">FINANCIAL <i class="fas fa-chevron-down toggle-icon"></i></div>
                     {% if session.plan in ['professional', 'suite'] and session.role in ['owner', 'admin', 'manager'] %}
                     <a href="/approvals" class="nav-item {{ 'active' if request.path == '/approvals' else '' }}">
                         <i class="fas fa-clipboard-check"></i><span>Approvals</span>
@@ -1002,7 +1031,7 @@
 
                 {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and (user_can_view('ar') or user_can_view('ap')) %}
                 <div class="nav-section">
-                    <div class="nav-label">RECEIVABLES & PAYABLES</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">RECEIVABLES & PAYABLES <i class="fas fa-chevron-down toggle-icon"></i></div>
                     {% if user_can_view('ar') %}
                     <a href="/ar" class="nav-item {{ is_active('ar') }}">
                         <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
@@ -1018,7 +1047,7 @@
 
                 {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
                 <div class="nav-section">
-                    <div class="nav-label">OPERATIONS</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">OPERATIONS <i class="fas fa-chevron-down toggle-icon"></i></div>
                     {% if user_can_view('inventory') %}
                     <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
                         <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
@@ -1084,7 +1113,7 @@
                 {% endif %}
 
                 <div class="nav-section">
-                    <div class="nav-label">HISTORY</div>
+                    <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">HISTORY <i class="fas fa-chevron-down toggle-icon"></i></div>
                     {% if user_can_view('all_transactions') %}
                     <a href="/all-transactions" class="nav-item {{ is_active('all_transactions') }}">
                         <i class="fas fa-list-ul"></i><span>All Transactions</span>
@@ -1181,9 +1210,9 @@
                     </a>
                     {% endif %}
                     
-                    <!-- Greeting -->
+                    <!-- Business Name & Date -->
                     <div class="greeting">
-                        <h1 id="greetingMessage"></h1>
+                        <h1 id="businessNameDisplay">{{ session.get('business_name', session.username) }}</h1>
                         <p id="currentDate"></p>
                     </div>
                 </div>
@@ -1288,6 +1317,24 @@
             });
         }
 
+        
+        // ========== SIDEBAR SECTION COLLAPSE STATE ==========
+        document.querySelectorAll('.nav-section .nav-label').forEach(function(label) {
+            var section = label.parentElement;
+            var sectionId = section.querySelector('.nav-label')?.textContent?.trim() || 'section';
+            // Restore saved state
+            if (localStorage.getItem('nav_collapsed_' + sectionId) === 'true') {
+                section.classList.add('collapsed');
+            }
+            // Save on click (the onclick already toggles, we intercept after)
+            label.addEventListener('click', function(e) {
+                setTimeout(function() {
+                    localStorage.setItem('nav_collapsed_' + sectionId, section.classList.contains('collapsed'));
+                }, 50);
+            });
+        });
+
+
         // ========== THEME MODE ==========
         var savedTheme = localStorage.getItem('theme') || 'dark';
         document.body.classList.remove('dark', 'semi-dark');
@@ -1320,15 +1367,10 @@
         document.body.classList.add('enterprise-mode');
         {% endif %}
 
-        // ========== GREETING ==========
-        const hour = new Date().getHours();
-        let greetingText = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
-        const username = '{{ session.username }}';
-        const greetingElement = document.getElementById('greetingMessage');
-        if (greetingElement) greetingElement.innerHTML = `Good ${greetingText}, ${username}`;
+        // ========== DATE DISPLAY ==========
         const dateElement = document.getElementById('currentDate');
         if (dateElement) {
-            dateElement.innerHTML = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            dateElement.innerHTML = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
         }
 
         // ========== MAGNETIC BUTTONS ==========
