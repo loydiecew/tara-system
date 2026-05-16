@@ -86,6 +86,8 @@
                         {% endif %}
                         <div class="form-group"><label>Business Name</label><input type="text" value="{{ session.business_name }}" disabled></div>
                         <div class="form-group"><label>Email Address</label><input type="email" name="email" value="{{ user.email or '' }}" placeholder="your@email.com"></div>
+                        <div class="form-group"><label>GCash Number</label><input type="text" name="gcash_number" value="{{ user.gcash_number or '' }}" placeholder="09171234567"></div>
+                        <div class="form-group"><label>Maya Number</label><input type="text" name="maya_number" value="{{ user.maya_number or '' }}" placeholder="09171234567"></div>
                         <div class="form-group"><label>Role</label><input type="text" value="{{ session.role|capitalize }}" disabled></div>
                         <div class="form-group">
                             <label>Industry Category</label>

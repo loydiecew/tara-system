@@ -974,6 +974,9 @@
 
                 <div class="nav-section">
                     <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">MAIN <i class="fas fa-chevron-down toggle-icon"></i></div>
+                    <a href="/quick-tap" class="nav-item {{ 'active' if request.path == '/quick-tap' else '' }}">
+                        <i class="fas fa-bolt"></i><span>Quick Tap</span>
+                    </a>
                     <a href="/dashboard" class="nav-item {{ is_active('dashboard') }}">
                         <i class="fas fa-chart-pie"></i><span>Dashboard</span>
                     </a>
@@ -1029,29 +1032,50 @@
                     {% endif %}
                 </div>
 
-                {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and (user_can_view('ar') or user_can_view('ap')) %}
+                {% if session.role not in ['cashier', 'viewer'] and session.plan in ['essentials', 'professional', 'suite'] %}
                 <div class="nav-section">
                     <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">RECEIVABLES & PAYABLES <i class="fas fa-chevron-down toggle-icon"></i></div>
-                    {% if user_can_view('ar') %}
-                    <a href="/ar" class="nav-item {{ is_active('ar') }}">
-                        <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
-                    </a>
-                    {% endif %}
-                    {% if user_can_view('ap') %}
-                    <a href="/ap" class="nav-item {{ is_active('ap') }}">
-                        <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
-                    </a>
+                    {% if session.plan in ['professional', 'suite'] %}
+                        {% if user_can_view('ar') %}
+                        <a href="/ar" class="nav-item {{ is_active('ar') }}">
+                            <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
+                        </a>
+                        {% endif %}
+                        {% if user_can_view('ap') %}
+                        <a href="/ap" class="nav-item {{ is_active('ap') }}">
+                            <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
+                        </a>
+                        {% endif %}
+                    {% else %}
+                        <div class="nav-item locked" onclick="showAddonTrial('Accounts Receivable', '149', 'ar')" title="14-day free trial available">
+                            <i class="fas fa-hand-holding-usd"></i><span>Accounts Receivable</span>
+                            <span class="price-tag">₱149</span>
+                            <i class="fas fa-lock lock-icon"></i>
+                        </div>
+                        <div class="nav-item locked" onclick="showAddonTrial('Accounts Payable', '149', 'ap')" title="14-day free trial available">
+                            <i class="fas fa-truck-fast"></i><span>Accounts Payable</span>
+                            <span class="price-tag">₱149</span>
+                            <i class="fas fa-lock lock-icon"></i>
+                        </div>
                     {% endif %}
                 </div>
                 {% endif %}
 
-                {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] and (user_can_view('inventory') or user_can_view('purchase_orders') or user_can_view('sales_orders')) %}
+                {% if session.role not in ['cashier', 'viewer'] and session.plan in ['essentials', 'professional', 'suite'] %}
                 <div class="nav-section">
                     <div class="nav-label" onclick="this.parentElement.classList.toggle('collapsed')">OPERATIONS <i class="fas fa-chevron-down toggle-icon"></i></div>
-                    {% if user_can_view('inventory') %}
-                    <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
-                        <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
-                    </a>
+                    {% if session.plan in ['professional', 'suite'] %}
+                        {% if user_can_view('inventory') %}
+                        <a href="/inventory" class="nav-item {{ is_active('inventory') }}">
+                            <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
+                        </a>
+                        {% endif %}
+                    {% else %}
+                        <div class="nav-item locked" onclick="showAddonTrial('Inventory Management', '149', 'inventory')" title="14-day free trial available">
+                            <i class="fas fa-boxes-stacked"></i><span>Inventory Management</span>
+                            <span class="price-tag">₱149</span>
+                            <i class="fas fa-lock lock-icon"></i>
+                        </div>
                     {% endif %}
                     {% if user_can_view('purchase_orders') %}
                     <a href="/purchase-orders" class="nav-item {{ is_active('purchase_orders') }}">
@@ -1152,6 +1176,9 @@
                     </div>
                     
                     {% set addon_modules = [
+                        {'name': 'Accounts Receivable', 'icon': 'fa-hand-holding-usd', 'price': '149', 'module': 'ar'},
+                        {'name': 'Accounts Payable', 'icon': 'fa-truck-fast', 'price': '149', 'module': 'ap'},
+                        {'name': 'Inventory Management', 'icon': 'fa-boxes-stacked', 'price': '149', 'module': 'inventory'},
                         {'name': 'Quotations', 'icon': 'fa-file-contract', 'price': '99', 'module': 'quotations'},
                         {'name': 'Budgeting', 'icon': 'fa-chart-pie', 'price': '79', 'module': 'budgets'},
                         {'name': 'Projects', 'icon': 'fa-folder-tree', 'price': '99', 'module': 'projects'},
@@ -1883,7 +1910,7 @@ fetch('/api/tasks/count')
 <!-- Add-on Trial Modal -->
 <div id="addonTrialModal" class="modal" style="display:none;">
     <div class="modal-content" style="max-width:420px;text-align:center;">
-        <div style="font-size:40px;margin-bottom:12px;">🔓</div>
+        <div style="font-size:40px;margin-bottom:12px;"><i class="fas fa-lock-open" style="color:var(--accent);font-size:32px;"></i></div>
         <h3 id="addonTrialTitle" style="margin-bottom:8px;">Unlock [Module]</h3>
         <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px;">
             <span id="addonTrialPrice"></span>/month · 14-day free trial

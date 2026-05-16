@@ -5,6 +5,9 @@ import base64
 import os
 from models.database import get_db
 from models.email_service import send_email
+import qrcode
+import io
+from flask import Response
 
 payments_bp = Blueprint('payments', __name__)
 
@@ -23,7 +26,7 @@ def create_payment_link(invoice_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['suite']:
+    if session.get('plan') not in ['essentials', 'professional', 'suite']:
         flash('Payment links are available on Enterprise plan only.', 'error')
         return redirect(url_for('ar.ar'))
     
@@ -101,7 +104,7 @@ def email_payment_link(invoice_id):
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
     
-    if session.get('plan') not in ['suite']:
+    if session.get('plan') not in ['essentials', 'professional', 'suite']:
         flash('Payment links are available on Enterprise plan only.', 'error')
         return redirect(url_for('ar.ar'))
     
@@ -209,6 +212,60 @@ def payment_success(invoice_id):
     return render_template('payment_success.html', invoice_id=invoice_id)
 
 
+
+
+@payments_bp.route('/api/payment_link/<int:invoice_id>')
+def api_payment_link(invoice_id):
+    """Get the latest payment link for an invoice (JSON)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT checkout_url, amount, reference_number, created_at
+        FROM payment_links
+        WHERE invoice_id = %s AND user_id = %s
+        ORDER BY created_at DESC LIMIT 1
+    """, (invoice_id, session['user_id']))
+    link = cursor.fetchone()
+    cursor.close()
+    db.close()
+    
+    if link:
+        return jsonify({
+            'checkout_url': link['checkout_url'],
+            'amount': float(link['amount']),
+            'reference': link['reference_number']
+        })
+    return jsonify({'error': 'No payment link found'}), 404
+
+@payments_bp.route('/qr/<path:checkout_url_base64>')
+def qr_code(checkout_url_base64):
+    """Generate QR code for a checkout URL"""
+    import base64 as b64
+    try:
+        url = b64.urlsafe_b64decode(checkout_url_base64.encode()).decode()
+    except:
+        return "Invalid URL", 400
+    
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=2,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="#10b981", back_color="white")
+    
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    
+    return Response(buf.getvalue(), mimetype='image/png')
+
 @payments_bp.route('/webhook/paymongo', methods=['POST'])
 def paymongo_webhook():
     data = request.get_json()
@@ -245,3 +302,111 @@ def paymongo_webhook():
     cursor.close()
     db.close()
     return jsonify({'ok': True})
+@payments_bp.route('/gcash_qr/<int:invoice_id>')
+def gcash_qr(invoice_id):
+    """Generate a direct GCash QR code for an invoice"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # Get the business's GCash number
+    cursor.execute("SELECT gcash_number FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    gcash_number = user['gcash_number'] if user and user.get('gcash_number') else None
+    
+    if not gcash_number:
+        cursor.close()
+        db.close()
+        flash('Please set your GCash number in Profile first.', 'error')
+        return redirect(url_for('ar.ar'))
+    
+    # Get invoice
+    cursor.execute("""
+        SELECT i.*, c.name as customer_name
+        FROM invoices i JOIN customers c ON i.customer_id = c.id
+        WHERE i.id = %s AND i.user_id = %s
+    """, (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if not invoice:
+        cursor.close()
+        db.close()
+        flash('Invoice not found.', 'error')
+        return redirect(url_for('ar.ar'))
+    
+    cursor.execute("SELECT COALESCE(SUM(amount), 0) as total_paid FROM payments WHERE invoice_id = %s", (invoice_id,))
+    total_paid = float(cursor.fetchone()['total_paid'])
+    remaining = float(invoice['amount']) - total_paid
+    
+    cursor.close()
+    db.close()
+    
+    # Generate GCash deep link
+    # Format: gcash://send?to=09XXXXXXXXX&amount=XXX.XX&message=INV-XXX
+    gcash_url = f"gcash://send?to={gcash_number}&amount={remaining:.2f}&message=INV-{invoice.get('invoice_number', str(invoice_id))}"
+    
+    # Also generate a web fallback URL
+    web_url = f"https://gcash.app/send?to={gcash_number}&amount={remaining:.2f}"
+    
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=2)
+    qr.add_data(gcash_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#007bff", back_color="white")
+    
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    
+    return Response(buf.getvalue(), mimetype='image/png')
+
+@payments_bp.route('/maya_qr/<int:invoice_id>')
+def maya_qr(invoice_id):
+    """Generate a direct Maya QR code for an invoice"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute("SELECT maya_number FROM users WHERE id = %s", (session['user_id'],))
+    user = cursor.fetchone()
+    maya_number = user['maya_number'] if user and user.get('maya_number') else None
+    
+    if not maya_number:
+        cursor.close()
+        db.close()
+        flash('Please set your Maya number in Profile first.', 'error')
+        return redirect(url_for('ar.ar'))
+    
+    cursor.execute("""
+        SELECT i.*, COALESCE(SUM(p.amount), 0) as total_paid
+        FROM invoices i LEFT JOIN payments p ON i.id = p.invoice_id
+        WHERE i.id = %s AND i.user_id = %s
+        GROUP BY i.id
+    """, (invoice_id, session['user_id']))
+    invoice = cursor.fetchone()
+    
+    if not invoice:
+        cursor.close()
+        db.close()
+        return "Invoice not found", 404
+    
+    remaining = float(invoice['amount']) - float(invoice['total_paid'])
+    cursor.close()
+    db.close()
+    
+    # Maya deep link
+    maya_url = f"maya://send?to={maya_number}&amount={remaining:.2f}"
+    
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=2)
+    qr.add_data(maya_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#00c853", back_color="white")
+    
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    
+    return Response(buf.getvalue(), mimetype='image/png')

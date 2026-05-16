@@ -471,16 +471,18 @@ def update_profile():
     email = request.form.get('email', '')
     industry = request.form.get('industry', '')
     vat_registered = request.form.get('vat_registered', '1')
+    gcash_number = request.form.get('gcash_number', '')
+    maya_number = request.form.get('maya_number', '')
     smtp_email = request.form.get('smtp_email', '')
     smtp_password = request.form.get('smtp_password', '')
     
     db = get_db()
     cursor = db.cursor()
     cursor.execute("""
-        UPDATE users SET full_name = %s, email = %s, industry = %s, vat_registered = %s,
+        UPDATE users SET full_name = %s, email = %s, industry = %s, vat_registered = %s, gcash_number = %s, maya_number = %s,
         smtp_email = %s, smtp_password = %s
         WHERE id = %s
-    """, (full_name, email, industry, vat_registered, smtp_email, smtp_password, session['user_id']))
+    """, (full_name, email, industry, vat_registered, gcash_number, maya_number, smtp_email, smtp_password, session['user_id']))
     db.commit()
     cursor.close()
     db.close()
