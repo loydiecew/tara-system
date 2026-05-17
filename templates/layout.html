@@ -1162,6 +1162,11 @@
                     {% if session.role not in ['cashier'] %}<a href="/balance-sheet" class="nav-item {{ is_active('balance_sheet') }}">
                         <i class="fas fa-file-invoice"></i><span>Balance Sheet</span>
                     </a>{% endif %}
+                    {% if session.role not in ['cashier', 'viewer'] and session.plan in ['professional', 'suite'] %}
+                    <a href="/records" class="nav-item {{ is_active('records') }}">
+                        <i class="fas fa-scroll"></i><span>Business Records</span>
+                    </a>
+                    {% endif %}
                     {% if session.role in ['admin', 'owner'] and session.plan in ['professional', 'suite'] %}
                     <a href="/admin/audit" class="nav-item {{ is_active('admin_audit') }}">
                         <i class="fas fa-history"></i><span>Audit Log</span>
@@ -1539,6 +1544,7 @@
                 '/income-statement': 'accounting', '/balance-sheet': 'accounting',
                 '/insights': 'accounting','/reports': 'accounting',    
                 '/import-data': 'operations','/admin/audit': 'accounting',
+                '/records': 'accounting',
                 '/planner': 'operations',
             };
             
@@ -1579,6 +1585,7 @@
                     {% if user_can_view('trial_balance') %}{name:'Trial Balance',url:'/trial-balance',icon:'fa-balance-scale-right'},{% endif %}
                     {% if user_can_view('income_statement') %}{name:'Income Statement',url:'/income-statement',icon:'fa-file-invoice-dollar'},{% endif %}
                     {% if user_can_view('balance_sheet') %}{name:'Balance Sheet',url:'/balance-sheet',icon:'fa-file-invoice'},{% endif %}
+                    {% if user_can_view('records') %}{name:'Business Records',url:'/records',icon:'fa-scroll'},{% endif %}
                     {% if user_can_view('admin_audit') %}{name:'Audit Log',url:'/admin/audit',icon:'fa-history'},{% endif %}
                 ].filter(Boolean)
             };

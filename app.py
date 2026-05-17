@@ -7,6 +7,7 @@ from models.helpers import user_has_feature, user_has_addon
 
 # ---------- Import all blueprints ----------
 from routes import (
+    records_bp,
     scratchpad_bp,
     auth_bp, dashboard_bp, quick_tap_bp, cash_bp, sales_bp, journal_bp,
     ar_bp, ap_bp, inventory_bp, insights_bp, admin_bp, plan_bp, api_bp,
@@ -30,6 +31,7 @@ mail = Mail(app)
 
 # ---------- Register blueprints ----------
 BLUEPRINTS = [
+    records_bp,
     scratchpad_bp,
     approvals_bp,
     tasks_bp,

@@ -148,6 +148,36 @@ def add_transaction():
                     }
     
     status = 'pending_approval' if needs_approval else 'active'
+    
+    # Anomaly detection — check if this expense is unusually high
+    anomaly_warning = None
+    if trans_type == 'expense' and category:
+        cursor.execute("""
+            SELECT AVG(weekly_total) as weekly_avg
+            FROM (
+                SELECT SUM(t.amount) as weekly_total
+                FROM transactions t
+                JOIN users u ON t.user_id = u.id
+                WHERE u.business_id = %s AND t.type = 'expense'
+                  AND t.category = %s AND t.deleted_at IS NULL
+                  AND t.transaction_date >= DATE_SUB(%s, INTERVAL 28 DAY)
+                GROUP BY YEARWEEK(t.transaction_date)
+            ) as weeks
+        """, (session.get('business_id', session['user_id']), category, transaction_date))
+        row = cursor.fetchone()
+        if row and row[0] and row[0] > 0:
+            weekly_avg = float(row[0])
+            if amount > weekly_avg * 2.5:
+                multiplier = round(amount / weekly_avg, 1)
+                severity = 'high' if amount > weekly_avg * 4 else 'medium'
+                anomaly_warning = {
+                    'category': category,
+                    'amount': amount,
+                    'average': round(weekly_avg, 2),
+                    'multiplier': multiplier,
+                    'severity': severity
+                }
+    
     print(f"DEBUG: needs_approval={needs_approval}, status={status}, role={role}, amount={amount}, category={category}")
     
     cursor.execute("""
@@ -166,6 +196,9 @@ def add_transaction():
     }
     log_audit(session['user_id'], session['username'], 'CREATE', 'transactions', 
             cursor.lastrowid, new_values=new_transaction)
+    
+    if anomaly_warning:
+        flash(f'⚠ Unusual expense: ₱{anomaly_warning["amount"]:,.2f} for {anomaly_warning["category"]} is {anomaly_warning["multiplier"]}x above weekly average (₱{anomaly_warning["average"]:,.2f}). Review before approving.', 'warning')
     
     if needs_approval:
         if budget_info:

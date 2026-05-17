@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+{% block title %}Business Records{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-title">Total Records</div>
+        <div class="stat-value">{{ total }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2><i class="fas fa-history"></i> Business Records</h2>
+        <div style="display:flex;gap:8px;">
+            <select id="filterType" onchange="applyFilters()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-light);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                <option value="">All Types</option>
+                <option value="create" {% if record_type == 'create' %}selected{% endif %}>Created</option>
+                <option value="update" {% if record_type == 'update' %}selected{% endif %}>Updated</option>
+                <option value="delete" {% if record_type == 'delete' %}selected{% endif %}>Deleted</option>
+                <option value="payment" {% if record_type == 'payment' %}selected{% endif %}>Payments</option>
+                <option value="approve" {% if record_type == 'approve' %}selected{% endif %}>Approvals</option>
+            </select>
+            <select id="filterModule" onchange="applyFilters()" style="padding:6px 12px;border-radius:8px;border:1px solid var(--border-light);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;">
+                <option value="">All Modules</option>
+                <option value="sales" {% if module_filter == 'sales' %}selected{% endif %}>Sales</option>
+                <option value="transactions" {% if module_filter == 'transactions' %}selected{% endif %}>Cash</option>
+                <option value="invoices" {% if module_filter == 'invoices' %}selected{% endif %}>Invoices</option>
+                <option value="products" {% if module_filter == 'products' %}selected{% endif %}>Products</option>
+                <option value="users" {% if module_filter == 'users' %}selected{% endif %}>Users</option>
+            </select>
+        </div>
+    </div>
+    
+    <div style="margin-bottom:16px;">
+        <input type="text" id="filterSearch" placeholder="Search by name, description, or amount..." value="{{ search }}" oninput="applyFilters()" 
+               style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border-light);background:var(--bg-secondary);color:var(--text-primary);font-size:13px;">
+    </div>
+    
+    {% if records %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for r in records %}
+        <div class="record-item" style="padding:14px 16px;border-radius:12px;background:var(--bg-secondary);border:1px solid var(--border-light);cursor:pointer;transition:all 0.15s;"
+             onmouseover="this.style.borderColor='var(--accent)';"
+             onmouseout="this.style.borderColor='var(--border-light)';">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                    {% if r.record_type == 'create' %}background:rgba(16,185,129,0.1);color:#10b981;
+                    {% elif r.record_type == 'update' %}background:rgba(245,158,11,0.1);color:#f59e0b;
+                    {% elif r.record_type == 'delete' %}background:rgba(239,68,68,0.1);color:#ef4444;
+                    {% elif r.record_type == 'payment' %}background:rgba(59,130,246,0.1);color:#3b82f6;
+                    {% else %}background:rgba(148,163,184,0.1);color:#94a3b8;{% endif %}">
+                    <i class="fas fa-{% if r.record_type == 'create' %}plus{% elif r.record_type == 'update' %}pen{% elif r.record_type == 'delete' %}trash{% elif r.record_type == 'payment' %}check{% else %}circle{% endif %}"></i>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;font-size:13px;color:var(--text-primary);">{{ r.action_title }}</div>
+                    {% if r.action_description %}
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.action_description }}</div>
+                    {% endif %}
+                    <div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--text-muted);">
+                        {% if r.amount %}<span>₱{{ "{:,.2f}".format(r.amount) }}</span>{% endif %}
+                        {% if r.customer_name %}<span>{{ r.customer_name }}</span>{% endif %}
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-size:10px;color:var(--text-muted);">{{ r.user_name or 'System' }}</div>
+                    <div style="font-size:10px;color:var(--text-muted);">{{ r.created_at.strftime('%b %d, %I:%M %p') if r.created_at else '' }}</div>
+                    {% if r.comment_count %}
+                    <div style="font-size:10px;color:var(--accent);margin-top:2px;"><i class="fas fa-comment"></i> {{ r.comment_count }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if r.old_values or r.new_values %}
+            <div style="margin-top:10px;padding:10px;background:var(--bg-primary);border-radius:8px;font-size:11px;display:none;" class="record-detail">
+                {% if r.old_values %}
+                <div style="color:#ef4444;margin-bottom:4px;"><strong>Before:</strong> {{ r.old_values }}</div>
+                {% endif %}
+                {% if r.new_values %}
+                <div style="color:#10b981;"><strong>After:</strong> {{ r.new_values }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if total > per_page %}
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:20px;">
+        {% if page > 1 %}
+        <a href="?page={{ page - 1 }}&type={{ record_type }}&module={{ module_filter }}&search={{ search }}" class="btn btn-secondary btn-sm">Previous</a>
+        {% endif %}
+        <span style="padding:8px 12px;font-size:12px;color:var(--text-secondary);">Page {{ page }} of {{ (total / per_page)|round(0, 'ceil')|int }}</span>
+        {% if page * per_page < total %}
+        <a href="?page={{ page + 1 }}&type={{ record_type }}&module={{ module_filter }}&search={{ search }}" class="btn btn-secondary btn-sm">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-history"></i>
+        <h3>No Records Yet</h3>
+        <p>Business records will appear as you use the system.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function applyFilters() {
+    var type = document.getElementById('filterType').value;
+    var module = document.getElementById('filterModule').value;
+    var search = document.getElementById('filterSearch').value;
+    var url = '/records?';
+    if (type) url += 'type=' + type + '&';
+    if (module) url += 'module=' + module + '&';
+    if (search) url += 'search=' + encodeURIComponent(search) + '&';
+    window.location.href = url;
+}
+
+document.querySelectorAll('.record-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+        var detail = this.querySelector('.record-detail');
+        if (detail) {
+            detail.style.display = detail.style.display === 'none' ? 'block' : 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
